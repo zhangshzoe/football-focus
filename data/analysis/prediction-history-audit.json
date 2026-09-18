@@ -1,0 +1,2084 @@
+{
+  "generatedAt": "2026-09-12T09:56:09.288Z",
+  "source": "http://localhost:3000/api/prediction-snapshots + /api/sporttery/results",
+  "grain": "同一官方比赛在开赛前90分钟或更早的最后一条可用预测；没有严格决策点时标记为回退，不与严格样本混淆",
+  "inventory": {
+    "snapshotCount": 13,
+    "legacySnapshotCount": 7,
+    "immutableSnapshotCount": 6,
+    "rawPredictionRows": 198,
+    "uniqueSettledMatches": 55,
+    "selectedDecisionRows": 55,
+    "strictDecisionRows": 33,
+    "fallbackDecisionRows": 22
+  },
+  "completeness": {
+    "officialMatchId": {
+      "count": 130,
+      "total": 198,
+      "rate": 65.7
+    },
+    "verifiedMapping": {
+      "count": 130,
+      "total": 198,
+      "rate": 65.7
+    },
+    "validKickoffAt": {
+      "count": 137,
+      "total": 198,
+      "rate": 69.2
+    },
+    "predictionId": {
+      "count": 130,
+      "total": 198,
+      "rate": 65.7
+    },
+    "fullScoreDistribution": {
+      "count": 130,
+      "total": 198,
+      "rate": 65.7
+    },
+    "marketHadBaseline": {
+      "count": 182,
+      "total": 198,
+      "rate": 91.9
+    },
+    "hhadPrediction": {
+      "count": 198,
+      "total": 198,
+      "rate": 100
+    },
+    "totalGoalPrediction": {
+      "count": 191,
+      "total": 198,
+      "rate": 96.5
+    },
+    "halfFullPrediction": {
+      "count": 191,
+      "total": 198,
+      "rate": 96.5
+    },
+    "validIntelligenceEvidence": {
+      "count": 0,
+      "total": 198,
+      "rate": 0
+    },
+    "matchedResult": {
+      "count": 136,
+      "total": 198,
+      "rate": 68.7
+    }
+  },
+  "overall": {
+    "matches": 33,
+    "scoreTop1": {
+      "eligible": 33,
+      "rate": 9.1
+    },
+    "scoreTop3": {
+      "eligible": 33,
+      "rate": 30.3
+    },
+    "hadTop1": {
+      "eligible": 33,
+      "rate": 72.7
+    },
+    "hhadTop1": {
+      "eligible": 33,
+      "rate": 36.4
+    },
+    "totalTop1": {
+      "eligible": 26,
+      "rate": 23.1
+    },
+    "totalTop2": {
+      "eligible": 26,
+      "rate": 42.3
+    },
+    "halfFullTop1": {
+      "eligible": 26,
+      "rate": 26.9
+    },
+    "modelBrier": 0.471,
+    "modelLogLoss": 0.816,
+    "marketBrier": 0.467,
+    "marketLogLoss": 0.808,
+    "marketComparable": 26
+  },
+  "aiContribution": {
+    "comparableMatches": 0,
+    "fusedBrier": null,
+    "marketBaselineBrier": null,
+    "brierDelta": null,
+    "interpretation": "样本不足，不能据此固定或放大情报权重"
+  },
+  "byLeague": [
+    {
+      "league": "欧冠",
+      "matches": 9,
+      "scoreTop1": {
+        "eligible": 9,
+        "rate": 22.2
+      },
+      "scoreTop3": {
+        "eligible": 9,
+        "rate": 55.6
+      },
+      "hadTop1": {
+        "eligible": 9,
+        "rate": 88.9
+      },
+      "hhadTop1": {
+        "eligible": 9,
+        "rate": 22.2
+      },
+      "totalTop1": {
+        "eligible": 9,
+        "rate": 44.4
+      },
+      "totalTop2": {
+        "eligible": 9,
+        "rate": 55.6
+      },
+      "halfFullTop1": {
+        "eligible": 9,
+        "rate": 44.4
+      },
+      "modelBrier": 0.273,
+      "modelLogLoss": 0.525,
+      "marketBrier": 0.27,
+      "marketLogLoss": 0.519,
+      "marketComparable": 9
+    },
+    {
+      "league": "沙特联",
+      "matches": 4,
+      "scoreTop1": {
+        "eligible": 4,
+        "rate": 0
+      },
+      "scoreTop3": {
+        "eligible": 4,
+        "rate": 25
+      },
+      "hadTop1": {
+        "eligible": 4,
+        "rate": 75
+      },
+      "hhadTop1": {
+        "eligible": 4,
+        "rate": 75
+      },
+      "totalTop1": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "totalTop2": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "halfFullTop1": {
+        "eligible": 1,
+        "rate": 100
+      },
+      "modelBrier": 0.36,
+      "modelLogLoss": 0.677,
+      "marketBrier": 0.223,
+      "marketLogLoss": 0.487,
+      "marketComparable": 1
+    },
+    {
+      "league": "瑞典超",
+      "matches": 2,
+      "scoreTop1": {
+        "eligible": 2,
+        "rate": 0
+      },
+      "scoreTop3": {
+        "eligible": 2,
+        "rate": 50
+      },
+      "hadTop1": {
+        "eligible": 2,
+        "rate": 50
+      },
+      "hhadTop1": {
+        "eligible": 2,
+        "rate": 0
+      },
+      "totalTop1": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "totalTop2": {
+        "eligible": 1,
+        "rate": 100
+      },
+      "halfFullTop1": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "modelBrier": 0.669,
+      "modelLogLoss": 1.075,
+      "marketBrier": 1.064,
+      "marketLogLoss": 1.59,
+      "marketComparable": 1
+    },
+    {
+      "league": "法甲",
+      "matches": 2,
+      "scoreTop1": {
+        "eligible": 2,
+        "rate": 0
+      },
+      "scoreTop3": {
+        "eligible": 2,
+        "rate": 50
+      },
+      "hadTop1": {
+        "eligible": 2,
+        "rate": 100
+      },
+      "hhadTop1": {
+        "eligible": 2,
+        "rate": 0
+      },
+      "totalTop1": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "totalTop2": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "halfFullTop1": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "modelBrier": 0.385,
+      "modelLogLoss": 0.705,
+      "marketBrier": 0.414,
+      "marketLogLoss": 0.744,
+      "marketComparable": 1
+    },
+    {
+      "league": "西甲",
+      "matches": 2,
+      "scoreTop1": {
+        "eligible": 2,
+        "rate": 50
+      },
+      "scoreTop3": {
+        "eligible": 2,
+        "rate": 50
+      },
+      "hadTop1": {
+        "eligible": 2,
+        "rate": 50
+      },
+      "hhadTop1": {
+        "eligible": 2,
+        "rate": 50
+      },
+      "totalTop1": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "totalTop2": {
+        "eligible": 1,
+        "rate": 100
+      },
+      "halfFullTop1": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "modelBrier": 0.634,
+      "modelLogLoss": 1.039,
+      "marketBrier": 0.391,
+      "marketLogLoss": 0.712,
+      "marketComparable": 1
+    },
+    {
+      "league": "荷甲",
+      "matches": 2,
+      "scoreTop1": {
+        "eligible": 2,
+        "rate": 0
+      },
+      "scoreTop3": {
+        "eligible": 2,
+        "rate": 0
+      },
+      "hadTop1": {
+        "eligible": 2,
+        "rate": 50
+      },
+      "hhadTop1": {
+        "eligible": 2,
+        "rate": 50
+      },
+      "totalTop1": {
+        "eligible": 2,
+        "rate": 0
+      },
+      "totalTop2": {
+        "eligible": 2,
+        "rate": 0
+      },
+      "halfFullTop1": {
+        "eligible": 2,
+        "rate": 0
+      },
+      "modelBrier": 0.793,
+      "modelLogLoss": 1.259,
+      "marketBrier": 0.78,
+      "marketLogLoss": 1.227,
+      "marketComparable": 2
+    },
+    {
+      "league": "巴西杯",
+      "matches": 1,
+      "scoreTop1": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "scoreTop3": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "hadTop1": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "hhadTop1": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "totalTop1": {
+        "eligible": 0,
+        "rate": null
+      },
+      "totalTop2": {
+        "eligible": 0,
+        "rate": null
+      },
+      "halfFullTop1": {
+        "eligible": 0,
+        "rate": null
+      },
+      "modelBrier": 0.655,
+      "modelLogLoss": 1.082,
+      "marketBrier": null,
+      "marketLogLoss": null,
+      "marketComparable": 0
+    },
+    {
+      "league": "英联杯",
+      "matches": 1,
+      "scoreTop1": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "scoreTop3": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "hadTop1": {
+        "eligible": 1,
+        "rate": 100
+      },
+      "hhadTop1": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "totalTop1": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "totalTop2": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "halfFullTop1": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "modelBrier": 0.222,
+      "modelLogLoss": 0.485,
+      "marketBrier": 0.221,
+      "marketLogLoss": 0.483,
+      "marketComparable": 1
+    },
+    {
+      "league": "葡超",
+      "matches": 1,
+      "scoreTop1": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "scoreTop3": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "hadTop1": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "hhadTop1": {
+        "eligible": 1,
+        "rate": 100
+      },
+      "totalTop1": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "totalTop2": {
+        "eligible": 1,
+        "rate": 100
+      },
+      "halfFullTop1": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "modelBrier": 1.127,
+      "modelLogLoss": 1.818,
+      "marketBrier": 1.119,
+      "marketLogLoss": 1.809,
+      "marketComparable": 1
+    },
+    {
+      "league": "解放者杯",
+      "matches": 1,
+      "scoreTop1": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "scoreTop3": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "hadTop1": {
+        "eligible": 1,
+        "rate": 100
+      },
+      "hhadTop1": {
+        "eligible": 1,
+        "rate": 100
+      },
+      "totalTop1": {
+        "eligible": 1,
+        "rate": 100
+      },
+      "totalTop2": {
+        "eligible": 1,
+        "rate": 100
+      },
+      "halfFullTop1": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "modelBrier": 0.563,
+      "modelLogLoss": 0.948,
+      "marketBrier": 0.585,
+      "marketLogLoss": 0.979,
+      "marketComparable": 1
+    },
+    {
+      "league": "日职联",
+      "matches": 1,
+      "scoreTop1": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "scoreTop3": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "hadTop1": {
+        "eligible": 1,
+        "rate": 100
+      },
+      "hhadTop1": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "totalTop1": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "totalTop2": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "halfFullTop1": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "modelBrier": 0.337,
+      "modelLogLoss": 0.643,
+      "marketBrier": 0.343,
+      "marketLogLoss": 0.65,
+      "marketComparable": 1
+    },
+    {
+      "league": "德乙",
+      "matches": 1,
+      "scoreTop1": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "scoreTop3": {
+        "eligible": 1,
+        "rate": 100
+      },
+      "hadTop1": {
+        "eligible": 1,
+        "rate": 100
+      },
+      "hhadTop1": {
+        "eligible": 1,
+        "rate": 100
+      },
+      "totalTop1": {
+        "eligible": 1,
+        "rate": 100
+      },
+      "totalTop2": {
+        "eligible": 1,
+        "rate": 100
+      },
+      "halfFullTop1": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "modelBrier": 0.513,
+      "modelLogLoss": 0.864,
+      "marketBrier": 0.534,
+      "marketLogLoss": 0.898,
+      "marketComparable": 1
+    },
+    {
+      "league": "荷乙",
+      "matches": 1,
+      "scoreTop1": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "scoreTop3": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "hadTop1": {
+        "eligible": 1,
+        "rate": 100
+      },
+      "hhadTop1": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "totalTop1": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "totalTop2": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "halfFullTop1": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "modelBrier": 0.477,
+      "modelLogLoss": 0.821,
+      "marketBrier": 0.494,
+      "marketLogLoss": 0.849,
+      "marketComparable": 1
+    },
+    {
+      "league": "德甲",
+      "matches": 1,
+      "scoreTop1": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "scoreTop3": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "hadTop1": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "hhadTop1": {
+        "eligible": 1,
+        "rate": 100
+      },
+      "totalTop1": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "totalTop2": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "halfFullTop1": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "modelBrier": 0.684,
+      "modelLogLoss": 1.102,
+      "marketBrier": 0.689,
+      "marketLogLoss": 1.119,
+      "marketComparable": 1
+    },
+    {
+      "league": "意甲",
+      "matches": 1,
+      "scoreTop1": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "scoreTop3": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "hadTop1": {
+        "eligible": 1,
+        "rate": 100
+      },
+      "hhadTop1": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "totalTop1": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "totalTop2": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "halfFullTop1": {
+        "eligible": 1,
+        "rate": 100
+      },
+      "modelBrier": 0.551,
+      "modelLogLoss": 0.925,
+      "marketBrier": 0.578,
+      "marketLogLoss": 0.967,
+      "marketComparable": 1
+    },
+    {
+      "league": "英冠",
+      "matches": 1,
+      "scoreTop1": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "scoreTop3": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "hadTop1": {
+        "eligible": 1,
+        "rate": 100
+      },
+      "hhadTop1": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "totalTop1": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "totalTop2": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "halfFullTop1": {
+        "eligible": 1,
+        "rate": 100
+      },
+      "modelBrier": 0.219,
+      "modelLogLoss": 0.48,
+      "marketBrier": 0.223,
+      "marketLogLoss": 0.486,
+      "marketComparable": 1
+    },
+    {
+      "league": "巴西甲",
+      "matches": 1,
+      "scoreTop1": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "scoreTop3": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "hadTop1": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "hhadTop1": {
+        "eligible": 1,
+        "rate": 100
+      },
+      "totalTop1": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "totalTop2": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "halfFullTop1": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "modelBrier": 0.791,
+      "modelLogLoss": 1.283,
+      "marketBrier": 0.735,
+      "marketLogLoss": 1.194,
+      "marketComparable": 1
+    },
+    {
+      "league": "韩K联",
+      "matches": 1,
+      "scoreTop1": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "scoreTop3": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "hadTop1": {
+        "eligible": 1,
+        "rate": 100
+      },
+      "hhadTop1": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "totalTop1": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "totalTop2": {
+        "eligible": 1,
+        "rate": 100
+      },
+      "halfFullTop1": {
+        "eligible": 1,
+        "rate": 0
+      },
+      "modelBrier": 0.534,
+      "modelLogLoss": 0.905,
+      "marketBrier": 0.551,
+      "marketLogLoss": 0.93,
+      "marketComparable": 1
+    }
+  ],
+  "decisionRows": [
+    {
+      "matchKey": "2026-09-03|周四001|费哈|拉斯永恒",
+      "snapshotId": "2026-09-03-2145",
+      "decisionPolicy": "kickoff_minus_90m",
+      "id": "周四001",
+      "league": "沙特联",
+      "home": "费哈",
+      "away": "拉斯永恒",
+      "kickoffAt": "2026-09-03T23:55:00+08:00",
+      "capturedAt": "2026-09-03T21:46:27.2256205+08:00",
+      "resultDate": "2026-09-03",
+      "actualScore": "2:2",
+      "actualHad": "平",
+      "predictedHad": "负",
+      "hadProbability": 41.35284270468282,
+      "scoreTop1": "1:1",
+      "scoreTop3Hit": false,
+      "totalTop2": [],
+      "actualTotal": "4",
+      "intelligenceCoverage": 0
+    },
+    {
+      "matchKey": "2026-09-03|周四002|新未来城体育|塞哈特海湾",
+      "snapshotId": "2026-09-03-2145",
+      "decisionPolicy": "kickoff_minus_90m",
+      "id": "周四002",
+      "league": "沙特联",
+      "home": "新未来城体育",
+      "away": "塞哈特海湾",
+      "kickoffAt": "2026-09-04T00:30:00+08:00",
+      "capturedAt": "2026-09-03T21:46:27.2256205+08:00",
+      "resultDate": "2026-09-04",
+      "actualScore": "3:0",
+      "actualHad": "胜",
+      "predictedHad": "胜",
+      "hadProbability": 56.74022776007449,
+      "scoreTop1": "1:0",
+      "scoreTop3Hit": false,
+      "totalTop2": [],
+      "actualTotal": "3",
+      "intelligenceCoverage": 0
+    },
+    {
+      "matchKey": "2026-09-03|周四003|米亚尔比|尤尔加登",
+      "snapshotId": "2026-09-03-2145",
+      "decisionPolicy": "kickoff_minus_90m",
+      "id": "周四003",
+      "league": "瑞典超",
+      "home": "米亚尔比",
+      "away": "尤尔加登",
+      "kickoffAt": "2026-09-04T01:00:00+08:00",
+      "capturedAt": "2026-09-03T21:46:27.2256205+08:00",
+      "resultDate": "2026-09-04",
+      "actualScore": "0:2",
+      "actualHad": "负",
+      "predictedHad": "负",
+      "hadProbability": 57.9009308181452,
+      "scoreTop1": "1:1",
+      "scoreTop3Hit": true,
+      "totalTop2": [],
+      "actualTotal": "2",
+      "intelligenceCoverage": 0
+    },
+    {
+      "matchKey": "2026-09-03|周四004|迪里耶|胡拜尔库迪西亚",
+      "snapshotId": "2026-09-03-2145",
+      "decisionPolicy": "kickoff_minus_90m",
+      "id": "周四004",
+      "league": "沙特联",
+      "home": "迪里耶",
+      "away": "胡拜尔库迪西亚",
+      "kickoffAt": "2026-09-04T02:00:00+08:00",
+      "capturedAt": "2026-09-03T21:46:27.2256205+08:00",
+      "resultDate": "2026-09-04",
+      "actualScore": "0:2",
+      "actualHad": "负",
+      "predictedHad": "负",
+      "hadProbability": 66.69208341867862,
+      "scoreTop1": "1:2",
+      "scoreTop3Hit": true,
+      "totalTop2": [],
+      "actualTotal": "2",
+      "intelligenceCoverage": 0
+    },
+    {
+      "matchKey": "2026-09-03|周四005|图卢兹|里尔",
+      "snapshotId": "2026-09-03-2145",
+      "decisionPolicy": "kickoff_minus_90m",
+      "id": "周四005",
+      "league": "法甲",
+      "home": "图卢兹",
+      "away": "里尔",
+      "kickoffAt": "2026-09-04T02:45:00+08:00",
+      "capturedAt": "2026-09-03T21:46:27.2256205+08:00",
+      "resultDate": "2026-09-04",
+      "actualScore": "0:1",
+      "actualHad": "负",
+      "predictedHad": "负",
+      "hadProbability": 50.67077750104273,
+      "scoreTop1": "1:1",
+      "scoreTop3Hit": true,
+      "totalTop2": [],
+      "actualTotal": "1",
+      "intelligenceCoverage": 0
+    },
+    {
+      "matchKey": "2026-09-03|周四006|皇家社会|塞尔塔",
+      "snapshotId": "2026-09-03-2145",
+      "decisionPolicy": "kickoff_minus_90m",
+      "id": "周四006",
+      "league": "西甲",
+      "home": "皇家社会",
+      "away": "塞尔塔",
+      "kickoffAt": "2026-09-04T03:00:00+08:00",
+      "capturedAt": "2026-09-03T21:46:27.2256205+08:00",
+      "resultDate": "2026-09-04",
+      "actualScore": "0:0",
+      "actualHad": "平",
+      "predictedHad": "胜",
+      "hadProbability": 53.01659787575491,
+      "scoreTop1": "1:1",
+      "scoreTop3Hit": false,
+      "totalTop2": [],
+      "actualTotal": "0",
+      "intelligenceCoverage": 0
+    },
+    {
+      "matchKey": "2026-09-03|周四007|格雷米奥|巴西国际",
+      "snapshotId": "2026-09-03-2145",
+      "decisionPolicy": "kickoff_minus_90m",
+      "id": "周四007",
+      "league": "巴西杯",
+      "home": "格雷米奥",
+      "away": "巴西国际",
+      "kickoffAt": "2026-09-04T07:00:00+08:00",
+      "capturedAt": "2026-09-03T21:46:27.2256205+08:00",
+      "resultDate": "2026-09-04",
+      "actualScore": "3:1",
+      "actualHad": "胜",
+      "predictedHad": "平",
+      "hadProbability": 34.06285574456696,
+      "scoreTop1": "1:1",
+      "scoreTop3Hit": false,
+      "totalTop2": [],
+      "actualTotal": "4",
+      "intelligenceCoverage": 0
+    },
+    {
+      "matchKey": "2026-09-07|周一001|卡利亚里|莱切",
+      "snapshotId": "2026-09-07-1700",
+      "decisionPolicy": "time_unverified",
+      "id": "周一001",
+      "league": "意甲",
+      "home": "卡利亚里",
+      "away": "莱切",
+      "kickoffAt": "",
+      "capturedAt": "2026-09-07T09:09:00.738Z",
+      "resultDate": "2026-09-08",
+      "actualScore": "1:0",
+      "actualHad": "胜",
+      "predictedHad": "胜",
+      "hadProbability": 46.73532406656461,
+      "scoreTop1": "1:0",
+      "scoreTop3Hit": true,
+      "totalTop2": [
+        "2球",
+        "1球"
+      ],
+      "actualTotal": "1",
+      "intelligenceCoverage": 0
+    },
+    {
+      "matchKey": "2026-09-07|周一002|赫塔菲|塞尔塔",
+      "snapshotId": "2026-09-07-1700",
+      "decisionPolicy": "time_unverified",
+      "id": "周一002",
+      "league": "西甲",
+      "home": "赫塔菲",
+      "away": "塞尔塔",
+      "kickoffAt": "",
+      "capturedAt": "2026-09-07T09:09:00.738Z",
+      "resultDate": "2026-09-08",
+      "actualScore": "1:1",
+      "actualHad": "平",
+      "predictedHad": "胜",
+      "hadProbability": 37.58394855864219,
+      "scoreTop1": "0:0",
+      "scoreTop3Hit": false,
+      "totalTop2": [
+        "1球",
+        "2球"
+      ],
+      "actualTotal": "2",
+      "intelligenceCoverage": 0
+    },
+    {
+      "matchKey": "2026-09-07|周一003|马尔默|索尔纳",
+      "snapshotId": "2026-09-07-1700",
+      "decisionPolicy": "time_unverified",
+      "id": "周一003",
+      "league": "瑞典超",
+      "home": "马尔默",
+      "away": "索尔纳",
+      "kickoffAt": "",
+      "capturedAt": "2026-09-07T09:09:00.738Z",
+      "resultDate": "2026-09-08",
+      "actualScore": "0:0",
+      "actualHad": "平",
+      "predictedHad": "胜",
+      "hadProbability": 54.143887739436195,
+      "scoreTop1": "1:1",
+      "scoreTop3Hit": false,
+      "totalTop2": [
+        "3球",
+        "2球"
+      ],
+      "actualTotal": "0",
+      "intelligenceCoverage": 0
+    },
+    {
+      "matchKey": "2026-09-07|周一004|卡尔马|尤尔加登",
+      "snapshotId": "2026-09-07-1700",
+      "decisionPolicy": "time_unverified",
+      "id": "周一004",
+      "league": "瑞典超",
+      "home": "卡尔马",
+      "away": "尤尔加登",
+      "kickoffAt": "",
+      "capturedAt": "2026-09-07T09:09:00.738Z",
+      "resultDate": "2026-09-08",
+      "actualScore": "0:1",
+      "actualHad": "负",
+      "predictedHad": "负",
+      "hadProbability": 57.30671902087375,
+      "scoreTop1": "1:1",
+      "scoreTop3Hit": true,
+      "totalTop2": [
+        "2球",
+        "3球"
+      ],
+      "actualTotal": "1",
+      "intelligenceCoverage": 0
+    },
+    {
+      "matchKey": "2026-09-07|周一005|利雅得新月|新未来城体育",
+      "snapshotId": "2026-09-07-1700",
+      "decisionPolicy": "time_unverified",
+      "id": "周一005",
+      "league": "沙特联",
+      "home": "利雅得新月",
+      "away": "新未来城体育",
+      "kickoffAt": "",
+      "capturedAt": "2026-09-07T09:09:00.738Z",
+      "resultDate": "2026-09-08",
+      "actualScore": "0:2",
+      "actualHad": "负",
+      "predictedHad": "胜",
+      "hadProbability": 78.87416156595016,
+      "scoreTop1": "2:0",
+      "scoreTop3Hit": false,
+      "totalTop2": [
+        "3球",
+        "4球"
+      ],
+      "actualTotal": "2",
+      "intelligenceCoverage": 0
+    },
+    {
+      "matchKey": "2026-09-07|周一006|乌迪内斯|拉齐奥",
+      "snapshotId": "2026-09-07-1700",
+      "decisionPolicy": "time_unverified",
+      "id": "周一006",
+      "league": "意甲",
+      "home": "乌迪内斯",
+      "away": "拉齐奥",
+      "kickoffAt": "",
+      "capturedAt": "2026-09-07T09:09:00.738Z",
+      "resultDate": "2026-09-08",
+      "actualScore": "1:2",
+      "actualHad": "负",
+      "predictedHad": "负",
+      "hadProbability": 35.12440268422262,
+      "scoreTop1": "1:1",
+      "scoreTop3Hit": false,
+      "totalTop2": [
+        "2球",
+        "1球"
+      ],
+      "actualTotal": "3",
+      "intelligenceCoverage": 0
+    },
+    {
+      "matchKey": "2026-09-07|周一007|埃斯托里尔|阿罗卡",
+      "snapshotId": "2026-09-07-1700",
+      "decisionPolicy": "time_unverified",
+      "id": "周一007",
+      "league": "葡超",
+      "home": "埃斯托里尔",
+      "away": "阿罗卡",
+      "kickoffAt": "",
+      "capturedAt": "2026-09-07T09:09:00.738Z",
+      "resultDate": "2026-09-08",
+      "actualScore": "0:0",
+      "actualHad": "平",
+      "predictedHad": "胜",
+      "hadProbability": 38.65229543068468,
+      "scoreTop1": "1:1",
+      "scoreTop3Hit": false,
+      "totalTop2": [
+        "2球",
+        "3球"
+      ],
+      "actualTotal": "0",
+      "intelligenceCoverage": 0
+    },
+    {
+      "matchKey": "2026-09-07|周一008|埃尔切|皇家社会",
+      "snapshotId": "2026-09-07-1700",
+      "decisionPolicy": "time_unverified",
+      "id": "周一008",
+      "league": "西甲",
+      "home": "埃尔切",
+      "away": "皇家社会",
+      "kickoffAt": "",
+      "capturedAt": "2026-09-07T09:09:00.738Z",
+      "resultDate": "2026-09-08",
+      "actualScore": "2:3",
+      "actualHad": "负",
+      "predictedHad": "负",
+      "hadProbability": 45.098772821918146,
+      "scoreTop1": "1:1",
+      "scoreTop3Hit": false,
+      "totalTop2": [
+        "2球",
+        "3球"
+      ],
+      "actualTotal": "5",
+      "intelligenceCoverage": 0
+    },
+    {
+      "matchKey": "2026-09-07|周一009|维多利亚|格雷米奥",
+      "snapshotId": "2026-09-07-1700",
+      "decisionPolicy": "time_unverified",
+      "id": "周一009",
+      "league": "巴西甲",
+      "home": "维多利亚",
+      "away": "格雷米奥",
+      "kickoffAt": "",
+      "capturedAt": "2026-09-07T09:09:00.738Z",
+      "resultDate": "2026-09-08",
+      "actualScore": "1:0",
+      "actualHad": "胜",
+      "predictedHad": "胜",
+      "hadProbability": 44.57173620517569,
+      "scoreTop1": "1:1",
+      "scoreTop3Hit": true,
+      "totalTop2": [
+        "2球",
+        "3球"
+      ],
+      "actualTotal": "1",
+      "intelligenceCoverage": 0
+    },
+    {
+      "matchKey": "2026-09-08|周二002|雅典aek|林茨",
+      "snapshotId": "2026-09-08-1700",
+      "decisionPolicy": "time_unverified",
+      "id": "周二002",
+      "league": "欧冠",
+      "home": "雅典AEK",
+      "away": "林茨",
+      "kickoffAt": "",
+      "capturedAt": "2026-09-08T09:02:18.453Z",
+      "resultDate": "2026-09-09",
+      "actualScore": "1:0",
+      "actualHad": "胜",
+      "predictedHad": "胜",
+      "hadProbability": 54.36351800243292,
+      "scoreTop1": "2:1",
+      "scoreTop3Hit": false,
+      "totalTop2": [
+        "3球",
+        "2球"
+      ],
+      "actualTotal": "1",
+      "intelligenceCoverage": 0
+    },
+    {
+      "matchKey": "2026-09-08|周二003|布鲁日|阿斯顿维拉",
+      "snapshotId": "2026-09-08-1700",
+      "decisionPolicy": "time_unverified",
+      "id": "周二003",
+      "league": "欧冠",
+      "home": "布鲁日",
+      "away": "阿斯顿维拉",
+      "kickoffAt": "",
+      "capturedAt": "2026-09-08T09:02:18.453Z",
+      "resultDate": "2026-09-09",
+      "actualScore": "2:3",
+      "actualHad": "负",
+      "predictedHad": "胜",
+      "hadProbability": 37.625889104766046,
+      "scoreTop1": "1:1",
+      "scoreTop3Hit": false,
+      "totalTop2": [
+        "2球",
+        "3球"
+      ],
+      "actualTotal": "5",
+      "intelligenceCoverage": 0
+    },
+    {
+      "matchKey": "2026-09-08|周二004|奈梅亨|sbv精英",
+      "snapshotId": "2026-09-08-1700",
+      "decisionPolicy": "time_unverified",
+      "id": "周二004",
+      "league": "荷甲",
+      "home": "奈梅亨",
+      "away": "SBV精英",
+      "kickoffAt": "",
+      "capturedAt": "2026-09-08T09:02:18.453Z",
+      "resultDate": "2026-09-09",
+      "actualScore": "2:2",
+      "actualHad": "平",
+      "predictedHad": "胜",
+      "hadProbability": 58.85884662232781,
+      "scoreTop1": "2:1",
+      "scoreTop3Hit": false,
+      "totalTop2": [
+        "3球",
+        "2球"
+      ],
+      "actualTotal": "4",
+      "intelligenceCoverage": 0
+    },
+    {
+      "matchKey": "2026-09-08|周二005|胡拜尔库迪西亚|吉达国民",
+      "snapshotId": "2026-09-08-1700",
+      "decisionPolicy": "time_unverified",
+      "id": "周二005",
+      "league": "沙特联",
+      "home": "胡拜尔库迪西亚",
+      "away": "吉达国民",
+      "kickoffAt": "",
+      "capturedAt": "2026-09-08T09:02:18.453Z",
+      "resultDate": "2026-09-09",
+      "actualScore": "3:2",
+      "actualHad": "胜",
+      "predictedHad": "胜",
+      "hadProbability": 47.51654739340142,
+      "scoreTop1": "1:1",
+      "scoreTop3Hit": false,
+      "totalTop2": [
+        "3球",
+        "2球"
+      ],
+      "actualTotal": "5",
+      "intelligenceCoverage": 0
+    },
+    {
+      "matchKey": "2026-09-08|周二006|南安普顿|斯旺西",
+      "snapshotId": "2026-09-08-1700",
+      "decisionPolicy": "time_unverified",
+      "id": "周二006",
+      "league": "英冠",
+      "home": "南安普顿",
+      "away": "斯旺西",
+      "kickoffAt": "",
+      "capturedAt": "2026-09-08T09:02:18.453Z",
+      "resultDate": "2026-09-09",
+      "actualScore": "3:1",
+      "actualHad": "胜",
+      "predictedHad": "胜",
+      "hadProbability": 52.316295561173284,
+      "scoreTop1": "1:1",
+      "scoreTop3Hit": false,
+      "totalTop2": [
+        "2球",
+        "3球"
+      ],
+      "actualTotal": "4",
+      "intelligenceCoverage": 0
+    },
+    {
+      "matchKey": "2026-09-08|周二007|桑德兰|赫尔城",
+      "snapshotId": "2026-09-08-1700",
+      "decisionPolicy": "time_unverified",
+      "id": "周二007",
+      "league": "英联杯",
+      "home": "桑德兰",
+      "away": "赫尔城",
+      "kickoffAt": "",
+      "capturedAt": "2026-09-08T09:02:18.453Z",
+      "resultDate": "2026-09-09",
+      "actualScore": "1:0",
+      "actualHad": "胜",
+      "predictedHad": "胜",
+      "hadProbability": 55.47125704799913,
+      "scoreTop1": "1:0",
+      "scoreTop3Hit": true,
+      "totalTop2": [
+        "2球",
+        "3球"
+      ],
+      "actualTotal": "1",
+      "intelligenceCoverage": 0
+    },
+    {
+      "matchKey": "2026-09-08|周二008|皇马|国米",
+      "snapshotId": "2026-09-08-1700",
+      "decisionPolicy": "time_unverified",
+      "id": "周二008",
+      "league": "欧冠",
+      "home": "皇马",
+      "away": "国米",
+      "kickoffAt": "",
+      "capturedAt": "2026-09-08T09:02:18.453Z",
+      "resultDate": "2026-09-09",
+      "actualScore": "2:1",
+      "actualHad": "胜",
+      "predictedHad": "胜",
+      "hadProbability": 61.227860885692444,
+      "scoreTop1": "2:1",
+      "scoreTop3Hit": true,
+      "totalTop2": [
+        "3球",
+        "2球"
+      ],
+      "actualTotal": "3",
+      "intelligenceCoverage": 0
+    },
+    {
+      "matchKey": "2026-09-08|周二009|多特蒙德|比利亚雷亚尔",
+      "snapshotId": "2026-09-08-1700",
+      "decisionPolicy": "time_unverified",
+      "id": "周二009",
+      "league": "欧冠",
+      "home": "多特蒙德",
+      "away": "比利亚雷亚尔",
+      "kickoffAt": "",
+      "capturedAt": "2026-09-08T09:02:18.453Z",
+      "resultDate": "2026-09-09",
+      "actualScore": "3:2",
+      "actualHad": "胜",
+      "predictedHad": "胜",
+      "hadProbability": 53.862305540687736,
+      "scoreTop1": "2:1",
+      "scoreTop3Hit": false,
+      "totalTop2": [
+        "3球",
+        "2球"
+      ],
+      "actualTotal": "5",
+      "intelligenceCoverage": 0
+    },
+    {
+      "matchKey": "2026-09-08|周二010|里尔|贝蒂斯",
+      "snapshotId": "2026-09-08-1700",
+      "decisionPolicy": "time_unverified",
+      "id": "周二010",
+      "league": "欧冠",
+      "home": "里尔",
+      "away": "贝蒂斯",
+      "kickoffAt": "",
+      "capturedAt": "2026-09-08T09:02:18.453Z",
+      "resultDate": "2026-09-09",
+      "actualScore": "2:3",
+      "actualHad": "负",
+      "predictedHad": "胜",
+      "hadProbability": 45.07875206228294,
+      "scoreTop1": "1:1",
+      "scoreTop3Hit": false,
+      "totalTop2": [
+        "2球",
+        "3球"
+      ],
+      "actualTotal": "5",
+      "intelligenceCoverage": 0
+    },
+    {
+      "matchKey": "2026-09-08|周二011|波尔图|曼城",
+      "snapshotId": "2026-09-08-1700",
+      "decisionPolicy": "time_unverified",
+      "id": "周二011",
+      "league": "欧冠",
+      "home": "波尔图",
+      "away": "曼城",
+      "kickoffAt": "",
+      "capturedAt": "2026-09-08T09:02:18.453Z",
+      "resultDate": "2026-09-09",
+      "actualScore": "0:2",
+      "actualHad": "负",
+      "predictedHad": "负",
+      "hadProbability": 58.360380609645645,
+      "scoreTop1": "1:1",
+      "scoreTop3Hit": true,
+      "totalTop2": [
+        "2球",
+        "3球"
+      ],
+      "actualTotal": "2",
+      "intelligenceCoverage": 0
+    },
+    {
+      "matchKey": "2026-09-08|周二012|弗鲁米嫩塞|普拉滕斯",
+      "snapshotId": "2026-09-08-1700",
+      "decisionPolicy": "time_unverified",
+      "id": "周二012",
+      "league": "解放者杯",
+      "home": "弗鲁米嫩塞",
+      "away": "普拉滕斯",
+      "kickoffAt": "",
+      "capturedAt": "2026-09-08T09:02:18.453Z",
+      "resultDate": "2026-09-09",
+      "actualScore": "2:0",
+      "actualHad": "胜",
+      "predictedHad": "胜",
+      "hadProbability": 56.92584637986686,
+      "scoreTop1": "1:0",
+      "scoreTop3Hit": true,
+      "totalTop2": [
+        "1球",
+        "2球"
+      ],
+      "actualTotal": "2",
+      "intelligenceCoverage": 0
+    },
+    {
+      "matchKey": "2026-09-08|周二001|蔚山hd|fc首尔",
+      "snapshotId": "2026-09-08-1700",
+      "decisionPolicy": "time_unverified",
+      "id": "周二001",
+      "league": "韩K联",
+      "home": "蔚山HD",
+      "away": "FC首尔",
+      "kickoffAt": "",
+      "capturedAt": "2026-09-08T09:02:18.453Z",
+      "resultDate": "2026-09-08",
+      "actualScore": "1:0",
+      "actualHad": "胜",
+      "predictedHad": "负",
+      "hadProbability": 48.41033689551089,
+      "scoreTop1": "1:1",
+      "scoreTop3Hit": false,
+      "totalTop2": [
+        "3球",
+        "2球"
+      ],
+      "actualTotal": "1",
+      "intelligenceCoverage": 0
+    },
+    {
+      "matchKey": "2041356",
+      "snapshotId": "2026-09-09-1700",
+      "decisionPolicy": "latest_pre_match_fallback",
+      "id": "周三001",
+      "league": "韩K联",
+      "home": "江原FC",
+      "away": "全北现代",
+      "kickoffAt": "2026-09-09T18:30:00+08:00",
+      "capturedAt": "2026-09-09T09:03:45.723Z",
+      "resultDate": "2026-09-09",
+      "actualScore": "1:1",
+      "actualHad": "平",
+      "predictedHad": "负",
+      "hadProbability": 39.71083735525118,
+      "scoreTop1": "1:1",
+      "scoreTop3Hit": true,
+      "totalTop2": [
+        "2球",
+        "1球"
+      ],
+      "actualTotal": "2",
+      "intelligenceCoverage": 0
+    },
+    {
+      "matchKey": "2041358",
+      "snapshotId": "2026-09-09-1700",
+      "decisionPolicy": "kickoff_minus_90m",
+      "id": "周三003",
+      "league": "欧冠",
+      "home": "巴萨",
+      "away": "费耶诺德",
+      "kickoffAt": "2026-09-10T00:45:00+08:00",
+      "capturedAt": "2026-09-09T09:03:45.723Z",
+      "resultDate": "2026-09-10",
+      "actualScore": "5:1",
+      "actualHad": "胜",
+      "predictedHad": "胜",
+      "hadProbability": 88.70307071115748,
+      "scoreTop1": "3:0",
+      "scoreTop3Hit": false,
+      "totalTop2": [
+        "4球",
+        "5球"
+      ],
+      "actualTotal": "6",
+      "intelligenceCoverage": 0
+    },
+    {
+      "matchKey": "2041359",
+      "snapshotId": "2026-09-09-1700",
+      "decisionPolicy": "kickoff_minus_90m",
+      "id": "周三004",
+      "league": "欧冠",
+      "home": "斯图加特",
+      "away": "维京",
+      "kickoffAt": "2026-09-10T00:45:00+08:00",
+      "capturedAt": "2026-09-09T09:03:45.723Z",
+      "resultDate": "2026-09-10",
+      "actualScore": "3:1",
+      "actualHad": "胜",
+      "predictedHad": "胜",
+      "hadProbability": 76.26570853607738,
+      "scoreTop1": "2:1",
+      "scoreTop3Hit": true,
+      "totalTop2": [
+        "4球",
+        "3球"
+      ],
+      "actualTotal": "4",
+      "intelligenceCoverage": 0
+    },
+    {
+      "matchKey": "2041360",
+      "snapshotId": "2026-09-09-1700",
+      "decisionPolicy": "kickoff_minus_90m",
+      "id": "周三005",
+      "league": "荷甲",
+      "home": "特温特",
+      "away": "特尔斯达",
+      "kickoffAt": "2026-09-10T00:45:00+08:00",
+      "capturedAt": "2026-09-09T09:03:45.723Z",
+      "resultDate": "2026-09-10",
+      "actualScore": "1:0",
+      "actualHad": "胜",
+      "predictedHad": "胜",
+      "hadProbability": 75.23565909549347,
+      "scoreTop1": "2:1",
+      "scoreTop3Hit": false,
+      "totalTop2": [
+        "3球",
+        "4球"
+      ],
+      "actualTotal": "1",
+      "intelligenceCoverage": 0
+    },
+    {
+      "matchKey": "2041362",
+      "snapshotId": "2026-09-09-1700",
+      "decisionPolicy": "kickoff_minus_90m",
+      "id": "周三007",
+      "league": "欧冠",
+      "home": "那不勒斯",
+      "away": "阿森纳",
+      "kickoffAt": "2026-09-10T03:00:00+08:00",
+      "capturedAt": "2026-09-09T09:03:45.723Z",
+      "resultDate": "2026-09-10",
+      "actualScore": "0:1",
+      "actualHad": "负",
+      "predictedHad": "负",
+      "hadProbability": 59.96872508064861,
+      "scoreTop1": "0:1",
+      "scoreTop3Hit": true,
+      "totalTop2": [
+        "2球",
+        "3球"
+      ],
+      "actualTotal": "1",
+      "intelligenceCoverage": 0
+    },
+    {
+      "matchKey": "2041363",
+      "snapshotId": "2026-09-09-1700",
+      "decisionPolicy": "kickoff_minus_90m",
+      "id": "周三008",
+      "league": "欧冠",
+      "home": "利物浦",
+      "away": "马竞",
+      "kickoffAt": "2026-09-10T03:00:00+08:00",
+      "capturedAt": "2026-09-09T09:03:45.723Z",
+      "resultDate": "2026-09-10",
+      "actualScore": "2:1",
+      "actualHad": "胜",
+      "predictedHad": "胜",
+      "hadProbability": 54.83061408412411,
+      "scoreTop1": "1:1",
+      "scoreTop3Hit": true,
+      "totalTop2": [
+        "3球",
+        "2球"
+      ],
+      "actualTotal": "3",
+      "intelligenceCoverage": 0
+    },
+    {
+      "matchKey": "2041366",
+      "snapshotId": "2026-09-09-1700",
+      "decisionPolicy": "kickoff_minus_90m",
+      "id": "周三011",
+      "league": "英联杯",
+      "home": "切尔西",
+      "away": "利兹联",
+      "kickoffAt": "2026-09-10T03:00:00+08:00",
+      "capturedAt": "2026-09-09T09:03:45.723Z",
+      "resultDate": "2026-09-10",
+      "actualScore": "6:3",
+      "actualHad": "胜",
+      "predictedHad": "胜",
+      "hadProbability": 61.568808787209875,
+      "scoreTop1": "2:1",
+      "scoreTop3Hit": false,
+      "totalTop2": [
+        "3球",
+        "2球"
+      ],
+      "actualTotal": "7",
+      "intelligenceCoverage": 0
+    },
+    {
+      "matchKey": "2041377",
+      "snapshotId": "2026-09-10-2145",
+      "decisionPolicy": "kickoff_minus_90m",
+      "id": "周四001",
+      "league": "欧冠",
+      "home": "费内巴切",
+      "away": "罗马",
+      "kickoffAt": "2026-09-11T00:45:00+08:00",
+      "capturedAt": "2026-09-10T13:46:35.711Z",
+      "resultDate": "2026-09-11",
+      "actualScore": "1:1",
+      "actualHad": "平",
+      "predictedHad": "负",
+      "hadProbability": 47.9427959113613,
+      "scoreTop1": "1:1",
+      "scoreTop3Hit": true,
+      "totalTop2": [
+        "2球",
+        "3球"
+      ],
+      "actualTotal": "2",
+      "intelligenceCoverage": 0
+    },
+    {
+      "matchKey": "2041378",
+      "snapshotId": "2026-09-10-2145",
+      "decisionPolicy": "kickoff_minus_90m",
+      "id": "周四002",
+      "league": "欧冠",
+      "home": "科莫",
+      "away": "RB莱比锡",
+      "kickoffAt": "2026-09-11T03:00:00+08:00",
+      "capturedAt": "2026-09-10T13:46:35.711Z",
+      "resultDate": "2026-09-11",
+      "actualScore": "4:1",
+      "actualHad": "胜",
+      "predictedHad": "胜",
+      "hadProbability": 54.685092865151134,
+      "scoreTop1": "2:1",
+      "scoreTop3Hit": false,
+      "totalTop2": [
+        "3球",
+        "2球"
+      ],
+      "actualTotal": "5",
+      "intelligenceCoverage": 0
+    },
+    {
+      "matchKey": "2041371",
+      "snapshotId": "2026-09-10-2145",
+      "decisionPolicy": "kickoff_minus_90m",
+      "id": "周四003",
+      "league": "欧冠",
+      "home": "拜仁",
+      "away": "博德闪耀",
+      "kickoffAt": "2026-09-11T03:00:00+08:00",
+      "capturedAt": "2026-09-10T13:46:35.711Z",
+      "resultDate": "2026-09-11",
+      "actualScore": "5:0",
+      "actualHad": "胜",
+      "predictedHad": "胜",
+      "hadProbability": 89.3624979186267,
+      "scoreTop1": "3:0",
+      "scoreTop3Hit": false,
+      "totalTop2": [
+        "4球",
+        "5球"
+      ],
+      "actualTotal": "5",
+      "intelligenceCoverage": 0
+    },
+    {
+      "matchKey": "2041372",
+      "snapshotId": "2026-09-10-2145",
+      "decisionPolicy": "kickoff_minus_90m",
+      "id": "周四004",
+      "league": "欧冠",
+      "home": "布拉格斯拉维亚",
+      "away": "朗斯",
+      "kickoffAt": "2026-09-11T03:00:00+08:00",
+      "capturedAt": "2026-09-10T13:46:35.711Z",
+      "resultDate": "2026-09-11",
+      "actualScore": "2:3",
+      "actualHad": "负",
+      "predictedHad": "负",
+      "hadProbability": 38.61298676104423,
+      "scoreTop1": "1:1",
+      "scoreTop3Hit": false,
+      "totalTop2": [
+        "2球",
+        "3球"
+      ],
+      "actualTotal": "5",
+      "intelligenceCoverage": 0
+    },
+    {
+      "matchKey": "2041373",
+      "snapshotId": "2026-09-10-2145",
+      "decisionPolicy": "kickoff_minus_90m",
+      "id": "周四005",
+      "league": "欧冠",
+      "home": "曼联",
+      "away": "萨巴赫",
+      "kickoffAt": "2026-09-11T03:00:00+08:00",
+      "capturedAt": "2026-09-10T13:46:35.711Z",
+      "resultDate": "2026-09-11",
+      "actualScore": "4:0",
+      "actualHad": "胜",
+      "predictedHad": "胜",
+      "hadProbability": 88.71404585283122,
+      "scoreTop1": "3:0",
+      "scoreTop3Hit": true,
+      "totalTop2": [
+        "4球",
+        "3球"
+      ],
+      "actualTotal": "4",
+      "intelligenceCoverage": 0
+    },
+    {
+      "matchKey": "2041374",
+      "snapshotId": "2026-09-10-2145",
+      "decisionPolicy": "kickoff_minus_90m",
+      "id": "周四006",
+      "league": "葡超",
+      "home": "阿马多拉之星",
+      "away": "布拉加",
+      "kickoffAt": "2026-09-11T03:15:00+08:00",
+      "capturedAt": "2026-09-10T13:46:35.711Z",
+      "resultDate": "2026-09-11",
+      "actualScore": "2:1",
+      "actualHad": "胜",
+      "predictedHad": "负",
+      "hadProbability": 61.11218773158006,
+      "scoreTop1": "0:1",
+      "scoreTop3Hit": false,
+      "totalTop2": [
+        "2球",
+        "3球"
+      ],
+      "actualTotal": "3",
+      "intelligenceCoverage": 0
+    },
+    {
+      "matchKey": "2041375",
+      "snapshotId": "2026-09-10-2145",
+      "decisionPolicy": "kickoff_minus_90m",
+      "id": "周四007",
+      "league": "解放者杯",
+      "home": "山谷独立",
+      "away": "弗拉门戈",
+      "kickoffAt": "2026-09-11T08:30:00+08:00",
+      "capturedAt": "2026-09-10T13:46:35.711Z",
+      "resultDate": "2026-09-11",
+      "actualScore": "0:2",
+      "actualHad": "负",
+      "predictedHad": "负",
+      "hadProbability": 38.744982588015596,
+      "scoreTop1": "0:1",
+      "scoreTop3Hit": false,
+      "totalTop2": [
+        "2球",
+        "1球"
+      ],
+      "actualTotal": "2",
+      "intelligenceCoverage": 0
+    },
+    {
+      "matchKey": "2041386",
+      "snapshotId": "2026-09-10-2145",
+      "decisionPolicy": "kickoff_minus_90m",
+      "id": "周五001",
+      "league": "日职联",
+      "home": "京都不死鸟",
+      "away": "柏太阳神",
+      "kickoffAt": "2026-09-11T18:00:00+08:00",
+      "capturedAt": "2026-09-10T13:46:35.711Z",
+      "resultDate": "2026-09-11",
+      "actualScore": "2:3",
+      "actualHad": "负",
+      "predictedHad": "负",
+      "hadProbability": 52.571286150797434,
+      "scoreTop1": "1:1",
+      "scoreTop3Hit": false,
+      "totalTop2": [
+        "2球",
+        "3球"
+      ],
+      "actualTotal": "5",
+      "intelligenceCoverage": 0
+    },
+    {
+      "matchKey": "2041387",
+      "snapshotId": "2026-09-11-2145",
+      "decisionPolicy": "kickoff_minus_90m",
+      "id": "周五002",
+      "league": "沙特联",
+      "home": "费萨里",
+      "away": "吉达联合",
+      "kickoffAt": "2026-09-11T23:45:00+08:00",
+      "capturedAt": "2026-09-11T13:46:55.817Z",
+      "resultDate": "2026-09-11",
+      "actualScore": "1:3",
+      "actualHad": "负",
+      "predictedHad": "负",
+      "hadProbability": 62.586572141810116,
+      "scoreTop1": "1:2",
+      "scoreTop3Hit": false,
+      "totalTop2": [
+        "3球",
+        "2球"
+      ],
+      "actualTotal": "4",
+      "intelligenceCoverage": 0
+    },
+    {
+      "matchKey": "2041388",
+      "snapshotId": "2026-09-11-2145",
+      "decisionPolicy": "kickoff_minus_90m",
+      "id": "周五003",
+      "league": "德乙",
+      "home": "纽伦堡",
+      "away": "汉诺威96",
+      "kickoffAt": "2026-09-12T00:30:00+08:00",
+      "capturedAt": "2026-09-11T13:46:55.817Z",
+      "resultDate": "2026-09-12",
+      "actualScore": "2:1",
+      "actualHad": "胜",
+      "predictedHad": "胜",
+      "hadProbability": 42.13396896627107,
+      "scoreTop1": "1:1",
+      "scoreTop3Hit": true,
+      "totalTop2": [
+        "3球",
+        "4球"
+      ],
+      "actualTotal": "3",
+      "intelligenceCoverage": 0
+    },
+    {
+      "matchKey": "2041389",
+      "snapshotId": "2026-09-11-2145",
+      "decisionPolicy": "kickoff_minus_90m",
+      "id": "周五004",
+      "league": "瑞典超",
+      "home": "赫根",
+      "away": "米亚尔比",
+      "kickoffAt": "2026-09-12T01:00:00+08:00",
+      "capturedAt": "2026-09-11T13:46:55.817Z",
+      "resultDate": "2026-09-12",
+      "actualScore": "1:1",
+      "actualHad": "平",
+      "predictedHad": "胜",
+      "hadProbability": 63.77114407868676,
+      "scoreTop1": "2:0",
+      "scoreTop3Hit": false,
+      "totalTop2": [
+        "3球",
+        "2球"
+      ],
+      "actualTotal": "2",
+      "intelligenceCoverage": 0
+    },
+    {
+      "matchKey": "2041391",
+      "snapshotId": "2026-09-11-2145",
+      "decisionPolicy": "kickoff_minus_90m",
+      "id": "周五006",
+      "league": "荷乙",
+      "home": "马斯特里赫特",
+      "away": "阿尔梅勒城",
+      "kickoffAt": "2026-09-12T02:00:00+08:00",
+      "capturedAt": "2026-09-11T13:46:55.817Z",
+      "resultDate": "2026-09-12",
+      "actualScore": "0:4",
+      "actualHad": "负",
+      "predictedHad": "负",
+      "hadProbability": 43.979157485225954,
+      "scoreTop1": "1:1",
+      "scoreTop3Hit": false,
+      "totalTop2": [
+        "3球",
+        "2球"
+      ],
+      "actualTotal": "4",
+      "intelligenceCoverage": 0
+    },
+    {
+      "matchKey": "2041390",
+      "snapshotId": "2026-09-10-2145",
+      "decisionPolicy": "kickoff_minus_90m",
+      "id": "周五005",
+      "league": "荷甲",
+      "home": "阿尔克马尔",
+      "away": "威廉二世",
+      "kickoffAt": "2026-09-12T02:00:00+08:00",
+      "capturedAt": "2026-09-10T13:46:35.711Z",
+      "resultDate": "2026-09-12",
+      "actualScore": "1:1",
+      "actualHad": "平",
+      "predictedHad": "胜",
+      "hadProbability": 83.23364299072698,
+      "scoreTop1": "3:0",
+      "scoreTop3Hit": false,
+      "totalTop2": [
+        "3球",
+        "4球"
+      ],
+      "actualTotal": "2",
+      "intelligenceCoverage": 0
+    },
+    {
+      "matchKey": "2041392",
+      "snapshotId": "2026-09-11-2145",
+      "decisionPolicy": "kickoff_minus_90m",
+      "id": "周五007",
+      "league": "德甲",
+      "home": "柏林联合",
+      "away": "沙尔克04",
+      "kickoffAt": "2026-09-12T02:30:00+08:00",
+      "capturedAt": "2026-09-11T13:46:55.817Z",
+      "resultDate": "2026-09-12",
+      "actualScore": "1:3",
+      "actualHad": "负",
+      "predictedHad": "胜",
+      "hadProbability": 42.13014440066642,
+      "scoreTop1": "1:1",
+      "scoreTop3Hit": false,
+      "totalTop2": [
+        "2球",
+        "3球"
+      ],
+      "actualTotal": "4",
+      "intelligenceCoverage": 0
+    },
+    {
+      "matchKey": "2041393",
+      "snapshotId": "2026-09-11-2145",
+      "decisionPolicy": "kickoff_minus_90m",
+      "id": "周五008",
+      "league": "意甲",
+      "home": "威尼斯",
+      "away": "佛罗伦萨",
+      "kickoffAt": "2026-09-12T02:45:00+08:00",
+      "capturedAt": "2026-09-11T13:46:55.817Z",
+      "resultDate": "2026-09-12",
+      "actualScore": "2:4",
+      "actualHad": "负",
+      "predictedHad": "负",
+      "hadProbability": 39.639576512564446,
+      "scoreTop1": "1:1",
+      "scoreTop3Hit": false,
+      "totalTop2": [
+        "2球",
+        "3球"
+      ],
+      "actualTotal": "6",
+      "intelligenceCoverage": 0
+    },
+    {
+      "matchKey": "2041394",
+      "snapshotId": "2026-09-11-2145",
+      "decisionPolicy": "kickoff_minus_90m",
+      "id": "周五009",
+      "league": "法甲",
+      "home": "雷恩",
+      "away": "马赛",
+      "kickoffAt": "2026-09-12T02:45:00+08:00",
+      "capturedAt": "2026-09-11T13:46:55.817Z",
+      "resultDate": "2026-09-12",
+      "actualScore": "1:0",
+      "actualHad": "胜",
+      "predictedHad": "胜",
+      "hadProbability": 48.18121601151631,
+      "scoreTop1": "1:1",
+      "scoreTop3Hit": false,
+      "totalTop2": [
+        "3球",
+        "2球"
+      ],
+      "actualTotal": "1",
+      "intelligenceCoverage": 0
+    },
+    {
+      "matchKey": "2041395",
+      "snapshotId": "2026-09-11-2145",
+      "decisionPolicy": "kickoff_minus_90m",
+      "id": "周五010",
+      "league": "英冠",
+      "home": "西汉姆联",
+      "away": "雷克瑟姆",
+      "kickoffAt": "2026-09-12T03:00:00+08:00",
+      "capturedAt": "2026-09-11T13:46:55.817Z",
+      "resultDate": "2026-09-12",
+      "actualScore": "6:0",
+      "actualHad": "胜",
+      "predictedHad": "胜",
+      "hadProbability": 61.89036684890642,
+      "scoreTop1": "1:0",
+      "scoreTop3Hit": false,
+      "totalTop2": [
+        "2球",
+        "3球"
+      ],
+      "actualTotal": "6",
+      "intelligenceCoverage": 0
+    },
+    {
+      "matchKey": "2041396",
+      "snapshotId": "2026-09-11-2145",
+      "decisionPolicy": "kickoff_minus_90m",
+      "id": "周五011",
+      "league": "西甲",
+      "home": "塞维利亚",
+      "away": "瓦伦西亚",
+      "kickoffAt": "2026-09-12T03:00:00+08:00",
+      "capturedAt": "2026-09-11T13:46:55.817Z",
+      "resultDate": "2026-09-12",
+      "actualScore": "1:0",
+      "actualHad": "胜",
+      "predictedHad": "胜",
+      "hadProbability": 49.844874812149556,
+      "scoreTop1": "1:0",
+      "scoreTop3Hit": true,
+      "totalTop2": [
+        "2球",
+        "1球"
+      ],
+      "actualTotal": "1",
+      "intelligenceCoverage": 0
+    },
+    {
+      "matchKey": "2041397",
+      "snapshotId": "2026-09-11-2145",
+      "decisionPolicy": "kickoff_minus_90m",
+      "id": "周五012",
+      "league": "巴西甲",
+      "home": "科里蒂巴",
+      "away": "巴拉纳竞技",
+      "kickoffAt": "2026-09-12T08:00:00+08:00",
+      "capturedAt": "2026-09-11T13:46:55.817Z",
+      "resultDate": "2026-09-12",
+      "actualScore": "3:3",
+      "actualHad": "平",
+      "predictedHad": "负",
+      "hadProbability": 42.23263336718855,
+      "scoreTop1": "1:1",
+      "scoreTop3Hit": false,
+      "totalTop2": [
+        "2球",
+        "1球"
+      ],
+      "actualTotal": "6",
+      "intelligenceCoverage": 0
+    },
+    {
+      "matchKey": "2041406",
+      "snapshotId": "2026-09-11-2145",
+      "decisionPolicy": "kickoff_minus_90m",
+      "id": "周六002",
+      "league": "韩K联",
+      "home": "全北现代",
+      "away": "FC首尔",
+      "kickoffAt": "2026-09-12T15:30:00+08:00",
+      "capturedAt": "2026-09-11T13:46:55.817Z",
+      "resultDate": "2026-09-12",
+      "actualScore": "1:2",
+      "actualHad": "负",
+      "predictedHad": "负",
+      "hadProbability": 40.470618617963524,
+      "scoreTop1": "1:1",
+      "scoreTop3Hit": false,
+      "totalTop2": [
+        "2球",
+        "3球"
+      ],
+      "actualTotal": "3",
+      "intelligenceCoverage": 0
+    }
+  ]
+}

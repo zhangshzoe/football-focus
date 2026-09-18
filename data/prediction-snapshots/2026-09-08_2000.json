@@ -1,0 +1,3050 @@
+{
+  "capturedAt": "2026-09-08T12:04:50.052Z",
+  "scheduledTime": "2000",
+  "sourceFetchedAt": "2026-09-08T12:04:50.037Z",
+  "source": {
+    "sporttery": "中国体育彩票·竞彩网",
+    "market": "https://plzx.zgzcw.com/"
+  },
+  "sourceMatchCount": 18,
+  "modelVersion": "多盘口交叉校准：三家公司欧赔初盘/即盘、亚洲让球水位、大小球与体彩胜平负/固定让球盘共同约束预期进球；历史有效样本不足，暂未启用历史校准；盘口冲突会降低一致度。",
+  "aiProvider": "DeepSeek · deepseek-v4-flash",
+  "reports": [
+    {
+      "id": "周二002",
+      "league": "欧冠",
+      "time": "00:45:00",
+      "matchDate": "2026-09-09",
+      "home": "雅典AEK",
+      "away": "林茨",
+      "matchStatus": "Selling",
+      "isMock": false,
+      "sourceUpdatedAt": "2026-09-08 19:06:38",
+      "companies": [
+        {
+          "companyId": 2,
+          "company": "36*",
+          "win": 1.72,
+          "draw": 4.1,
+          "lose": 4.2,
+          "handicap": -0.75,
+          "homePrice": 0.97,
+          "awayPrice": 0.87,
+          "total": 3,
+          "overPrice": 0.82,
+          "underPrice": 1.02,
+          "firstWin": 1.75,
+          "firstDraw": 3.5,
+          "firstLose": 4.75,
+          "firstHandicap": -0.75,
+          "firstHomePrice": 0.97,
+          "firstAwayPrice": 0.87,
+          "firstTotal": 2.75,
+          "firstOverPrice": 0.82,
+          "firstUnderPrice": 1.02
+        },
+        {
+          "companyId": 3,
+          "company": "ＳＢ/*",
+          "win": 1.73,
+          "draw": 4.15,
+          "lose": 4.45,
+          "handicap": -0.75,
+          "homePrice": 0.93,
+          "awayPrice": 0.96,
+          "total": 3.25,
+          "overPrice": 1.06,
+          "underPrice": 0.82,
+          "firstWin": 1.7,
+          "firstDraw": 4.3,
+          "firstLose": 4.55,
+          "firstHandicap": -0.75,
+          "firstHomePrice": 0.89,
+          "firstAwayPrice": 0.99,
+          "firstTotal": 2.75,
+          "firstOverPrice": 0.83,
+          "firstUnderPrice": 1.03
+        },
+        {
+          "companyId": 22,
+          "company": "平*",
+          "win": 1.75,
+          "draw": 4.07,
+          "lose": 4.66,
+          "handicap": -0.75,
+          "homePrice": 0.95,
+          "awayPrice": 0.97,
+          "total": 3,
+          "overPrice": 0.83,
+          "underPrice": 1.05,
+          "firstWin": 1.74,
+          "firstDraw": 3.92,
+          "firstLose": 4.28,
+          "firstHandicap": -0.75,
+          "firstHomePrice": 0.95,
+          "firstAwayPrice": 0.87,
+          "firstTotal": 2.75,
+          "firstOverPrice": 0.81,
+          "firstUnderPrice": 1
+        }
+      ],
+      "probabilities": {
+        "home": 55.9983183818075,
+        "draw": 22.6608546005217,
+        "away": 21.340827017670804
+      },
+      "consensus": {
+        "handicap": -0.75,
+        "totalLine": 3,
+        "agreement": "较一致"
+      },
+      "marketSignal": {
+        "direction": "主队方向",
+        "movementDirection": "主队方向",
+        "strength": 2.5425219055658315,
+        "probabilityShifts": [
+          1.9565217987168149,
+          -1.3270857195236574,
+          0.21976374116112474
+        ],
+        "fairOdds": [
+          1.785767910353672,
+          4.412896237271554,
+          4.685854016678791
+        ],
+        "hadEv": [
+          -0.13202606508198378,
+          -0.08223538867887126,
+          -0.09941709985429203
+        ],
+        "hhadEv": [
+          -0.12931606649543104,
+          -0.15792310107328433,
+          -0.07757198110382413
+        ],
+        "evThreshold": 0.05,
+        "institutionAction": "盘口深度持平；主队持平、客队升赔",
+        "handicapExpectation": "主队让0.75，机构净胜球预期赢1～2球级",
+        "firstHandicap": -0.75,
+        "handicapChange": 0,
+        "narrative": "当前绝对概率最高为主队方向；变盘相对偏向主队方向。盘口深度持平；主队持平、客队升赔。该变盘信号表示相对强弱变化，不等同于赛果概率最高项；欧赔变化 2.0 个百分点，亚盘主队侧水位概率变化 +1.3 个百分点。主队让0.75，机构净胜球预期赢1～2球级；当前结论为“多盘口较一致”。历史有效样本不足，本场保持盘口模型基线。",
+        "officialOdds": [
+          1.55,
+          4.05,
+          4.22
+        ],
+        "officialHandicap": "-1",
+        "officialHhadOdds": [
+          2.63,
+          3.7,
+          2.09
+        ],
+        "officialHhadFair": [
+          33.679286781326354,
+          23.939601144564403,
+          42.38111207410924
+        ],
+        "modeledHhad": [
+          33.1058529849646,
+          22.75883510612745,
+          44.13531190890794
+        ],
+        "modeledTotalGoals": [
+          4.076220397836617,
+          13.043905273077177,
+          20.870248436923493,
+          22.261598332718403,
+          17.809278666174723,
+          11.397938346351829,
+          6.078900451387645,
+          4.461910095530108
+        ],
+        "totalGoalLabels": [
+          "0球",
+          "1球",
+          "2球",
+          "3球",
+          "4球",
+          "5球",
+          "6球",
+          "7+球"
+        ],
+        "modeledHalfFull": [
+          35.68942488001676,
+          4.879032045435835,
+          1.7280738010215098,
+          16.850466881122568,
+          11.79557116258426,
+          8.03853027348417,
+          3.3700679604495876,
+          4.879032045435834,
+          12.769800950449477
+        ],
+        "halfFullLabels": [
+          "胜胜",
+          "胜平",
+          "胜负",
+          "平胜",
+          "平平",
+          "平负",
+          "负胜",
+          "负平",
+          "负负"
+        ],
+        "asianHomeProbability": 50.255102040816325,
+        "asianAwayProbability": 49.744897959183675,
+        "asianMovement": 1.3022224596644816,
+        "overProbability": 52.60416666666667,
+        "fitAgreement": "多盘口较一致",
+        "handicapMeaning": "外围主队让 0.75 球；体彩主队 -1，主队需净胜超过 1 球才是让胜，净胜 1 球为让平。",
+        "rawProbabilities": [
+          55.998318381807486,
+          22.660854600521695,
+          21.3408270176708
+        ],
+        "calibrationSampleSize": 0,
+        "probabilityTemperature": 1
+      },
+      "expectedGoals": {
+        "home": 2.000000000000001,
+        "away": 1.2000000000000004
+      },
+      "scores": [
+        {
+          "score": "2:1",
+          "probability": 9.78292895480789
+        },
+        {
+          "score": "1:1",
+          "probability": 9.782928954807886
+        },
+        {
+          "score": "2:0",
+          "probability": 8.152440795673238
+        },
+        {
+          "score": "1:0",
+          "probability": 8.152440795673236
+        }
+      ],
+      "missingCompanies": [],
+      "oddsScores": [
+        {
+          "score": "2:1",
+          "probability": 9.78292895480789
+        },
+        {
+          "score": "1:1",
+          "probability": 9.782928954807886
+        },
+        {
+          "score": "2:0",
+          "probability": 8.152440795673238
+        },
+        {
+          "score": "1:0",
+          "probability": 8.152440795673236
+        }
+      ],
+      "intelligenceScores": [
+        {
+          "score": "2:1",
+          "probability": 9.78
+        },
+        {
+          "score": "1:1",
+          "probability": 9.78
+        },
+        {
+          "score": "2:0",
+          "probability": 8.15
+        },
+        {
+          "score": "1:0",
+          "probability": 8.15
+        }
+      ],
+      "combinedScores": [
+        {
+          "score": "2:1",
+          "probability": 9.78292895480789
+        },
+        {
+          "score": "1:1",
+          "probability": 9.782928954807886
+        },
+        {
+          "score": "2:0",
+          "probability": 8.152440795673238
+        },
+        {
+          "score": "1:0",
+          "probability": 8.152440795673236
+        }
+      ],
+      "intelligenceCoverage": 0,
+      "aiSummary": "阵容数据缺失；近期表现未知，战意不明；欧冠小组赛，胜/平/负影响出线，具体排名未提供；模型概率主胜55.99%，让球盘主队让0.75，体彩让1球，欧赔支持主胜，变盘偏向主队，但亚盘主队水位偏高，一致性部分冲突；四重一致性：泊松模型与marketSignal一致看好主胜，但亚盘水位概率接近，近6场缺失，盘口信号较一致；最可能总进球数2-3球；胜平负方向主胜；首选比分2:1，次选1:1、2:0、1:0；暂无可靠爆冷信号",
+      "aiRisk": "缺少阵容、伤停、近期表现、小组积分、天气、裁判等信息；盘口深度与体彩让球存在差异，注意让平风险"
+    },
+    {
+      "id": "周二003",
+      "league": "欧冠",
+      "time": "00:45:00",
+      "matchDate": "2026-09-09",
+      "home": "布鲁日",
+      "away": "阿斯顿维拉",
+      "matchStatus": "Selling",
+      "isMock": false,
+      "sourceUpdatedAt": "2026-09-08 19:11:57",
+      "companies": [
+        {
+          "companyId": 2,
+          "company": "36*",
+          "win": 2.5,
+          "draw": 3.6,
+          "lose": 2.7,
+          "handicap": 0,
+          "homePrice": 0.85,
+          "awayPrice": 1,
+          "total": 2.75,
+          "overPrice": 0.82,
+          "underPrice": 1.02,
+          "firstWin": 3,
+          "firstDraw": 3.5,
+          "firstLose": 2.25,
+          "firstHandicap": 0.25,
+          "firstHomePrice": 0.85,
+          "firstAwayPrice": 1,
+          "firstTotal": 2.75,
+          "firstOverPrice": 0.9,
+          "firstUnderPrice": 0.95
+        },
+        {
+          "companyId": 3,
+          "company": "ＳＢ/*",
+          "win": 2.49,
+          "draw": 3.6,
+          "lose": 2.75,
+          "handicap": 0,
+          "homePrice": 0.85,
+          "awayPrice": 1.04,
+          "total": 2.75,
+          "overPrice": 0.84,
+          "underPrice": 1.04,
+          "firstWin": 2.66,
+          "firstDraw": 3.75,
+          "firstLose": 2.51,
+          "firstHandicap": 0,
+          "firstHomePrice": 1,
+          "firstAwayPrice": 0.88,
+          "firstTotal": 2.75,
+          "firstOverPrice": 0.91,
+          "firstUnderPrice": 0.95
+        },
+        {
+          "companyId": 22,
+          "company": "平*",
+          "win": 2.53,
+          "draw": 3.66,
+          "lose": 2.79,
+          "handicap": 0,
+          "homePrice": 0.87,
+          "awayPrice": 1.07,
+          "total": 2.75,
+          "overPrice": 0.84,
+          "underPrice": 1.08,
+          "firstWin": 2.79,
+          "firstDraw": 3.55,
+          "firstLose": 2.38,
+          "firstHandicap": 0,
+          "firstHomePrice": 1.06,
+          "firstAwayPrice": 0.75,
+          "firstTotal": 2.75,
+          "firstOverPrice": 0.87,
+          "firstUnderPrice": 0.93
+        }
+      ],
+      "probabilities": {
+        "home": 38.157592023390166,
+        "draw": 26.55040384416005,
+        "away": 35.292004132449776
+      },
+      "consensus": {
+        "handicap": 0,
+        "totalLine": 2.75,
+        "agreement": "较一致"
+      },
+      "marketSignal": {
+        "direction": "主队方向",
+        "movementDirection": "主队方向",
+        "strength": 6.147921295692833,
+        "probabilityShifts": [
+          4.353073284668002,
+          -0.01709116458215032,
+          -4.335982120085863
+        ],
+        "fairOdds": [
+          2.620710445740422,
+          3.7664210528381736,
+          2.8335030117502864
+        ],
+        "hadEv": [
+          -0.0994808282479922,
+          -0.1105614712206382,
+          -0.13181669834173548
+        ],
+        "hhadEv": [
+          -0.10911738550275973,
+          -0.13649101446765355,
+          -0.10439270241920695
+        ],
+        "evThreshold": 0.05,
+        "institutionAction": "盘口深度持平；主队降赔、客队升赔",
+        "handicapExpectation": "平手盘，净胜球预期接近",
+        "firstHandicap": 0,
+        "handicapChange": 0,
+        "narrative": "当前绝对概率最高为主队方向；变盘相对偏向主队方向。盘口深度持平；主队降赔、客队升赔。该变盘信号表示相对强弱变化，不等同于赛果概率最高项；欧赔变化 4.4 个百分点，亚盘主队侧水位概率变化 +4.0 个百分点。平手盘，净胜球预期接近；当前结论为“多盘口较一致”。历史有效样本不足，本场保持盘口模型基线。",
+        "officialOdds": [
+          2.36,
+          3.35,
+          2.46
+        ],
+        "officialHandicap": "+1",
+        "officialHhadOdds": [
+          1.4,
+          4.4,
+          5.35
+        ],
+        "officialHhadFair": [
+          63.29658510352245,
+          20.13982253293896,
+          16.563592363538586
+        ],
+        "modeledHhad": [
+          63.634472464088596,
+          19.625204216644235,
+          16.740323319267162
+        ],
+        "modeledTotalGoals": [
+          5.784432087483838,
+          16.485631449328945,
+          23.492024815293757,
+          22.317423574529084,
+          15.90116429685198,
+          9.063663649205633,
+          4.305240233372679,
+          2.650419893934086
+        ],
+        "totalGoalLabels": [
+          "0球",
+          "1球",
+          "2球",
+          "3球",
+          "4球",
+          "5球",
+          "6球",
+          "7+球"
+        ],
+        "modeledHalfFull": [
+          22.906452405259163,
+          5.289097908671081,
+          2.3217788708457325,
+          13.282321001721911,
+          14.437355242723427,
+          12.64211176984936,
+          2.4283114053750126,
+          5.289097908671081,
+          21.40347348688324
+        ],
+        "halfFullLabels": [
+          "胜胜",
+          "胜平",
+          "胜负",
+          "平胜",
+          "平平",
+          "平负",
+          "负胜",
+          "负平",
+          "负负"
+        ],
+        "asianHomeProbability": 52.44215938303341,
+        "asianAwayProbability": 47.55784061696659,
+        "asianMovement": 3.9885511356107353,
+        "overProbability": 52.60416666666667,
+        "fitAgreement": "多盘口较一致",
+        "handicapMeaning": "外围平手盘；体彩主队 +1，客队需净胜超过 1 球才是让负，净胜 1 球为让平。",
+        "rawProbabilities": [
+          38.157592023390166,
+          26.55040384416005,
+          35.292004132449776
+        ],
+        "calibrationSampleSize": 0,
+        "probabilityTemperature": 1
+      },
+      "expectedGoals": {
+        "home": 1.4500000000000006,
+        "away": 1.4000000000000006
+      },
+      "scores": [
+        {
+          "score": "1:1",
+          "probability": 11.742397137592203
+        },
+        {
+          "score": "2:1",
+          "probability": 8.513237924754351
+        },
+        {
+          "score": "1:0",
+          "probability": 8.387426526851572
+        },
+        {
+          "score": "1:2",
+          "probability": 8.219677996314546
+        }
+      ],
+      "missingCompanies": [],
+      "oddsScores": [
+        {
+          "score": "1:1",
+          "probability": 11.742397137592203
+        },
+        {
+          "score": "2:1",
+          "probability": 8.513237924754351
+        },
+        {
+          "score": "1:0",
+          "probability": 8.387426526851572
+        },
+        {
+          "score": "1:2",
+          "probability": 8.219677996314546
+        }
+      ],
+      "intelligenceScores": [
+        {
+          "score": "1:1",
+          "probability": 11.74
+        },
+        {
+          "score": "2:1",
+          "probability": 8.51
+        },
+        {
+          "score": "1:0",
+          "probability": 8.39
+        },
+        {
+          "score": "1:2",
+          "probability": 8.22
+        }
+      ],
+      "combinedScores": [
+        {
+          "score": "1:1",
+          "probability": 11.742397137592203
+        },
+        {
+          "score": "2:1",
+          "probability": 8.513237924754351
+        },
+        {
+          "score": "1:0",
+          "probability": 8.387426526851572
+        },
+        {
+          "score": "1:2",
+          "probability": 8.219677996314546
+        }
+      ],
+      "intelligenceCoverage": 0,
+      "aiSummary": "阵容数据缺失；近期表现未知，战意不明；欧冠小组赛，胜/平/负影响排名，但未提供积分；模型概率主胜38.16%，客胜35.29%，平局26.55%，接近均势；外围平手盘，体彩主队+1，变盘偏向主队，但亚盘水位主队较低，信号冲突；四重一致性：泊松概率与胜平负概率接近，但让球盘模型显示体彩让球胜概率高，近6场缺失，盘口信号较一致但存在分歧；最可能总进球数2-3球；胜平负方向无明确，略偏向主队不败；首选比分1:1，次选2:1、1:0、1:2；暂无可靠爆冷信号",
+      "aiRisk": "缺少阵容、伤停、近期表现、小组积分等信息；平手盘变盘与亚盘水位有分歧，需谨慎"
+    },
+    {
+      "id": "周二004",
+      "league": "荷甲",
+      "time": "00:45:00",
+      "matchDate": "2026-09-09",
+      "home": "奈梅亨",
+      "away": "SBV精英",
+      "matchStatus": "Selling",
+      "isMock": false,
+      "sourceUpdatedAt": "2026-09-08 18:28:50",
+      "companies": [
+        {
+          "companyId": 2,
+          "company": "36*",
+          "win": 1.61,
+          "draw": 4.1,
+          "lose": 5,
+          "handicap": -1,
+          "homePrice": 1.02,
+          "awayPrice": 0.77,
+          "total": 3.25,
+          "overPrice": 0.95,
+          "underPrice": 0.85,
+          "firstWin": 1.44,
+          "firstDraw": 4.5,
+          "firstLose": 6.25,
+          "firstHandicap": -1.25,
+          "firstHomePrice": 0.92,
+          "firstAwayPrice": 0.87,
+          "firstTotal": 3.25,
+          "firstOverPrice": 0.92,
+          "firstUnderPrice": 0.87
+        },
+        {
+          "companyId": 3,
+          "company": "ＳＢ/*",
+          "win": 1.64,
+          "draw": 4.35,
+          "lose": 4.8,
+          "handicap": -1,
+          "homePrice": 1.09,
+          "awayPrice": 0.8,
+          "total": 3.25,
+          "overPrice": 1.02,
+          "underPrice": 0.86,
+          "firstWin": 1.49,
+          "firstDraw": 4.95,
+          "firstLose": 5.5,
+          "firstHandicap": -1.25,
+          "firstHomePrice": 1.02,
+          "firstAwayPrice": 0.86,
+          "firstTotal": 3.25,
+          "firstOverPrice": 0.93,
+          "firstUnderPrice": 0.93
+        },
+        {
+          "companyId": 22,
+          "company": "平*",
+          "win": 1.65,
+          "draw": 4.23,
+          "lose": 5.11,
+          "handicap": -1,
+          "homePrice": 1.07,
+          "awayPrice": 0.84,
+          "total": 3.25,
+          "overPrice": 0.98,
+          "underPrice": 0.9,
+          "firstWin": 1.43,
+          "firstDraw": 4.93,
+          "firstLose": 5.99,
+          "firstHandicap": -1.25,
+          "firstHomePrice": 0.91,
+          "firstAwayPrice": 0.91,
+          "firstTotal": 3.25,
+          "firstOverPrice": 0.87,
+          "firstUnderPrice": 0.93
+        }
+      ],
+      "probabilities": {
+        "home": 58.46670218574673,
+        "draw": 22.19340388446318,
+        "away": 19.339893929790097
+      },
+      "consensus": {
+        "handicap": -1,
+        "totalLine": 3.25,
+        "agreement": "较一致"
+      },
+      "marketSignal": {
+        "direction": "主队方向",
+        "movementDirection": "客队方向",
+        "strength": 4.911552875920426,
+        "probabilityShifts": [
+          -6.032781818381228,
+          3.044194271302919,
+          3.724217783572137
+        ],
+        "fairOdds": [
+          1.7103752437122823,
+          4.505843291123381,
+          5.170659175434544
+        ],
+        "hadEv": [
+          -0.1171527969952243,
+          -0.06787703685254631,
+          -0.1529126458751937
+        ],
+        "hhadEv": [
+          -0.124882176330811,
+          -0.12157472222860177,
+          -0.10181459315438224
+        ],
+        "evThreshold": 0.05,
+        "institutionAction": "主队受让加深+客队降赔，客队获得强支持",
+        "handicapExpectation": "主队让1，机构净胜球预期赢1～2球级",
+        "firstHandicap": -1.25,
+        "handicapChange": 0.25,
+        "narrative": "当前绝对概率最高为主队方向；变盘相对偏向客队方向。主队受让加深+客队降赔，客队获得强支持。该变盘信号表示相对强弱变化，不等同于赛果概率最高项；欧赔变化 3.7 个百分点，亚盘主队侧水位概率变化 -2.6 个百分点。主队让1，机构净胜球预期赢1～2球级；当前结论为“多盘口较一致”。历史有效样本不足，本场保持盘口模型基线。",
+        "officialOdds": [
+          1.51,
+          4.2,
+          4.38
+        ],
+        "officialHandicap": "-1",
+        "officialHhadOdds": [
+          2.4,
+          3.9,
+          2.19
+        ],
+        "officialHhadFair": [
+          36.88301593470657,
+          22.697240575204045,
+          40.419743490089395
+        ],
+        "modeledHhad": [
+          36.463242652882876,
+          22.52372507106149,
+          41.013032276055604
+        ],
+        "modeledTotalGoals": [
+          3.5084354100845005,
+          11.753258623783077,
+          19.686708194836662,
+          21.983490817567606,
+          18.41117355971287,
+          12.335486285007628,
+          6.887313175795925,
+          5.434133933211738
+        ],
+        "totalGoalLabels": [
+          "0球",
+          "1球",
+          "2球",
+          "3球",
+          "4球",
+          "5球",
+          "6球",
+          "7+球"
+        ],
+        "modeledHalfFull": [
+          38.323966767038385,
+          4.7404627045404455,
+          1.6618141341374324,
+          17.140541219061276,
+          10.892025717900959,
+          7.286230947431221,
+          3.5890730411033043,
+          4.740462704540446,
+          11.625422764246512
+        ],
+        "halfFullLabels": [
+          "胜胜",
+          "胜平",
+          "胜负",
+          "平胜",
+          "平平",
+          "平负",
+          "负胜",
+          "负平",
+          "负负"
+        ],
+        "asianHomeProbability": 46.701846965699204,
+        "asianAwayProbability": 53.298153034300796,
+        "asianMovement": -2.638522427440643,
+        "overProbability": 48.684210526315795,
+        "fitAgreement": "多盘口较一致",
+        "handicapMeaning": "外围主队让 1 球；体彩主队 -1，主队需净胜超过 1 球才是让胜，净胜 1 球为让平。",
+        "rawProbabilities": [
+          58.46670218574673,
+          22.19340388446318,
+          19.339893929790097
+        ],
+        "calibrationSampleSize": 0,
+        "probabilityTemperature": 1
+      },
+      "expectedGoals": {
+        "home": 2.1500000000000004,
+        "away": 1.2000000000000004
+      },
+      "scores": [
+        {
+          "score": "2:1",
+          "probability": 9.730645609869367
+        },
+        {
+          "score": "1:1",
+          "probability": 9.051763358018015
+        },
+        {
+          "score": "2:0",
+          "probability": 8.108871341557801
+        },
+        {
+          "score": "1:0",
+          "probability": 7.543136131681676
+        }
+      ],
+      "missingCompanies": [],
+      "oddsScores": [
+        {
+          "score": "2:1",
+          "probability": 9.730645609869367
+        },
+        {
+          "score": "1:1",
+          "probability": 9.051763358018015
+        },
+        {
+          "score": "2:0",
+          "probability": 8.108871341557801
+        },
+        {
+          "score": "1:0",
+          "probability": 7.543136131681676
+        }
+      ],
+      "intelligenceScores": [
+        {
+          "score": "2:1",
+          "probability": 9.73
+        },
+        {
+          "score": "1:1",
+          "probability": 9.05
+        },
+        {
+          "score": "2:0",
+          "probability": 8.11
+        },
+        {
+          "score": "1:0",
+          "probability": 7.54
+        }
+      ],
+      "combinedScores": [
+        {
+          "score": "2:1",
+          "probability": 9.730645609869367
+        },
+        {
+          "score": "1:1",
+          "probability": 9.051763358018015
+        },
+        {
+          "score": "2:0",
+          "probability": 8.108871341557801
+        },
+        {
+          "score": "1:0",
+          "probability": 7.543136131681676
+        }
+      ],
+      "intelligenceCoverage": 0,
+      "aiSummary": "阵容数据缺失；近期表现未知，战意不明；非小组赛不适用；模型概率主胜58.47%，盘口主让1球，体彩让1球，但变盘偏客队，亚盘客队水位低，信号冲突；四重一致性：泊松模型支持主胜但大胜概率不高，盘口显示客队受支持，近6场缺失，盘口信号有分歧；最可能总进球数2-3球；胜平负方向主胜；首选比分2:1，次选1:1、2:0、1:0；暂无可靠爆冷信号",
+      "aiRisk": "缺少阵容、伤停、近期表现等信息；主队让球盘口与变盘方向冲突"
+    },
+    {
+      "id": "周二005",
+      "league": "沙特联",
+      "time": "02:00:00",
+      "matchDate": "2026-09-09",
+      "home": "胡拜尔库迪西亚",
+      "away": "吉达国民",
+      "matchStatus": "Selling",
+      "isMock": false,
+      "sourceUpdatedAt": "2026-09-08 20:03:23",
+      "companies": [
+        {
+          "companyId": 2,
+          "company": "36*",
+          "win": 2.05,
+          "draw": 3.6,
+          "lose": 3.1,
+          "handicap": -0.25,
+          "homePrice": 0.8,
+          "awayPrice": 1,
+          "total": 3,
+          "overPrice": 0.85,
+          "underPrice": 0.95,
+          "firstWin": 1.83,
+          "firstDraw": 3.75,
+          "firstLose": 3.6,
+          "firstHandicap": -0.5,
+          "firstHomePrice": 0.85,
+          "firstAwayPrice": 0.95,
+          "firstTotal": 3,
+          "firstOverPrice": 0.8,
+          "firstUnderPrice": 1
+        },
+        {
+          "companyId": 3,
+          "company": "ＳＢ/*",
+          "win": 2.06,
+          "draw": 3.7,
+          "lose": 2.92,
+          "handicap": -0.5,
+          "homePrice": 1.06,
+          "awayPrice": 0.82,
+          "total": 3,
+          "overPrice": 1.01,
+          "underPrice": 0.85,
+          "firstWin": 1.96,
+          "firstDraw": 3.75,
+          "firstLose": 3.1,
+          "firstHandicap": -0.5,
+          "firstHomePrice": 0.96,
+          "firstAwayPrice": 0.86,
+          "firstTotal": 3,
+          "firstOverPrice": 0.8,
+          "firstUnderPrice": 1
+        },
+        {
+          "companyId": 22,
+          "company": "平*",
+          "win": 2.06,
+          "draw": 3.73,
+          "lose": 3.37,
+          "handicap": -0.25,
+          "homePrice": 0.81,
+          "awayPrice": 1.06,
+          "total": 3,
+          "overPrice": 1.04,
+          "underPrice": 0.81,
+          "firstWin": 1.72,
+          "firstDraw": 4,
+          "firstLose": 3.96,
+          "firstHandicap": -0.75,
+          "firstHomePrice": 0.94,
+          "firstAwayPrice": 0.83,
+          "firstTotal": 3.25,
+          "firstOverPrice": 0.97,
+          "firstUnderPrice": 0.79
+        }
+      ],
+      "probabilities": {
+        "home": 45.45820210514996,
+        "draw": 25.20544001129786,
+        "away": 29.336357883552182
+      },
+      "consensus": {
+        "handicap": -0.25,
+        "totalLine": 3,
+        "agreement": "较一致"
+      },
+      "marketSignal": {
+        "direction": "主队方向",
+        "movementDirection": "客队方向",
+        "strength": 2.0997926475985644,
+        "probabilityShifts": [
+          -4.633632925740006,
+          0.9509192336841915,
+          3.8730084095164488
+        ],
+        "fairOdds": [
+          2.1998230323471373,
+          3.967397512409103,
+          3.408739435104394
+        ],
+        "hadEv": [
+          -0.13629416000215078,
+          -0.09260415959327706,
+          -0.0964401771865927
+        ],
+        "hhadEv": [
+          -0.13757661847449743,
+          -0.12075842043694518,
+          -0.10150709323804197
+        ],
+        "evThreshold": 0.05,
+        "institutionAction": "受让加深但客队升赔，盘口与赔付信号分歧",
+        "handicapExpectation": "主队让0.25，机构净胜球预期赢1球级",
+        "firstHandicap": -0.5,
+        "handicapChange": 0.25,
+        "narrative": "当前绝对概率最高为主队方向；变盘相对偏向客队方向。受让加深但客队升赔，盘口与赔付信号分歧。该变盘信号表示相对强弱变化，不等同于赛果概率最高项；欧赔变化 3.9 个百分点，亚盘主队侧水位概率变化 +3.9 个百分点。主队让0.25，机构净胜球预期赢1球级；当前结论为“多盘口较一致”。历史有效样本不足，本场保持盘口模型基线。",
+        "officialOdds": [
+          1.9,
+          3.6,
+          3.08
+        ],
+        "officialHandicap": "-1",
+        "officialHhadOdds": [
+          3.47,
+          4,
+          1.69
+        ],
+        "officialHhadFair": [
+          25.505295367166838,
+          22.12584373101723,
+          52.36886090181593
+        ],
+        "modeledHhad": [
+          24.853699755778173,
+          21.98103948907637,
+          53.16526075514545
+        ],
+        "modeledTotalGoals": [
+          4.978706836786388,
+          14.936120510359169,
+          22.40418076553877,
+          22.404180765538772,
+          16.803135574154084,
+          10.081881344492457,
+          5.040940672246231,
+          3.3508535308841347
+        ],
+        "totalGoalLabels": [
+          "0球",
+          "1球",
+          "2球",
+          "3球",
+          "4球",
+          "5球",
+          "6球",
+          "7+球"
+        ],
+        "modeledHalfFull": [
+          28.761031396125386,
+          5.209065057645853,
+          2.06005019006516,
+          15.177679135954858,
+          13.361205534946427,
+          10.351245028316836,
+          2.913267722084999,
+          5.209065057645852,
+          16.957390877214618
+        ],
+        "halfFullLabels": [
+          "胜胜",
+          "胜平",
+          "胜负",
+          "平胜",
+          "平平",
+          "平负",
+          "负胜",
+          "负平",
+          "负负"
+        ],
+        "asianHomeProbability": 52.63157894736842,
+        "asianAwayProbability": 47.36842105263158,
+        "asianMovement": 3.940479470928632,
+        "overProbability": 47.92746113989638,
+        "fitAgreement": "多盘口较一致",
+        "handicapMeaning": "外围主队让 0.25 球；体彩主队 -1，主队需净胜超过 1 球才是让胜，净胜 1 球为让平。",
+        "rawProbabilities": [
+          45.45820210514996,
+          25.20544001129786,
+          29.336357883552182
+        ],
+        "calibrationSampleSize": 0,
+        "probabilityTemperature": 1
+      },
+      "expectedGoals": {
+        "home": 1.7000000000000008,
+        "away": 1.3000000000000005
+      },
+      "scores": [
+        {
+          "score": "1:1",
+          "probability": 11.002942109297926
+        },
+        {
+          "score": "2:1",
+          "probability": 9.35250079290324
+        },
+        {
+          "score": "1:0",
+          "probability": 8.463801622536863
+        },
+        {
+          "score": "2:0",
+          "probability": 7.194231379156338
+        }
+      ],
+      "missingCompanies": [],
+      "oddsScores": [
+        {
+          "score": "1:1",
+          "probability": 11.002942109297926
+        },
+        {
+          "score": "2:1",
+          "probability": 9.35250079290324
+        },
+        {
+          "score": "1:0",
+          "probability": 8.463801622536863
+        },
+        {
+          "score": "2:0",
+          "probability": 7.194231379156338
+        }
+      ],
+      "intelligenceScores": [
+        {
+          "score": "1:1",
+          "probability": 11
+        },
+        {
+          "score": "2:1",
+          "probability": 9.35
+        },
+        {
+          "score": "1:0",
+          "probability": 8.46
+        },
+        {
+          "score": "2:0",
+          "probability": 7.19
+        }
+      ],
+      "combinedScores": [
+        {
+          "score": "1:1",
+          "probability": 11.002942109297926
+        },
+        {
+          "score": "2:1",
+          "probability": 9.35250079290324
+        },
+        {
+          "score": "1:0",
+          "probability": 8.463801622536863
+        },
+        {
+          "score": "2:0",
+          "probability": 7.194231379156338
+        }
+      ],
+      "intelligenceCoverage": 0,
+      "aiSummary": "阵容数据缺失；近期表现未知，战意不明；非小组赛不适用；模型概率主胜45.46%，客胜29.34%，盘口主让0.25，体彩让1球，变盘偏客队但亚盘主队水位升，信号矛盾；四重一致性：泊松模型平局概率较高，盘口不一致，近6场缺失；最可能总进球数2-3球；胜平负方向主胜或平局；首选比分1:1，次选2:1、1:0、2:0；暂无可靠爆冷信号",
+      "aiRisk": "缺少阵容、伤停、近期表现等信息；盘口与变盘信号分歧"
+    },
+    {
+      "id": "周二006",
+      "league": "英冠",
+      "time": "02:45:00",
+      "matchDate": "2026-09-09",
+      "home": "南安普顿",
+      "away": "斯旺西",
+      "matchStatus": "Selling",
+      "isMock": false,
+      "sourceUpdatedAt": "2026-09-08 18:56:19",
+      "companies": [
+        {
+          "companyId": 2,
+          "company": "36*",
+          "win": 1.8,
+          "draw": 3.8,
+          "lose": 4,
+          "handicap": -0.5,
+          "homePrice": 0.82,
+          "awayPrice": 1.02,
+          "total": 2.75,
+          "overPrice": 0.97,
+          "underPrice": 0.87,
+          "firstWin": 1.83,
+          "firstDraw": 3.5,
+          "firstLose": 3.8,
+          "firstHandicap": -0.5,
+          "firstHomePrice": 0.87,
+          "firstAwayPrice": 0.97,
+          "firstTotal": 2.75,
+          "firstOverPrice": 0.97,
+          "firstUnderPrice": 0.87
+        },
+        {
+          "companyId": 3,
+          "company": "ＳＢ/*",
+          "win": 1.8,
+          "draw": 3.75,
+          "lose": 3.85,
+          "handicap": -0.5,
+          "homePrice": 0.8,
+          "awayPrice": 1.08,
+          "total": 2.75,
+          "overPrice": 0.96,
+          "underPrice": 0.91,
+          "firstWin": 1.9,
+          "firstDraw": 3.7,
+          "firstLose": 3.55,
+          "firstHandicap": -0.5,
+          "firstHomePrice": 0.9,
+          "firstAwayPrice": 0.98,
+          "firstTotal": 2.75,
+          "firstOverPrice": 1,
+          "firstUnderPrice": 0.87
+        },
+        {
+          "companyId": 22,
+          "company": "平*",
+          "win": 1.83,
+          "draw": 3.89,
+          "lose": 4.34,
+          "handicap": -0.75,
+          "homePrice": 1.08,
+          "awayPrice": 0.84,
+          "total": 2.75,
+          "overPrice": 0.96,
+          "underPrice": 0.93,
+          "firstWin": 1.8,
+          "firstDraw": 3.79,
+          "firstLose": 4.09,
+          "firstHandicap": -0.5,
+          "firstHomePrice": 0.81,
+          "firstAwayPrice": 1.03,
+          "firstTotal": 2.75,
+          "firstOverPrice": 0.91,
+          "firstUnderPrice": 0.89
+        }
+      ],
+      "probabilities": {
+        "home": 52.68741236235554,
+        "draw": 24.511341346208408,
+        "away": 22.801246291436065
+      },
+      "consensus": {
+        "handicap": -0.5,
+        "totalLine": 2.75,
+        "agreement": "较一致"
+      },
+      "marketSignal": {
+        "direction": "主队方向",
+        "movementDirection": "主队方向",
+        "strength": 3.384006676189523,
+        "probabilityShifts": [
+          2.7980691761895162,
+          -0.5536902405623073,
+          -1.224411085059676
+        ],
+        "fairOdds": [
+          1.8979865496573274,
+          4.079744090197199,
+          4.385725180187149
+        ],
+        "hadEv": [
+          -0.1359264372573693,
+          -0.10533604086339321,
+          -0.06970915130940847
+        ],
+        "hhadEv": [
+          -0.12937546905195474,
+          -0.1743349145641846,
+          -0.07039720855563003
+        ],
+        "evThreshold": 0.05,
+        "institutionAction": "盘口深度持平；主队降赔、客队升赔",
+        "handicapExpectation": "主队让0.5，机构净胜球预期赢1球级",
+        "firstHandicap": -0.5,
+        "handicapChange": 0,
+        "narrative": "当前绝对概率最高为主队方向；变盘相对偏向主队方向。盘口深度持平；主队降赔、客队升赔。该变盘信号表示相对强弱变化，不等同于赛果概率最高项；欧赔变化 2.8 个百分点，亚盘主队侧水位概率变化 +1.3 个百分点。主队让0.5，机构净胜球预期赢1球级；当前结论为“多盘口较一致”。历史有效样本不足，本场保持盘口模型基线。",
+        "officialOdds": [
+          1.64,
+          3.65,
+          4.08
+        ],
+        "officialHandicap": "-1",
+        "officialHhadOdds": [
+          3.04,
+          3.45,
+          1.96
+        ],
+        "officialHhadFair": [
+          29.136002481860025,
+          25.673463056479555,
+          45.190534461660434
+        ],
+        "modeledHhad": [
+          28.638964833817276,
+          23.932321316980158,
+          47.42871384920255
+        ],
+        "modeledTotalGoals": [
+          6.392786120670752,
+          17.580161831844574,
+          24.172722518786298,
+          22.158328975554113,
+          15.233851170693455,
+          8.378618143881404,
+          3.840199982612311,
+          2.243331255957093
+        ],
+        "totalGoalLabels": [
+          "0球",
+          "1球",
+          "2球",
+          "3球",
+          "4球",
+          "5球",
+          "6球",
+          "7+球"
+        ],
+        "modeledHalfFull": [
+          32.60269121851022,
+          4.799393781406135,
+          1.4994294526661922,
+          17.228393190109077,
+          14.428616336038766,
+          8.826782644958458,
+          2.757470599347247,
+          4.799393781406135,
+          13.057828995557784
+        ],
+        "halfFullLabels": [
+          "胜胜",
+          "胜平",
+          "胜负",
+          "平胜",
+          "平平",
+          "平负",
+          "负胜",
+          "负平",
+          "负负"
+        ],
+        "asianHomeProbability": 52.60416666666667,
+        "asianAwayProbability": 47.39583333333333,
+        "asianMovement": 1.3020833333333481,
+        "overProbability": 49.35400516795866,
+        "fitAgreement": "多盘口较一致",
+        "handicapMeaning": "外围主队让 0.5 球；体彩主队 -1，主队需净胜超过 1 球才是让胜，净胜 1 球为让平。",
+        "rawProbabilities": [
+          52.68741236235552,
+          24.511341346208404,
+          22.801246291436065
+        ],
+        "calibrationSampleSize": 0,
+        "probabilityTemperature": 1
+      },
+      "expectedGoals": {
+        "home": 1.7000000000000008,
+        "away": 1.0500000000000003
+      },
+      "scores": [
+        {
+          "score": "1:1",
+          "probability": 11.411123225397297
+        },
+        {
+          "score": "1:0",
+          "probability": 10.867736405140281
+        },
+        {
+          "score": "2:1",
+          "probability": 9.699454741587706
+        },
+        {
+          "score": "2:0",
+          "probability": 9.237575944369244
+        }
+      ],
+      "missingCompanies": [],
+      "oddsScores": [
+        {
+          "score": "1:1",
+          "probability": 11.411123225397297
+        },
+        {
+          "score": "1:0",
+          "probability": 10.867736405140281
+        },
+        {
+          "score": "2:1",
+          "probability": 9.699454741587706
+        },
+        {
+          "score": "2:0",
+          "probability": 9.237575944369244
+        }
+      ],
+      "intelligenceScores": [
+        {
+          "score": "1:1",
+          "probability": 11.41
+        },
+        {
+          "score": "1:0",
+          "probability": 10.87
+        },
+        {
+          "score": "2:1",
+          "probability": 9.7
+        },
+        {
+          "score": "2:0",
+          "probability": 9.24
+        }
+      ],
+      "combinedScores": [
+        {
+          "score": "1:1",
+          "probability": 11.411123225397297
+        },
+        {
+          "score": "1:0",
+          "probability": 10.867736405140281
+        },
+        {
+          "score": "2:1",
+          "probability": 9.699454741587706
+        },
+        {
+          "score": "2:0",
+          "probability": 9.237575944369244
+        }
+      ],
+      "intelligenceCoverage": 0,
+      "aiSummary": "阵容数据缺失；近期表现未知，战意不明；非小组赛不适用；模型概率主胜52.69%，盘口主让0.5，体彩让1球，变盘偏主队，亚盘主队水位低，信号较一致；四重一致性：泊松模型和盘口均支持主胜，但平局概率高，近6场缺失；最可能总进球数2-3球；胜平负方向主胜；首选比分1:0，次选1:1、2:1、2:0；暂无可靠爆冷信号",
+      "aiRisk": "缺少阵容、伤停、近期表现等信息；平局概率高需注意"
+    },
+    {
+      "id": "周二007",
+      "league": "英联杯",
+      "time": "02:45:00",
+      "matchDate": "2026-09-09",
+      "home": "桑德兰",
+      "away": "赫尔城",
+      "matchStatus": "Selling",
+      "isMock": false,
+      "sourceUpdatedAt": "2026-09-08 19:41:37",
+      "companies": [
+        {
+          "companyId": 2,
+          "company": "36*",
+          "win": 1.65,
+          "draw": 3.7,
+          "lose": 5,
+          "handicap": -0.75,
+          "homePrice": 0.9,
+          "awayPrice": 0.95,
+          "total": 2.5,
+          "overPrice": 0.95,
+          "underPrice": 0.9,
+          "firstWin": 1.83,
+          "firstDraw": 3.5,
+          "firstLose": 4,
+          "firstHandicap": -0.5,
+          "firstHomePrice": 0.85,
+          "firstAwayPrice": 1,
+          "firstTotal": 2.5,
+          "firstOverPrice": 1,
+          "firstUnderPrice": 0.85
+        },
+        {
+          "companyId": 3,
+          "company": "ＳＢ/*",
+          "win": 1.61,
+          "draw": 3.7,
+          "lose": 4.4,
+          "handicap": -0.75,
+          "homePrice": 0.86,
+          "awayPrice": 0.96,
+          "total": 2.5,
+          "overPrice": 0.9,
+          "underPrice": 0.9,
+          "firstWin": 1.71,
+          "firstDraw": 3.6,
+          "firstLose": 4.2,
+          "firstHandicap": -0.75,
+          "firstHomePrice": 0.92,
+          "firstAwayPrice": 0.9,
+          "firstTotal": 2.5,
+          "firstOverPrice": 0.92,
+          "firstUnderPrice": 0.88
+        },
+        {
+          "companyId": 22,
+          "company": "平*",
+          "win": 1.7,
+          "draw": 3.88,
+          "lose": 5.21,
+          "handicap": -0.75,
+          "homePrice": 0.93,
+          "awayPrice": 0.98,
+          "total": 2.5,
+          "overPrice": 0.98,
+          "underPrice": 0.91,
+          "firstWin": 1.68,
+          "firstDraw": 3.69,
+          "firstLose": 4.82,
+          "firstHandicap": -0.75,
+          "firstHomePrice": 0.91,
+          "firstAwayPrice": 0.89,
+          "firstTotal": 2.5,
+          "firstOverPrice": 0.93,
+          "firstUnderPrice": 0.85
+        }
+      ],
+      "probabilities": {
+        "home": 56.3115508609495,
+        "draw": 24.913412251390373,
+        "away": 18.77503688766012
+      },
+      "consensus": {
+        "handicap": -0.75,
+        "totalLine": 2.5,
+        "agreement": "较一致"
+      },
+      "marketSignal": {
+        "direction": "主队方向",
+        "movementDirection": "主队方向",
+        "strength": 3.5906299090063545,
+        "probabilityShifts": [
+          3.1806210696781467,
+          -0.32643738673122924,
+          -2.856841670214644
+        ],
+        "fairOdds": [
+          1.7758345929226969,
+          4.013902190151378,
+          5.326221226533245
+        ],
+        "hadEv": [
+          -0.11027749639699791,
+          -0.11557386507564182,
+          -0.12696078472380434
+        ],
+        "hhadEv": [
+          -0.05879478176835573,
+          -0.18755295700398555,
+          -0.10429328712604202
+        ],
+        "evThreshold": 0.05,
+        "institutionAction": "盘口深度持平；主队降赔、客队升赔",
+        "handicapExpectation": "主队让0.75，机构净胜球预期赢1～2球级",
+        "firstHandicap": -0.75,
+        "handicapChange": 0,
+        "narrative": "当前绝对概率最高为主队方向；变盘相对偏向主队方向。盘口深度持平；主队降赔、客队升赔。该变盘信号表示相对强弱变化，不等同于赛果概率最高项；欧赔变化 3.2 个百分点，亚盘主队侧水位概率变化 +0.9 个百分点。主队让0.75，机构净胜球预期赢1～2球级；当前结论为“多盘口较一致”。历史有效样本不足，本场保持盘口模型基线。",
+        "officialOdds": [
+          1.58,
+          3.55,
+          4.65
+        ],
+        "officialHandicap": "-1",
+        "officialHhadOdds": [
+          3.06,
+          3.18,
+          2.05
+        ],
+        "officialHhadFair": [
+          28.94400340987799,
+          27.851776866109006,
+          43.204219724013
+        ],
+        "modeledHhad": [
+          30.758340465086416,
+          25.548649150818065,
+          43.693010384095516
+        ],
+        "modeledTotalGoals": [
+          8.208499862389873,
+          20.521249655974692,
+          25.65156206996837,
+          21.376301724973647,
+          13.360188578108536,
+          6.680094289054271,
+          2.7833726204392804,
+          1.4187311990913276
+        ],
+        "totalGoalLabels": [
+          "0球",
+          "1球",
+          "2球",
+          "3球",
+          "4球",
+          "5球",
+          "6球",
+          "7+球"
+        ],
+        "modeledHalfFull": [
+          34.98062548984564,
+          4.342481684693296,
+          1.0827945840202664,
+          18.880964377019723,
+          15.760038744125135,
+          7.720314741022824,
+          2.458883088660056,
+          4.342481684693296,
+          10.431415605919769
+        ],
+        "halfFullLabels": [
+          "胜胜",
+          "胜平",
+          "胜负",
+          "平胜",
+          "平平",
+          "平负",
+          "负胜",
+          "负平",
+          "负负"
+        ],
+        "asianHomeProbability": 50.649350649350644,
+        "asianAwayProbability": 49.350649350649356,
+        "asianMovement": 0.9111307540626834,
+        "overProbability": 49.350649350649356,
+        "fitAgreement": "多盘口较一致",
+        "handicapMeaning": "外围主队让 0.75 球；体彩主队 -1，主队需净胜超过 1 球才是让胜，净胜 1 球为让平。",
+        "rawProbabilities": [
+          56.31155086094951,
+          24.91341225139038,
+          18.775036887660125
+        ],
+        "calibrationSampleSize": 0,
+        "probabilityTemperature": 1
+      },
+      "expectedGoals": {
+        "home": 1.6500000000000008,
+        "away": 0.8500000000000002
+      },
+      "scores": [
+        {
+          "score": "1:0",
+          "probability": 13.544024772943294
+        },
+        {
+          "score": "1:1",
+          "probability": 11.512421057001804
+        },
+        {
+          "score": "2:0",
+          "probability": 11.173820437678224
+        },
+        {
+          "score": "2:1",
+          "probability": 9.497747372026492
+        }
+      ],
+      "missingCompanies": [],
+      "oddsScores": [
+        {
+          "score": "1:0",
+          "probability": 13.544024772943294
+        },
+        {
+          "score": "1:1",
+          "probability": 11.512421057001804
+        },
+        {
+          "score": "2:0",
+          "probability": 11.173820437678224
+        },
+        {
+          "score": "2:1",
+          "probability": 9.497747372026492
+        }
+      ],
+      "intelligenceScores": [
+        {
+          "score": "1:0",
+          "probability": 13.54
+        },
+        {
+          "score": "1:1",
+          "probability": 11.51
+        },
+        {
+          "score": "2:0",
+          "probability": 11.17
+        },
+        {
+          "score": "2:1",
+          "probability": 9.5
+        }
+      ],
+      "combinedScores": [
+        {
+          "score": "1:0",
+          "probability": 13.544024772943294
+        },
+        {
+          "score": "1:1",
+          "probability": 11.512421057001804
+        },
+        {
+          "score": "2:0",
+          "probability": 11.173820437678224
+        },
+        {
+          "score": "2:1",
+          "probability": 9.497747372026492
+        }
+      ],
+      "intelligenceCoverage": 0,
+      "aiSummary": "阵容数据缺失；近期表现未知，战意不明；非小组赛不适用；模型概率主胜56.31%，盘口主让0.75，体彩让1球，变盘偏主队，亚盘水位接近，较一致；四重一致性：泊松模型和盘口均支持主胜，但平局概率高，近6场缺失；最可能总进球数2球；胜平负方向主胜；首选比分1:0，次选1:1、2:0、2:1；暂无可靠爆冷信号",
+      "aiRisk": "缺少阵容、伤停、近期表现等信息；杯赛可能轮换，注意战意"
+    },
+    {
+      "id": "周二008",
+      "league": "欧冠",
+      "time": "03:00:00",
+      "matchDate": "2026-09-09",
+      "home": "皇马",
+      "away": "国米",
+      "matchStatus": "Selling",
+      "isMock": false,
+      "sourceUpdatedAt": "2026-09-08 19:57:37",
+      "companies": [
+        {
+          "companyId": 2,
+          "company": "36*",
+          "win": 1.57,
+          "draw": 4.5,
+          "lose": 5.25,
+          "handicap": -1,
+          "homePrice": 0.92,
+          "awayPrice": 0.92,
+          "total": 3.25,
+          "overPrice": 0.87,
+          "underPrice": 0.97,
+          "firstWin": 1.85,
+          "firstDraw": 3.7,
+          "firstLose": 4,
+          "firstHandicap": -0.5,
+          "firstHomePrice": 0.85,
+          "firstAwayPrice": 1,
+          "firstTotal": 2.75,
+          "firstOverPrice": 0.85,
+          "firstUnderPrice": 1
+        },
+        {
+          "companyId": 3,
+          "company": "ＳＢ/*",
+          "win": 1.6,
+          "draw": 4.6,
+          "lose": 5,
+          "handicap": -1,
+          "homePrice": 0.98,
+          "awayPrice": 0.91,
+          "total": 3.25,
+          "overPrice": 0.9,
+          "underPrice": 0.98,
+          "firstWin": 1.67,
+          "firstDraw": 4.35,
+          "firstLose": 4.75,
+          "firstHandicap": -0.75,
+          "firstHomePrice": 0.84,
+          "firstAwayPrice": 1.04,
+          "firstTotal": 2.75,
+          "firstOverPrice": 0.84,
+          "firstUnderPrice": 1.02
+        },
+        {
+          "companyId": 22,
+          "company": "平*",
+          "win": 1.61,
+          "draw": 4.44,
+          "lose": 5.28,
+          "handicap": -1,
+          "homePrice": 1,
+          "awayPrice": 0.93,
+          "total": 3.25,
+          "overPrice": 0.91,
+          "underPrice": 0.99,
+          "firstWin": 1.7,
+          "firstDraw": 3.96,
+          "firstLose": 4.43,
+          "firstHandicap": -0.75,
+          "firstHomePrice": 0.91,
+          "firstAwayPrice": 0.91,
+          "firstTotal": 2.75,
+          "firstOverPrice": 0.83,
+          "firstUnderPrice": 0.98
+        }
+      ],
+      "probabilities": {
+        "home": 61.02900498819119,
+        "draw": 20.88167233267331,
+        "away": 18.0893226791355
+      },
+      "consensus": {
+        "handicap": -1,
+        "totalLine": 3.25,
+        "agreement": "较一致"
+      },
+      "marketSignal": {
+        "direction": "主队方向",
+        "movementDirection": "主队方向",
+        "strength": 4.595640412269532,
+        "probabilityShifts": [
+          5.873027147671539,
+          -2.796398962499272,
+          -3.0766281851722725
+        ],
+        "fairOdds": [
+          1.6385651383198776,
+          4.788888476309015,
+          5.5281229581548414
+        ],
+        "hadEv": [
+          -0.13338812916768505,
+          -0.08120641736237433,
+          -0.08648920470365729
+        ],
+        "hhadEv": [
+          -0.12991634947119945,
+          -0.18616443672529914,
+          -0.051504155929329554
+        ],
+        "evThreshold": 0.05,
+        "institutionAction": "让球加深但主队升赔，盘口与赔付信号分歧",
+        "handicapExpectation": "主队让1，机构净胜球预期赢1～2球级",
+        "firstHandicap": -0.75,
+        "handicapChange": -0.25,
+        "narrative": "当前绝对概率最高为主队方向；变盘相对偏向主队方向。让球加深但主队升赔，盘口与赔付信号分歧。该变盘信号表示相对强弱变化，不等同于赛果概率最高项；欧赔变化 5.9 个百分点，亚盘主队侧水位概率变化 -2.8 个百分点。主队让1，机构净胜球预期赢1～2球级；当前结论为“多盘口较一致”。历史有效样本不足，本场保持盘口模型基线。",
+        "officialOdds": [
+          1.42,
+          4.4,
+          5.05
+        ],
+        "officialHandicap": "-1",
+        "officialHhadOdds": [
+          2.25,
+          3.65,
+          2.43
+        ],
+        "officialHhadFair": [
+          39.33346637397725,
+          24.246657353821593,
+          36.41987627220116
+        ],
+        "modeledHhad": [
+          38.67038446794669,
+          22.29686474725208,
+          39.03275078480125
+        ],
+        "modeledTotalGoals": [
+          3.174563637806794,
+          10.95224455043344,
+          18.892621849497683,
+          21.726515126922337,
+          18.739119296970518,
+          12.929992314909658,
+          7.434745581073053,
+          6.150197642386512
+        ],
+        "totalGoalLabels": [
+          "0球",
+          "1球",
+          "2球",
+          "3球",
+          "4球",
+          "5球",
+          "6球",
+          "7+球"
+        ],
+        "modeledHalfFull": [
+          40.04455188333453,
+          4.636389193575331,
+          1.6144088132316226,
+          17.284628234794923,
+          10.322610133452931,
+          6.822365632808405,
+          3.7221222062018056,
+          4.63638919357533,
+          10.916534709025116
+        ],
+        "halfFullLabels": [
+          "胜胜",
+          "胜平",
+          "胜负",
+          "平胜",
+          "平平",
+          "平负",
+          "负胜",
+          "负平",
+          "负负"
+        ],
+        "asianHomeProbability": 49.109414758269715,
+        "asianAwayProbability": 50.89058524173029,
+        "asianMovement": -2.838637189782239,
+        "overProbability": 51.03092783505154,
+        "fitAgreement": "多盘口较一致",
+        "handicapMeaning": "外围主队让 1 球；体彩主队 -1，主队需净胜超过 1 球才是让胜，净胜 1 球为让平。",
+        "rawProbabilities": [
+          61.02900498819119,
+          20.88167233267331,
+          18.0893226791355
+        ],
+        "calibrationSampleSize": 0,
+        "probabilityTemperature": 1
+      },
+      "expectedGoals": {
+        "home": 2.25,
+        "away": 1.2000000000000004
+      },
+      "scores": [
+        {
+          "score": "2:1",
+          "probability": 9.642737049838136
+        },
+        {
+          "score": "1:1",
+          "probability": 8.571321822078344
+        },
+        {
+          "score": "2:0",
+          "probability": 8.035614208198444
+        },
+        {
+          "score": "3:1",
+          "probability": 7.232052787378604
+        }
+      ],
+      "missingCompanies": [],
+      "oddsScores": [
+        {
+          "score": "2:1",
+          "probability": 9.642737049838136
+        },
+        {
+          "score": "1:1",
+          "probability": 8.571321822078344
+        },
+        {
+          "score": "2:0",
+          "probability": 8.035614208198444
+        },
+        {
+          "score": "3:1",
+          "probability": 7.232052787378604
+        }
+      ],
+      "intelligenceScores": [
+        {
+          "score": "2:1",
+          "probability": 9.64
+        },
+        {
+          "score": "1:1",
+          "probability": 8.57
+        },
+        {
+          "score": "2:0",
+          "probability": 8.04
+        },
+        {
+          "score": "3:1",
+          "probability": 7.23
+        }
+      ],
+      "combinedScores": [
+        {
+          "score": "2:1",
+          "probability": 9.642737049838136
+        },
+        {
+          "score": "1:1",
+          "probability": 8.571321822078344
+        },
+        {
+          "score": "2:0",
+          "probability": 8.035614208198444
+        },
+        {
+          "score": "3:1",
+          "probability": 7.232052787378604
+        }
+      ],
+      "intelligenceCoverage": 0,
+      "aiSummary": "阵容数据缺失；近期表现未知，战意不明；欧冠小组赛，胜/平/负影响出线，但未提供积分；模型概率主胜61.03%，盘口主让1球，体彩让1球，变盘偏主队但主队水位升，信号矛盾；四重一致性：泊松模型支持主胜大胜，但亚盘水位不配合，近6场缺失；最可能总进球数2-3球；胜平负方向主胜；首选比分2:1，次选1:1、2:0、3:1；暂无可靠爆冷信号",
+      "aiRisk": "缺少阵容、伤停、近期表现、小组积分等信息；盘口让球加深但主队水位升高，注意潜在冷门"
+    },
+    {
+      "id": "周二009",
+      "league": "欧冠",
+      "time": "03:00:00",
+      "matchDate": "2026-09-09",
+      "home": "多特蒙德",
+      "away": "比利亚雷亚尔",
+      "matchStatus": "Selling",
+      "isMock": false,
+      "sourceUpdatedAt": "2026-09-08 18:38:27",
+      "companies": [
+        {
+          "companyId": 2,
+          "company": "36*",
+          "win": 1.75,
+          "draw": 4,
+          "lose": 4,
+          "handicap": -0.75,
+          "homePrice": 1.02,
+          "awayPrice": 0.82,
+          "total": 3.25,
+          "overPrice": 0.95,
+          "underPrice": 0.9,
+          "firstWin": 1.9,
+          "firstDraw": 3.6,
+          "firstLose": 3.75,
+          "firstHandicap": -0.5,
+          "firstHomePrice": 0.95,
+          "firstAwayPrice": 0.9,
+          "firstTotal": 2.75,
+          "firstOverPrice": 0.85,
+          "firstUnderPrice": 1
+        },
+        {
+          "companyId": 3,
+          "company": "ＳＢ/*",
+          "win": 1.83,
+          "draw": 4.1,
+          "lose": 3.95,
+          "handicap": -0.75,
+          "homePrice": 1.05,
+          "awayPrice": 0.84,
+          "total": 3.25,
+          "overPrice": 1,
+          "underPrice": 0.88,
+          "firstWin": 1.8,
+          "firstDraw": 4.3,
+          "firstLose": 3.95,
+          "firstHandicap": -0.75,
+          "firstHomePrice": 1.01,
+          "firstAwayPrice": 0.87,
+          "firstTotal": 3,
+          "firstOverPrice": 0.88,
+          "firstUnderPrice": 0.98
+        },
+        {
+          "companyId": 22,
+          "company": "平*",
+          "win": 1.83,
+          "draw": 4.04,
+          "lose": 4.17,
+          "handicap": -0.75,
+          "homePrice": 1.07,
+          "awayPrice": 0.86,
+          "total": 3.25,
+          "overPrice": 0.99,
+          "underPrice": 0.92,
+          "firstWin": 1.83,
+          "firstDraw": 3.81,
+          "firstLose": 3.91,
+          "firstHandicap": -0.5,
+          "firstHomePrice": 0.84,
+          "firstAwayPrice": 0.99,
+          "firstTotal": 2.75,
+          "firstOverPrice": 0.8,
+          "firstUnderPrice": 1.01
+        }
+      ],
+      "probabilities": {
+        "home": 53.75888453687809,
+        "draw": 23.1034310721493,
+        "away": 23.137684390972606
+      },
+      "consensus": {
+        "handicap": -0.75,
+        "totalLine": 3.25,
+        "agreement": "较一致"
+      },
+      "marketSignal": {
+        "direction": "主队方向",
+        "movementDirection": "主队方向",
+        "strength": 1.5232071561598657,
+        "probabilityShifts": [
+          2.4332894402879557,
+          -1.5490201159766792,
+          -1.1751788099069238
+        ],
+        "fairOdds": [
+          1.8601576439221117,
+          4.328361432018983,
+          4.321953671345607
+        ],
+        "hadEv": [
+          -0.1344819589562627,
+          -0.08741447265010271,
+          -0.09300277187387385
+        ],
+        "hhadEv": [
+          -0.13770830834574577,
+          -0.14738732577427727,
+          -0.08010738516256832
+        ],
+        "evThreshold": 0.05,
+        "institutionAction": "让球加深但主队升赔，盘口与赔付信号分歧",
+        "handicapExpectation": "主队让0.75，机构净胜球预期赢1～2球级",
+        "firstHandicap": -0.5,
+        "handicapChange": -0.25,
+        "narrative": "当前绝对概率最高为主队方向；变盘相对偏向主队方向。让球加深但主队升赔，盘口与赔付信号分歧。该变盘信号表示相对强弱变化，不等同于赛果概率最高项；欧赔变化 2.4 个百分点，亚盘主队侧水位概率变化 -2.0 个百分点。主队让0.75，机构净胜球预期赢1～2球级；当前结论为“多盘口较一致”。历史有效样本不足，本场保持盘口模型基线。",
+        "officialOdds": [
+          1.61,
+          3.95,
+          3.92
+        ],
+        "officialHandicap": "-1",
+        "officialHhadOdds": [
+          2.65,
+          3.85,
+          2.03
+        ],
+        "officialHhadFair": [
+          33.403141361256544,
+          22.991772625280475,
+          43.60508601346298
+        ],
+        "modeledHhad": [
+          32.53930911902847,
+          22.145783746122667,
+          45.31490713484885
+        ],
+        "modeledTotalGoals": [
+          3.5084354100844974,
+          11.753258623783072,
+          19.68670819483665,
+          21.983490817567606,
+          18.41117355971288,
+          12.335486285007633,
+          6.887313175795932,
+          5.434133933211727
+        ],
+        "totalGoalLabels": [
+          "0球",
+          "1球",
+          "2球",
+          "3球",
+          "4球",
+          "5球",
+          "6球",
+          "7+球"
+        ],
+        "modeledHalfFull": [
+          34.97060291861465,
+          5.010088705291804,
+          1.9297214881605633,
+          16.2422653990965,
+          11.255475072664742,
+          8.31275820111063,
+          3.525411006002717,
+          5.010088705291802,
+          13.743588503766585
+        ],
+        "halfFullLabels": [
+          "胜胜",
+          "胜平",
+          "胜负",
+          "平胜",
+          "平平",
+          "平负",
+          "负胜",
+          "负平",
+          "负负"
+        ],
+        "asianHomeProbability": 47.32824427480916,
+        "asianAwayProbability": 52.67175572519085,
+        "asianMovement": -2.0224050758402,
+        "overProbability": 49.104859335038356,
+        "fitAgreement": "多盘口较一致",
+        "handicapMeaning": "外围主队让 0.75 球；体彩主队 -1，主队需净胜超过 1 球才是让胜，净胜 1 球为让平。",
+        "rawProbabilities": [
+          53.75888453687809,
+          23.1034310721493,
+          23.137684390972606
+        ],
+        "calibrationSampleSize": 0,
+        "probabilityTemperature": 1
+      },
+      "expectedGoals": {
+        "home": 2.0500000000000007,
+        "away": 1.3000000000000005
+      },
+      "scores": [
+        {
+          "score": "2:1",
+          "probability": 9.583729877072077
+        },
+        {
+          "score": "1:1",
+          "probability": 9.349980367875196
+        },
+        {
+          "score": "2:0",
+          "probability": 7.3720999054400576
+        },
+        {
+          "score": "1:0",
+          "probability": 7.192292590673224
+        }
+      ],
+      "missingCompanies": [],
+      "oddsScores": [
+        {
+          "score": "2:1",
+          "probability": 9.583729877072077
+        },
+        {
+          "score": "1:1",
+          "probability": 9.349980367875196
+        },
+        {
+          "score": "2:0",
+          "probability": 7.3720999054400576
+        },
+        {
+          "score": "1:0",
+          "probability": 7.192292590673224
+        }
+      ],
+      "intelligenceScores": [
+        {
+          "score": "2:1",
+          "probability": 9.58
+        },
+        {
+          "score": "1:1",
+          "probability": 9.35
+        },
+        {
+          "score": "2:0",
+          "probability": 7.37
+        },
+        {
+          "score": "1:0",
+          "probability": 7.19
+        }
+      ],
+      "combinedScores": [
+        {
+          "score": "2:1",
+          "probability": 9.583729877072077
+        },
+        {
+          "score": "1:1",
+          "probability": 9.349980367875196
+        },
+        {
+          "score": "2:0",
+          "probability": 7.3720999054400576
+        },
+        {
+          "score": "1:0",
+          "probability": 7.192292590673224
+        }
+      ],
+      "intelligenceCoverage": 0,
+      "aiSummary": "阵容数据缺失；近期表现未知，战意不明；欧冠小组赛，胜/平/负影响出线，但未提供积分；模型概率主胜53.76%，盘口主让0.75，体彩让1球，变盘偏主队但主队水位升，信号歧义；四重一致性：泊松模型支持主胜，但亚盘水位显示客队概率高，近6场缺失；最可能总进球数2-3球；胜平负方向主胜；首选比分2:1，次选1:1、2:0、1:0；暂无可靠爆冷信号",
+      "aiRisk": "缺少阵容、伤停、近期表现、小组积分等信息；让球盘口与水位信号冲突"
+    },
+    {
+      "id": "周二010",
+      "league": "欧冠",
+      "time": "03:00:00",
+      "matchDate": "2026-09-09",
+      "home": "里尔",
+      "away": "贝蒂斯",
+      "matchStatus": "Selling",
+      "isMock": false,
+      "sourceUpdatedAt": "2026-09-08 18:35:49",
+      "companies": [
+        {
+          "companyId": 2,
+          "company": "36*",
+          "win": 2.15,
+          "draw": 3.5,
+          "lose": 3.3,
+          "handicap": -0.25,
+          "homePrice": 0.87,
+          "awayPrice": 0.97,
+          "total": 2.75,
+          "overPrice": 1.02,
+          "underPrice": 0.82,
+          "firstWin": 2.4,
+          "firstDraw": 3.6,
+          "firstLose": 2.7,
+          "firstHandicap": 0,
+          "firstHomePrice": 0.8,
+          "firstAwayPrice": 1.05,
+          "firstTotal": 2.5,
+          "firstOverPrice": 0.85,
+          "firstUnderPrice": 1
+        },
+        {
+          "companyId": 3,
+          "company": "ＳＢ/*",
+          "win": 2.17,
+          "draw": 3.55,
+          "lose": 3.35,
+          "handicap": -0.25,
+          "homePrice": 0.91,
+          "awayPrice": 0.98,
+          "total": 2.75,
+          "overPrice": 1.03,
+          "underPrice": 0.85,
+          "firstWin": 2.32,
+          "firstDraw": 3.7,
+          "firstLose": 2.96,
+          "firstHandicap": -0.25,
+          "firstHomePrice": 1.02,
+          "firstAwayPrice": 0.86,
+          "firstTotal": 2.5,
+          "firstOverPrice": 0.83,
+          "firstUnderPrice": 1.03
+        },
+        {
+          "companyId": 22,
+          "company": "平*",
+          "win": 2.21,
+          "draw": 3.53,
+          "lose": 3.42,
+          "handicap": -0.25,
+          "homePrice": 0.92,
+          "awayPrice": 1.01,
+          "total": 2.75,
+          "overPrice": 1.04,
+          "underPrice": 0.87,
+          "firstWin": 2.44,
+          "firstDraw": 3.35,
+          "firstLose": 2.84,
+          "firstHandicap": 0,
+          "firstHomePrice": 0.77,
+          "firstAwayPrice": 1.07,
+          "firstTotal": 2.5,
+          "firstOverPrice": 0.82,
+          "firstUnderPrice": 0.99
+        }
+      ],
+      "probabilities": {
+        "home": 44.700925117005,
+        "draw": 27.330579729951126,
+        "away": 27.968495153043882
+      },
+      "consensus": {
+        "handicap": -0.25,
+        "totalLine": 2.75,
+        "agreement": "较一致"
+      },
+      "marketSignal": {
+        "direction": "主队方向",
+        "movementDirection": "主队方向",
+        "strength": 4.624718548929853,
+        "probabilityShifts": [
+          5.5704903343962995,
+          1.243623208211997,
+          -5.235391497157604
+        ],
+        "fairOdds": [
+          2.2370901662157836,
+          3.6589051892818674,
+          3.575451573379226
+        ],
+        "hadEv": [
+          -0.13280205273010304,
+          -0.1254214486415639,
+          -0.06864911140363872
+        ],
+        "hhadEv": [
+          -0.12315779720863196,
+          -0.1798171182068582,
+          -0.08046865270590109
+        ],
+        "evThreshold": 0.05,
+        "institutionAction": "让球加深但主队升赔，盘口与赔付信号分歧",
+        "handicapExpectation": "主队让0.25，机构净胜球预期赢1球级",
+        "firstHandicap": 0,
+        "handicapChange": -0.25,
+        "narrative": "当前绝对概率最高为主队方向；变盘相对偏向主队方向。让球加深但主队升赔，盘口与赔付信号分歧。该变盘信号表示相对强弱变化，不等同于赛果概率最高项；欧赔变化 5.6 个百分点，亚盘主队侧水位概率变化 -2.1 个百分点。主队让0.25，机构净胜球预期赢1球级；当前结论为“多盘口较一致”。历史有效样本不足，本场保持盘口模型基线。",
+        "officialOdds": [
+          1.94,
+          3.2,
+          3.33
+        ],
+        "officialHandicap": "-1",
+        "officialHhadOdds": [
+          3.9,
+          3.6,
+          1.68
+        ],
+        "officialHhadFair": [
+          22.702702702702705,
+          24.594594594594597,
+          52.70270270270271
+        ],
+        "modeledHhad": [
+          22.483133404906873,
+          22.78285782758727,
+          54.73400876750589
+        ],
+        "modeledTotalGoals": [
+          7.06512130604295,
+          18.722571461013825,
+          24.80740718584333,
+          21.913209680828285,
+          14.517501413548747,
+          7.69427574918084,
+          3.3983051225548726,
+          1.8816080809871516
+        ],
+        "totalGoalLabels": [
+          "0球",
+          "1球",
+          "2球",
+          "3球",
+          "4球",
+          "5球",
+          "6球",
+          "7+球"
+        ],
+        "modeledHalfFull": [
+          27.245407763752517,
+          5.039807031150534,
+          1.764338400079631,
+          15.564214250734368,
+          15.552552731360128,
+          10.792150506882418,
+          2.4642533671312226,
+          5.039807031150534,
+          16.53746891775864
+        ],
+        "halfFullLabels": [
+          "胜胜",
+          "胜平",
+          "胜负",
+          "平胜",
+          "平平",
+          "平负",
+          "负胜",
+          "负平",
+          "负负"
+        ],
+        "asianHomeProbability": 51.14503816793893,
+        "asianAwayProbability": 48.85496183206107,
+        "asianMovement": -2.1017150788143257,
+        "overProbability": 47.680412371134025,
+        "fitAgreement": "多盘口较一致",
+        "handicapMeaning": "外围主队让 0.25 球；体彩主队 -1，主队需净胜超过 1 球才是让胜，净胜 1 球为让平。",
+        "rawProbabilities": [
+          44.700925117005,
+          27.330579729951126,
+          27.968495153043882
+        ],
+        "calibrationSampleSize": 0,
+        "probabilityTemperature": 1
+      },
+      "expectedGoals": {
+        "home": 1.5000000000000007,
+        "away": 1.1500000000000004
+      },
+      "scores": [
+        {
+          "score": "1:1",
+          "probability": 12.187334252924103
+        },
+        {
+          "score": "1:0",
+          "probability": 10.597681959064433
+        },
+        {
+          "score": "2:1",
+          "probability": 9.14050068969308
+        },
+        {
+          "score": "0:1",
+          "probability": 8.124889501949397
+        }
+      ],
+      "missingCompanies": [],
+      "oddsScores": [
+        {
+          "score": "1:1",
+          "probability": 12.187334252924103
+        },
+        {
+          "score": "1:0",
+          "probability": 10.597681959064433
+        },
+        {
+          "score": "2:1",
+          "probability": 9.14050068969308
+        },
+        {
+          "score": "0:1",
+          "probability": 8.124889501949397
+        }
+      ],
+      "intelligenceScores": [
+        {
+          "score": "1:1",
+          "probability": 12.19
+        },
+        {
+          "score": "1:0",
+          "probability": 10.6
+        },
+        {
+          "score": "2:1",
+          "probability": 9.14
+        },
+        {
+          "score": "0:1",
+          "probability": 8.12
+        }
+      ],
+      "combinedScores": [
+        {
+          "score": "1:1",
+          "probability": 12.187334252924103
+        },
+        {
+          "score": "1:0",
+          "probability": 10.597681959064433
+        },
+        {
+          "score": "2:1",
+          "probability": 9.14050068969308
+        },
+        {
+          "score": "0:1",
+          "probability": 8.124889501949397
+        }
+      ],
+      "intelligenceCoverage": 0,
+      "aiSummary": "阵容数据缺失；近期表现未知，战意不明；欧冠小组赛，胜/平/负影响出线，但未提供积分；模型概率主胜44.70%，客胜27.97%，盘口主让0.25，体彩让1球，变盘偏主队但主队水位升，信号矛盾；四重一致性：泊松模型平局概率高，盘口分歧，近6场缺失；最可能总进球数2球；胜平负方向主胜或平局；首选比分1:1，次选1:0、2:1、0:1；暂无可靠爆冷信号",
+      "aiRisk": "缺少阵容、伤停、近期表现、小组积分等信息；盘口与水位信号不一致"
+    },
+    {
+      "id": "周二011",
+      "league": "欧冠",
+      "time": "03:00:00",
+      "matchDate": "2026-09-09",
+      "home": "波尔图",
+      "away": "曼城",
+      "matchStatus": "Selling",
+      "isMock": false,
+      "sourceUpdatedAt": "2026-09-08 19:14:38",
+      "companies": [
+        {
+          "companyId": 2,
+          "company": "36*",
+          "win": 4.75,
+          "draw": 4.1,
+          "lose": 1.65,
+          "handicap": 0.75,
+          "homePrice": 1.02,
+          "awayPrice": 0.82,
+          "total": 2.75,
+          "overPrice": 0.82,
+          "underPrice": 1.02,
+          "firstWin": 4.2,
+          "firstDraw": 3.9,
+          "firstLose": 1.75,
+          "firstHandicap": 0.75,
+          "firstHomePrice": 0.85,
+          "firstAwayPrice": 1,
+          "firstTotal": 3,
+          "firstOverPrice": 1,
+          "firstUnderPrice": 0.85
+        },
+        {
+          "companyId": 3,
+          "company": "ＳＢ/*",
+          "win": 5.3,
+          "draw": 4.1,
+          "lose": 1.64,
+          "handicap": 0.75,
+          "homePrice": 1.06,
+          "awayPrice": 0.83,
+          "total": 2.75,
+          "overPrice": 0.81,
+          "underPrice": 1.07,
+          "firstWin": 4.05,
+          "firstDraw": 4.15,
+          "firstLose": 1.81,
+          "firstHandicap": 0.75,
+          "firstHomePrice": 0.85,
+          "firstAwayPrice": 1.03,
+          "firstTotal": 2.75,
+          "firstOverPrice": 0.88,
+          "firstUnderPrice": 0.98
+        },
+        {
+          "companyId": 22,
+          "company": "平*",
+          "win": 5.16,
+          "draw": 4.1,
+          "lose": 1.68,
+          "handicap": 0.75,
+          "homePrice": 1.06,
+          "awayPrice": 0.87,
+          "total": 2.75,
+          "overPrice": 0.87,
+          "underPrice": 1.04,
+          "firstWin": 4.12,
+          "firstDraw": 3.93,
+          "firstLose": 1.76,
+          "firstHandicap": 0.75,
+          "firstHomePrice": 0.84,
+          "firstAwayPrice": 0.99,
+          "firstTotal": 3,
+          "firstOverPrice": 0.98,
+          "firstUnderPrice": 0.83
+        }
+      ],
+      "probabilities": {
+        "home": 18.43202143278205,
+        "draw": 22.8008879961488,
+        "away": 58.76709057106915
+      },
+      "consensus": {
+        "handicap": 0.75,
+        "totalLine": 2.75,
+        "agreement": "有分歧"
+      },
+      "marketSignal": {
+        "direction": "客队方向",
+        "movementDirection": "客队方向",
+        "strength": 7.487448134316166,
+        "probabilityShifts": [
+          -4.350887432947403,
+          -1.0834846569823364,
+          5.43437208992974
+        ],
+        "fairOdds": [
+          5.42534091362037,
+          4.385794097882967,
+          1.7016326489579472
+        ],
+        "hadEv": [
+          -0.08024213050417561,
+          -0.06516359215789935,
+          -0.14200047766239043
+        ],
+        "hhadEv": [
+          -0.05093192806855151,
+          -0.1324392758366335,
+          -0.17053777952126936
+        ],
+        "evThreshold": 0.05,
+        "institutionAction": "盘口深度持平；主队升赔、客队降赔",
+        "handicapExpectation": "主队受让0.75，机构倾向客队赢1～2球级",
+        "firstHandicap": 0.75,
+        "handicapChange": 0,
+        "narrative": "当前绝对概率最高为客队方向；变盘相对偏向客队方向。盘口深度持平；主队升赔、客队降赔。该变盘信号表示相对强弱变化，不等同于赛果概率最高项；欧赔变化 5.4 个百分点，亚盘主队侧水位概率变化 -4.6 个百分点。主队受让0.75，机构倾向客队赢1～2球级；当前结论为“多盘口较一致”。历史有效样本不足，本场保持盘口模型基线。",
+        "officialOdds": [
+          4.99,
+          4.1,
+          1.46
+        ],
+        "officialHandicap": "+1",
+        "officialHhadOdds": [
+          2.28,
+          3.6,
+          2.42
+        ],
+        "officialHhadFair": [
+          38.82768210503797,
+          24.590865333190713,
+          36.58145256177131
+        ],
+        "modeledHhad": [
+          41.625792628572306,
+          24.09890900453796,
+          34.27529836688969
+        ],
+        "modeledTotalGoals": [
+          5.502322005640716,
+          15.956733816358085,
+          23.137264033719234,
+          22.366021899261934,
+          16.21536587696491,
+          9.40491220863965,
+          4.545707567509167,
+          2.8716725919063046
+        ],
+        "totalGoalLabels": [
+          "0球",
+          "1球",
+          "2球",
+          "3球",
+          "4球",
+          "5球",
+          "6球",
+          "7+球"
+        ],
+        "modeledHalfFull": [
+          10.773011562575304,
+          4.541336494871798,
+          3.014386432489855,
+          7.386086419061602,
+          13.023109867336375,
+          18.189058914190355,
+          1.3291939297006856,
+          4.541336494871799,
+          37.20247988490223
+        ],
+        "halfFullLabels": [
+          "胜胜",
+          "胜平",
+          "胜负",
+          "平胜",
+          "平平",
+          "平负",
+          "负胜",
+          "负平",
+          "负负"
+        ],
+        "asianHomeProbability": 47.39583333333333,
+        "asianAwayProbability": 52.60416666666667,
+        "asianMovement": -4.562391209747613,
+        "overProbability": 52.60416666666667,
+        "fitAgreement": "多盘口较一致",
+        "handicapMeaning": "外围主队受让 0.75 球；体彩主队 +1，客队需净胜超过 1 球才是让负，净胜 1 球为让平。",
+        "rawProbabilities": [
+          18.43202143278205,
+          22.8008879961488,
+          58.76709057106915
+        ],
+        "calibrationSampleSize": 0,
+        "probabilityTemperature": 1
+      },
+      "expectedGoals": {
+        "home": 1.0000000000000002,
+        "away": 1.900000000000001
+      },
+      "scores": [
+        {
+          "score": "1:1",
+          "probability": 10.454411810717367
+        },
+        {
+          "score": "0:1",
+          "probability": 10.454411810717366
+        },
+        {
+          "score": "0:2",
+          "probability": 9.931691220181502
+        },
+        {
+          "score": "1:2",
+          "probability": 9.931691220181502
+        }
+      ],
+      "missingCompanies": [],
+      "oddsScores": [
+        {
+          "score": "1:1",
+          "probability": 10.454411810717367
+        },
+        {
+          "score": "0:1",
+          "probability": 10.454411810717366
+        },
+        {
+          "score": "0:2",
+          "probability": 9.931691220181502
+        },
+        {
+          "score": "1:2",
+          "probability": 9.931691220181502
+        }
+      ],
+      "intelligenceScores": [
+        {
+          "score": "1:1",
+          "probability": 10.45
+        },
+        {
+          "score": "0:1",
+          "probability": 10.45
+        },
+        {
+          "score": "0:2",
+          "probability": 9.93
+        },
+        {
+          "score": "1:2",
+          "probability": 9.93
+        }
+      ],
+      "combinedScores": [
+        {
+          "score": "1:1",
+          "probability": 10.454411810717367
+        },
+        {
+          "score": "0:1",
+          "probability": 10.454411810717366
+        },
+        {
+          "score": "0:2",
+          "probability": 9.931691220181502
+        },
+        {
+          "score": "1:2",
+          "probability": 9.931691220181502
+        }
+      ],
+      "intelligenceCoverage": 0,
+      "aiSummary": "阵容数据缺失；近期表现未知，战意不明；欧冠小组赛，胜/平/负影响出线，但未提供积分；模型概率客胜58.77%，盘口主受让0.75，体彩主队+1，变盘偏客队，亚盘客队水位低，较一致；四重一致性：泊松模型和盘口均支持客胜，但平局概率高，近6场缺失；最可能总进球数2-3球；胜平负方向客胜；首选比分0:1，次选1:1、0:2、1:2；暂无可靠爆冷信号",
+      "aiRisk": "缺少阵容、伤停、近期表现、小组积分等信息；注意客队可能只赢一球，让平风险"
+    },
+    {
+      "id": "周二012",
+      "league": "解放者杯",
+      "time": "06:00:00",
+      "matchDate": "2026-09-09",
+      "home": "弗鲁米嫩塞",
+      "away": "普拉滕斯",
+      "matchStatus": "Selling",
+      "isMock": false,
+      "sourceUpdatedAt": "2026-09-08 19:42:11",
+      "companies": [
+        {
+          "companyId": 2,
+          "company": "36*",
+          "win": 1.7,
+          "draw": 3.25,
+          "lose": 6.25,
+          "handicap": -0.75,
+          "homePrice": 0.92,
+          "awayPrice": 0.92,
+          "total": 1.75,
+          "overPrice": 0.77,
+          "underPrice": 1.1,
+          "firstWin": 1.42,
+          "firstDraw": 3.8,
+          "firstLose": 9.5,
+          "firstHandicap": -1,
+          "firstHomePrice": 0.8,
+          "firstAwayPrice": 1.05,
+          "firstTotal": 2,
+          "firstOverPrice": 0.8,
+          "firstUnderPrice": 1.05
+        },
+        {
+          "companyId": 3,
+          "company": "ＳＢ/*",
+          "win": 1.71,
+          "draw": 3.25,
+          "lose": 5.2,
+          "handicap": -0.75,
+          "homePrice": 0.97,
+          "awayPrice": 0.92,
+          "total": 1.75,
+          "overPrice": 0.79,
+          "underPrice": 1.08,
+          "firstWin": 1.43,
+          "firstDraw": 4,
+          "firstLose": 7.6,
+          "firstHandicap": -1,
+          "firstHomePrice": 0.81,
+          "firstAwayPrice": 1.07,
+          "firstTotal": 2,
+          "firstOverPrice": 0.82,
+          "firstUnderPrice": 1.05
+        },
+        {
+          "companyId": 22,
+          "company": "平*",
+          "win": 1.68,
+          "draw": 3.47,
+          "lose": 6.17,
+          "handicap": -0.75,
+          "homePrice": 0.93,
+          "awayPrice": 0.96,
+          "total": 2,
+          "overPrice": 1.07,
+          "underPrice": 0.81,
+          "firstWin": 1.5,
+          "firstDraw": 3.83,
+          "firstLose": 7.4,
+          "firstHandicap": -1,
+          "firstHomePrice": 0.93,
+          "firstAwayPrice": 0.9,
+          "firstTotal": 2,
+          "firstOverPrice": 0.85,
+          "firstUnderPrice": 0.97
+        }
+      ],
+      "probabilities": {
+        "home": 57.04592075648267,
+        "draw": 28.207487617669884,
+        "away": 14.746591625847438
+      },
+      "consensus": {
+        "handicap": -0.75,
+        "totalLine": 1.75,
+        "agreement": "较一致"
+      },
+      "marketSignal": {
+        "direction": "主队方向",
+        "movementDirection": "客队方向",
+        "strength": 4.034309739010349,
+        "probabilityShifts": [
+          -7.651448784676784,
+          3.673969995002302,
+          2.5732707779713855
+        ],
+        "fairOdds": [
+          1.7529737214143581,
+          3.5451579862560134,
+          6.781227997439261
+        ],
+        "hadEv": [
+          -0.14431118865275994,
+          -0.0973603962345636,
+          -0.011978361068221588
+        ],
+        "hhadEv": [
+          -0.17910958639004815,
+          -0.09784710516032913,
+          -0.07506036264505078
+        ],
+        "evThreshold": 0.05,
+        "institutionAction": "主队受让加深+客队降赔，客队获得强支持",
+        "handicapExpectation": "主队让0.75，机构净胜球预期赢1～2球级",
+        "firstHandicap": -1,
+        "handicapChange": 0.25,
+        "narrative": "当前绝对概率最高为主队方向；变盘相对偏向客队方向。主队受让加深+客队降赔，客队获得强支持。该变盘信号表示相对强弱变化，不等同于赛果概率最高项；欧赔变化 2.6 个百分点，亚盘主队侧水位概率变化 -3.2 个百分点。主队让0.75，机构净胜球预期赢1～2球级；当前结论为“多盘口较一致”。历史有效样本不足，本场保持盘口模型基线。",
+        "officialOdds": [
+          1.5,
+          3.2,
+          6.7
+        ],
+        "officialHandicap": "-1",
+        "officialHhadOdds": [
+          2.8,
+          3.15,
+          2.2
+        ],
+        "officialHhadFair": [
+          31.629392971246006,
+          28.115015974440894,
+          40.25559105431309
+        ],
+        "modeledHhad": [
+          29.317514771783998,
+          28.639774439354632,
+          42.04271078886133
+        ],
+        "modeledTotalGoals": [
+          14.227407158651348,
+          27.74344395937014,
+          27.049857860385888,
+          17.582407609250836,
+          8.571423709509784,
+          3.3428552467088175,
+          1.086427955180366,
+          0.3961765009428131
+        ],
+        "totalGoalLabels": [
+          "0球",
+          "1球",
+          "2球",
+          "3球",
+          "4球",
+          "5球",
+          "6球",
+          "7+球"
+        ],
+        "modeledHalfFull": [
+          35.12641991115978,
+          3.4328374054747375,
+          0.5453319015211786,
+          21.19664121880106,
+          20.615126261529777,
+          6.511221816796237,
+          1.6386203587583643,
+          3.4328374054747375,
+          7.5009637204841235
+        ],
+        "halfFullLabels": [
+          "胜胜",
+          "胜平",
+          "胜负",
+          "平胜",
+          "平平",
+          "平负",
+          "负胜",
+          "负平",
+          "负负"
+        ],
+        "asianHomeProbability": 50,
+        "asianAwayProbability": 50,
+        "asianMovement": -3.2467532467532534,
+        "overProbability": 53.746770025839794,
+        "fitAgreement": "多盘口较一致",
+        "handicapMeaning": "外围主队让 0.75 球；体彩主队 -1，主队需净胜超过 1 球才是让胜，净胜 1 球为让平。",
+        "rawProbabilities": [
+          57.04592075648267,
+          28.207487617669884,
+          14.746591625847438
+        ],
+        "calibrationSampleSize": 0,
+        "probabilityTemperature": 1
+      },
+      "expectedGoals": {
+        "home": 1.4000000000000006,
+        "away": 0.5499999999999999
+      },
+      "scores": [
+        {
+          "score": "1:0",
+          "probability": 19.918370022111898
+        },
+        {
+          "score": "0:0",
+          "probability": 14.227407158651351
+        },
+        {
+          "score": "2:0",
+          "probability": 13.942859015478334
+        },
+        {
+          "score": "1:1",
+          "probability": 10.955103512161541
+        }
+      ],
+      "missingCompanies": [],
+      "oddsScores": [
+        {
+          "score": "1:0",
+          "probability": 19.918370022111898
+        },
+        {
+          "score": "0:0",
+          "probability": 14.227407158651351
+        },
+        {
+          "score": "2:0",
+          "probability": 13.942859015478334
+        },
+        {
+          "score": "1:1",
+          "probability": 10.955103512161541
+        }
+      ],
+      "intelligenceScores": [
+        {
+          "score": "1:0",
+          "probability": 19.92
+        },
+        {
+          "score": "0:0",
+          "probability": 14.23
+        },
+        {
+          "score": "2:0",
+          "probability": 13.94
+        },
+        {
+          "score": "1:1",
+          "probability": 10.96
+        }
+      ],
+      "combinedScores": [
+        {
+          "score": "1:0",
+          "probability": 19.918370022111898
+        },
+        {
+          "score": "0:0",
+          "probability": 14.227407158651351
+        },
+        {
+          "score": "2:0",
+          "probability": 13.942859015478334
+        },
+        {
+          "score": "1:1",
+          "probability": 10.955103512161541
+        }
+      ],
+      "intelligenceCoverage": 0,
+      "aiSummary": "阵容数据缺失；近期表现未知，战意不明；解放者杯小组赛，胜/平/负影响出线，但未提供积分；模型概率主胜57.05%，平局28.21%，盘口主让0.75，体彩让1球，变盘偏客队，亚盘水位接近，信号矛盾；四重一致性：泊松模型支持主胜但平局概率高，盘口与变盘方向冲突，近6场缺失；最可能总进球数1-2球；胜平负方向主胜；首选比分1:0，次选0:0、2:0、1:1；暂无可靠爆冷信号",
+      "aiRisk": "缺少阵容、伤停、近期表现、小组积分等信息；盘口与变盘方向不一致，平局概率高"
+    }
+  ]
+}
