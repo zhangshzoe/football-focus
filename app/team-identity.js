@@ -91,13 +91,31 @@ const aliasGroups={
  "vasterasSk":["韦斯特罗","瓦斯特拉斯"],
  "kristiansundBk":["克里斯蒂","克里斯蒂安松"],
  "mirassol":["米拉索尔","米拉索"],
+ "iranU23":["伊朗亚","伊朗U23"],
+ "chinaU23":["中国亚","中国U23"],
+ "machidaZelvia":["町田泽维","町田泽维亚"],
+ "visselKobe":["神户胜利","神户胜利船"],
+ "kyrgyzstanU23":["吉尔吉亚","吉尔吉斯斯坦U23"],
+ "japanU23":["日本亚","日本U23"],
+ "wolverhampton":["伍尔弗","狼队"],
+ "westBromwichAlbion":["西布罗姆","西布罗姆维奇"],
 };
 
-export const TEAM_ALIAS_VERSION="verified-zh-aliases-2026-09-19.2";
+export const TEAM_ALIAS_VERSION="verified-zh-aliases-2026-09-20.1";
 export const TEAM_ALIAS_INDEX=new Map(Object.entries(aliasGroups).flatMap(([identity,names])=>names.map(name=>[normalize(name),identity])));
 export const teamIdentity=(value,league="")=>{
  const name=normalize(value);
  // “红星”并非唯一球队名，只在已核实的法乙赛程中对应圣旺红星。
  if(name===normalize("红星")&&normalize(league)===normalize("法乙"))return "redStarSaintOuen";
  return TEAM_ALIAS_INDEX.get(name)||name;
+};
+
+// 仅作为“同一彩票编号 + 同一开赛时间”后的二次校验：允许常见的中文截断，
+// 不把模糊相似度单独用于寻找赛事，避免相近队名跨场误配。
+export const teamNamesCompatible=(left,right,leftLeague="",rightLeague="")=>{
+ const leftIdentity=teamIdentity(left,leftLeague),rightIdentity=teamIdentity(right,rightLeague);
+ if(!leftIdentity||!rightIdentity)return false;
+ if(leftIdentity===rightIdentity)return true;
+ const leftName=normalize(left),rightName=normalize(right),shorter=leftName.length<=rightName.length?leftName:rightName,longer=leftName.length<=rightName.length?rightName:leftName;
+ return shorter.length>=4&&longer.startsWith(shorter)&&longer.length-shorter.length<=2;
 };

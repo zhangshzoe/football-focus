@@ -4,7 +4,7 @@ import {readFile} from "node:fs/promises";
 import ts from "typescript";
 import {createElement} from "react";
 import {renderToStaticMarkup} from "react-dom/server";
-import {teamIdentity} from "../app/team-identity.js";
+import {teamIdentity,teamNamesCompatible} from "../app/team-identity.js";
 
 const compile=(source,fileName="test.ts")=>{
  const js=ts.transpileModule(source,{fileName,compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX}}).outputText;
@@ -28,6 +28,11 @@ const fixtures=[
  ["110","韦斯特罗","马尔默","瓦斯特拉斯","马尔默","瑞超","2026-09-19 21:00:00"],
  ["117","克里斯蒂","罗森博格","克里斯蒂安松","罗森博格","挪超","2026-09-19 22:00:00"],
  ["130","米拉索尔","博塔弗戈","米拉索","博塔弗戈","巴甲","2026-09-20 04:00:00"],
+ ["201","伊朗亚","中国亚","伊朗U23","中国U23","亚运男足","2026-09-20 13:00:00"],
+ ["202","町田泽维","柏太阳神","町田泽维亚","柏太阳神","日职","2026-09-20 16:00:00"],
+ ["203","大阪钢巴","神户胜利","大阪钢巴","神户胜利船","日职","2026-09-20 16:00:00"],
+ ["205","吉尔吉亚","日本亚","吉尔吉斯斯坦U23","日本U23","亚运男足","2026-09-20 18:30:00"],
+ ["207","伍尔弗","西布罗姆","狼队","西布罗姆维奇","英冠","2026-09-20 19:00:00"],
  ["014","中国女","中国港女","中国香港女足","中国女足","亚运女足","2026-09-14 18:00:00"],
 ];
 
@@ -40,8 +45,10 @@ test("confirmed aliases match in context without weakening team or home/away ide
  assert.notEqual(teamIdentity("红星","塞超"),teamIdentity("圣旺红星","法乙"));
  assert.notEqual(teamIdentity("国米"),teamIdentity("迈阿密国际"));
  assert.notEqual(teamIdentity("中国女"),teamIdentity("中国港女"));
- assert.notEqual(teamIdentity("曼联"),teamIdentity("曼城"));
+  assert.notEqual(teamIdentity("曼联"),teamIdentity("曼城"));
   assert.notEqual(teamIdentity("米拉索"),teamIdentity("博塔弗戈"));
+  assert.equal(teamNamesCompatible("阿尔法竞技","阿尔法竞技队","测试联赛","测试联赛"),true);
+  assert.equal(teamNamesCompatible("阿尔法竞技","贝塔竞技队","测试联赛","测试联赛"),false);
 });
 
 async function loadRoute(){
@@ -101,8 +108,9 @@ test("coverage panel renders visible missing-match reasons and is wired into bot
  const {default:Coverage}=await import(`data:text/javascript;base64,${Buffer.from(output).toString("base64")}`);
  const coverage={officialMatches:12,predictedMatches:11,unavailableMatches:1};
  const unavailableMatches=[{id:"周一014",officialMatchId:"test-014",league:"亚运女足",home:"中国女",away:"中国港女",kickoffAt:"2026-09-14T18:00:00+08:00",reason:"主客队顺序相反，暂停生成预测"}];
- const html=renderToStaticMarkup(createElement(Coverage,{coverage,unavailableMatches,predictedCount:11}));
+ const html=renderToStaticMarkup(createElement(Coverage,{coverage,unavailableMatches,predictedCount:11,onRetry:()=>{}}));
  assert.match(html,/已生成 11 \/ 12 场预测/);
+ assert.match(html,/重新抓取并核验/);
  assert.match(html,/周一014/);assert.match(html,/09\/14 18:00/);assert.match(html,/主客队顺序相反/);
  assert.doesNotMatch(html,/<details|hidden=/,"The missing match must be visible, not hidden behind an expansion");
  assert.equal(renderToStaticMarkup(createElement(Coverage,{predictedCount:0})),"");

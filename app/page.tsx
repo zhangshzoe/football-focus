@@ -87,6 +87,7 @@ export default function Home(){
  const[predictionAiProvider,setPredictionAiProvider]=useState("");
  const[predictionRetryNonce,setPredictionRetryNonce]=useState(0);
  const predictionRetryHandledRef=useRef(0);
+ const predictionRetryBeforeRef=useRef(0);
  const allMatches=useMemo(()=>liveMatches.slice().sort(compareMatchesByDateAndSequence),[liveMatches]);
  const predictionSalesDate=shanghaiDate(),predictionMatches=useMemo(()=>allMatches.filter(match=>matchDateKey(match)===predictionSalesDate),[allMatches,predictionSalesDate]);
  const leagues=useMemo(()=>["全部比赛",...Array.from(new Set(allMatches.map(match=>match.league))).sort((a,b)=>a.localeCompare(b,"zh-CN"))],[liveMatches]);
@@ -109,8 +110,10 @@ export default function Home(){
  async function repairMissingMatches(){const before=liveMatches;setDataLoading(true);setRepairNotice("");try{const data=await requestSporttery(true);const incoming=Array.isArray(data.matches)?data.matches:[],nextMatches=mergeOfficialMatches(before,incoming),beforeMarkets=before.reduce((sum,match)=>sum+Object.values(match.marketOdds||{}).filter(Boolean).length,0),afterMarkets=nextMatches.reduce((sum,match)=>sum+Object.values(match.marketOdds||{}).filter(Boolean).length,0),added=nextMatches.length-before.length,completed=Math.max(0,afterMarkets-beforeMarkets);setLiveMatches(nextMatches);setDataMeta({upstreamUpdatedAt:data.upstreamUpdatedAt||dataMeta.upstreamUpdatedAt,fetchedAt:data.fetchedAt||new Date().toISOString(),poolStatus:data.poolStatus,deliveryMode:data.deliveryMode});setDataState(nextMatches.length?"success":"empty");setDataError("");setRepairNotice(added||completed?`补抓完成：新增 ${added} 场，补全 ${completed} 个玩法。`:`补抓完成，官方本次未返回新的场次或玩法；已有数据保持不变。`);void writeBrowserData(SPORTTERY_CACHE_KEY,{matches:nextMatches,upstreamUpdatedAt:data.upstreamUpdatedAt||dataMeta.upstreamUpdatedAt,fetchedAt:data.fetchedAt||new Date().toISOString(),poolStatus:data.poolStatus,deliveryMode:data.deliveryMode})}catch(error){setRepairNotice(`补抓失败：${error instanceof Error?error.message:"请稍后重试"}；已有比赛未受影响。`)}finally{setDataLoading(false)}}
  async function retryUnavailablePredictionData(){
   if(dataLoading||predictionLoading||!unavailablePredictions.length)return;
+  predictionRetryBeforeRef.current=unavailablePredictions.length;
   setRepairNotice("正在重新抓取官方赛事和外围盘口，并重新核验主客队名称…");
   await repairMissingMatches();
+  setRepairNotice("官方赛事与玩法已刷新，正在按彩票编号、日期、时间和主客队重新核验…");
   setPredictionRetryNonce(value=>value+1);
  }
  useEffect(()=>{let active=true;void readBrowserData<{matches:Match[];upstreamUpdatedAt?:string;fetchedAt?:string;poolStatus?:PoolStatus;deliveryMode?:string}|null>(SPORTTERY_CACHE_KEY,null).then(parsed=>{if(!active)return;const cached=Array.isArray(parsed?.matches)?parsed:undefined;if(cached?.matches.length){setLiveMatches(cached.matches);setDataMeta({upstreamUpdatedAt:cached.upstreamUpdatedAt||"",fetchedAt:cached.fetchedAt||"",poolStatus:cached.poolStatus,deliveryMode:cached.deliveryMode});setDataState("stale")}void refreshSporttery(cached)});return()=>{active=false}},[]);
@@ -131,8 +134,9 @@ export default function Home(){
     return{id:match.id,officialMatchId:match.officialMatchId||match.matchId,salesDate:match.salesDate,matchDate:match.matchDate,kickoffAt:match.kickoffAt,time:match.time,league:match.league,home:match.home,away:match.away,reason:detail?.reason||"本场返回结果未通过当前赛程与预测版本校验"};
    });
    setUnavailablePredictions(unavailable);setPredictionCoverage({officialMatches:predictionMatches.length,predictedMatches:reports.length,unavailableMatches:unavailable.length});
+   if(forceRefresh){const before=predictionRetryBeforeRef.current,recovered=Math.max(0,before-unavailable.length);setRepairNotice(unavailable.length===0?`重新抓取并核验完成：已补全 ${recovered} 场，当前全部比赛均已生成预测。`:recovered>0?`重新抓取并核验完成：已补全 ${recovered} 场，仍有 ${unavailable.length} 场无法唯一确认。`:`重新抓取并核验完成：两端数据已刷新，仍有 ${unavailable.length} 场未通过安全校验。`)}
    setPredictionRows(reports);setPredictionVersion(data.version||null);setPredictionAiProvider("");setPredictionMeta({fetchedAt:data.fetchedAt||"",sourceUrl:data.sourceUrl||"",methodology:`预测版本 ${data.predictionId||"—"}；${data.methodology||""}`});
-  }).catch(error=>{if(active){const fallback=buildOfficialPredictionFallback(predictionMatches,dataMeta.fetchedAt||new Date().toISOString());setPredictionRows(fallback.reports as PredictionReport[]);setPredictionVersion(fallback.version);setUnavailablePredictions(fallback.unavailableMatches);setPredictionCoverage(fallback.coverage);setPredictionAiProvider("体彩官方五玩法浏览器基线（外围赔率暂不可达）");setPredictionMeta({fetchedAt:fallback.version.generatedAt,sourceUrl:"https://www.sporttery.cn/",methodology:`预测版本 ${fallback.version.predictionId}；仅使用体彩官方五玩法去水概率，外围赔率恢复后将自动回到完整模型。`});setPredictionError(`外围赔率模型暂不可用：${error instanceof Error?error.message:"读取失败"}。当前已切换为体彩官方五玩法基线，未补造任何赔率。`)}}).finally(()=>{if(active)setPredictionLoading(false)});
+  }).catch(error=>{if(active){const fallback=buildOfficialPredictionFallback(predictionMatches,dataMeta.fetchedAt||new Date().toISOString());setPredictionRows(fallback.reports as PredictionReport[]);setPredictionVersion(fallback.version);setUnavailablePredictions(fallback.unavailableMatches);setPredictionCoverage(fallback.coverage);setPredictionAiProvider("体彩官方五玩法浏览器基线（外围赔率暂不可达）");setPredictionMeta({fetchedAt:fallback.version.generatedAt,sourceUrl:"https://www.sporttery.cn/",methodology:`预测版本 ${fallback.version.predictionId}；仅使用体彩官方五玩法去水概率，外围赔率恢复后将自动回到完整模型。`});setPredictionError(`外围赔率模型暂不可用：${error instanceof Error?error.message:"读取失败"}。当前已切换为体彩官方五玩法基线，未补造任何赔率。`);if(forceRefresh)setRepairNotice(`重新抓取未完成：${error instanceof Error?error.message:"外围盘口读取失败"}；已保留当前官方数据。`)}}).finally(()=>{if(active)setPredictionLoading(false)});
   return()=>{active=false}
  },[view,dataLoading,dataState,liveMatches,predictionRetryNonce]);
  useEffect(()=>{

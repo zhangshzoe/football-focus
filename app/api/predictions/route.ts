@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {createBasePredictionVersion,deriveMarkets,predictionHash} from "../../prediction-version";
 import {getPublishedCalibration} from "../../calibration-service";
-import {TEAM_ALIAS_VERSION,teamIdentity} from "../../team-identity.js";
+import {TEAM_ALIAS_VERSION,teamIdentity,teamNamesCompatible} from "../../team-identity.js";
 type CompanyOdds = {
   companyId: number;
   company: string;
@@ -266,14 +266,17 @@ function verifyOfficialMapping(external:any,officialMatches:any[],issue:string){
   return officialDate===externalDate&&externalClock!==""&&officialClock!==""&&Math.abs(minutes(officialClock)-minutes(externalClock))<=45;
  };
  const sameTeams=(item:any)=>!!home&&!!away&&normalizedTeam(item.home,item.league)===home&&normalizedTeam(item.away,item.league)===away;
- const reversed=officialMatches.filter(item=>home&&away&&normalizedTeam(item.home,item.league)===away&&normalizedTeam(item.away,item.league)===home&&sameSchedule(item));
+ const sameDisplayId=(item:any)=>String(item.id||"")===String(external.CC_ID||"");
+ const compatibleTeams=(item:any)=>teamNamesCompatible(item.home,external.HOST_NAME,item.league,league)&&teamNamesCompatible(item.away,external.GUEST_NAME,item.league,league);
+ const verifiedTeams=(item:any)=>sameTeams(item)||(sameDisplayId(item)&&compatibleTeams(item));
+ const reversed=officialMatches.filter(item=>teamNamesCompatible(item.home,external.GUEST_NAME,item.league,league)&&teamNamesCompatible(item.away,external.HOST_NAME,item.league,league)&&sameSchedule(item));
  const candidates=officialMatches.filter(item=>String(item.id||"")===String(external.CC_ID||"")||normalizedTeam(item.home,item.league)===home||normalizedTeam(item.away,item.league)===away||reversed.includes(item));
- const verified=candidates.filter(item=>sameTeams(item)&&sameSchedule(item));
- if(verified.length===1)return{official:verified[0],status:"verified",reason:`日期、主客队与开赛时间均已通过校验（球队别名版本 ${TEAM_ALIAS_VERSION}）`,candidateOfficialMatchIds:[]};
+ const verified=candidates.filter(item=>verifiedTeams(item)&&sameSchedule(item));
+ if(verified.length===1)return{official:verified[0],status:"verified",reason:`彩票编号、日期、主客队与开赛时间均已通过校验（球队别名版本 ${TEAM_ALIAS_VERSION}）`,candidateOfficialMatchIds:[]};
  const candidateOfficialMatchIds=candidates.map(item=>String(item.officialMatchId||item.matchId||"")).filter(Boolean);
  if(verified.length>1)return{official:null,status:"pending_verification",reason:"存在多场同队同时间赛事，无法唯一确认官方比赛",candidateOfficialMatchIds};
  if(reversed.length)return{official:null,status:"pending_verification",reason:"外围盘口的主客队顺序与官方赛程相反，暂停生成预测",candidateOfficialMatchIds};
- const reasons=[];if(!candidates.some(sameTeams))reasons.push("主客队名称尚未匹配");
+ const reasons=[];if(!candidates.some(verifiedTeams))reasons.push("主客队名称尚未匹配");
  if(!candidates.some(item=>(datePart(item.kickoffAt)||datePart(item.matchDate)||datePart(item.time)||datePart(item.salesDate))===externalDate))reasons.push("比赛日期不一致");
  if(!externalClock)reasons.push("外围开赛时间缺失");else if(!candidates.some(item=>{const clock=clockPart(item.kickoffAt)||clockPart(item.time);return clock&&Math.abs(minutes(clock)-minutes(externalClock))<=45}))reasons.push("开赛时间不一致");
  return{official:null,status:"pending_verification",reason:reasons.join("、")||"无法唯一确认官方赛事",candidateOfficialMatchIds};
