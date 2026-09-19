@@ -1,11 +1,12 @@
 export const PURCHASE_PLAN_STORAGE_KEY="ff-daily-purchase-plans-v1";
-export const PURCHASE_PLAN_VERSION=7;
+export const PURCHASE_PLAN_VERSION=8;
 export const PURCHASE_PLAN_DEFINITIONS=[
  {id:"score-double-3",title:"比分双选",rule:"每场2个比分 · 3串1",markets:["score"],matches:3,selections:2},
  {id:"score-single-2",title:"比分单选",rule:"每场1个比分 · 2串1",markets:["score"],matches:2,selections:1},
  {id:"score-double-2",title:"比分双选2串1",rule:"每场2个比分 · 2串1",markets:["score"],matches:2,selections:2},
  {id:"score-single-3",title:"比分单选3串1",rule:"每场1个比分 · 3串1",markets:["score"],matches:3,selections:1},
  {id:"total-double-3",title:"总进球双选",rule:"每场2个进球数 · 3串1",markets:["total"],matches:3,selections:2},
+ {id:"total-double-2",title:"总进球双选2串1",rule:"每场2个进球数 · 2串1",markets:["total"],matches:2,selections:2},
  {id:"total-single-2",title:"总进球单选2串1",rule:"每场1个进球数 · 2串1",markets:["total"],matches:2,selections:1},
  {id:"draw-or-handicap-draw-2",title:"平/让平2串1",rule:"平或让平 · 2串1",markets:["had","hhad"],matches:2,selections:1,allowedPicks:["平","让平"]},
  {id:"draw-or-handicap-draw-3",title:"平/让平3串1",rule:"平或让平 · 3串1",markets:["had","hhad"],matches:3,selections:1,allowedPicks:["平","让平"]},

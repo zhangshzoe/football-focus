@@ -294,14 +294,15 @@ test("daily purchase drafts generate all fixed traceable ticket types and settle
  const qualified=(marketCode,handicap)=>({marketCode,salesStatus:"Selling",qualification:"qualified",handicap,allowedPassCounts:[1,2,3,4,5,6,7,8],cutoffAt:"2026-09-08T19:50:00+08:00",ruleVersion:"test"});
  const officialMatches=reports.map(report=>({id:report.id,officialMatchId:report.officialMatchId,salesDate:report.salesDate,matchDate:report.matchDate,kickoffAt:report.kickoffAt,matchStatus:"Selling",marketOdds:{"胜平负":[2.1,3.2,4],"让球胜平负":[3.1,3.4,1.9],"比分":Array(31).fill(9),"总进球数":[12,6,3.5,3.2,5,8,12,16],"半全场":[4,12,25,5,6,14,18,13,7]},marketEligibility:{"胜平负":qualified("HAD"),"让球胜平负":qualified("HHAD","-1"),"比分":qualified("CRS"),"总进球数":qualified("TTG"),"半全场":qualified("HAFU")}}));
  const set=generatePurchasePlans({date:"2026-09-08",reports,officialMatches,generatedAt:"2026-09-08T09:00:00.000Z"});
- assert.equal(set.plans.length,15);assert.deepEqual(set.plans.map(plan=>plan.id),["score-double-3","score-single-2","score-double-2","score-single-3","total-double-3","total-single-2","draw-or-handicap-draw-2","draw-or-handicap-draw-3","result-mixed-3","result-mixed-4","result-mixed-5","had-safe-2","had-double-2","total-adjacent-double-2","half-full-double-2"]);
- assert.equal(set.plans[0].betCount,8);assert.equal(set.plans[0].stake,16);assert.equal(set.plans[1].betCount,1);assert.equal(set.plans[1].stake,2);assert.equal(set.plans[2].betCount,4);assert.equal(set.plans[4].betCount,8);assert.equal(set.plans[5].betCount,1);
- assert.ok(set.plans[6].items.every(item=>item.pick==="平"||item.pick==="让平"));
+ assert.equal(set.plans.length,16);assert.deepEqual(set.plans.map(plan=>plan.id),["score-double-3","score-single-2","score-double-2","score-single-3","total-double-3","total-double-2","total-single-2","draw-or-handicap-draw-2","draw-or-handicap-draw-3","result-mixed-3","result-mixed-4","result-mixed-5","had-safe-2","had-double-2","total-adjacent-double-2","half-full-double-2"]);
+ assert.equal(set.plans[0].betCount,8);assert.equal(set.plans[0].stake,16);assert.equal(set.plans[1].betCount,1);assert.equal(set.plans[1].stake,2);assert.equal(set.plans[2].betCount,4);assert.equal(set.plans[4].betCount,8);assert.equal(set.plans[5].betCount,4);assert.equal(set.plans[5].stake,8);assert.equal(set.plans[6].betCount,1);
+ assert.ok(set.plans[5].items.every(item=>item.market==="total"&&item.picks.length===2));
  assert.ok(set.plans[7].items.every(item=>item.pick==="平"||item.pick==="让平"));
- assert.ok(set.plans[11].items.every(item=>item.probability>=50));
- assert.ok(set.plans[12].items.every(item=>item.market==="had"&&item.picks.length===2));
- assert.ok(set.plans[13].items.every(item=>Math.abs(Number(item.picks[0].pick.match(/\d+/)?.[0])-Number(item.picks[1].pick.match(/\d+/)?.[0]))===1));
- assert.ok(set.plans[14].items.every(item=>item.market==="halfFull"&&item.picks.length===2));
+ assert.ok(set.plans[8].items.every(item=>item.pick==="平"||item.pick==="让平"));
+ assert.ok(set.plans[12].items.every(item=>item.probability>=50));
+ assert.ok(set.plans[13].items.every(item=>item.market==="had"&&item.picks.length===2));
+ assert.ok(set.plans[14].items.every(item=>Math.abs(Number(item.picks[0].pick.match(/\d+/)?.[0])-Number(item.picks[1].pick.match(/\d+/)?.[0]))===1));
+ assert.ok(set.plans[15].items.every(item=>item.market==="halfFull"&&item.picks.length===2));
  for(const plan of set.plans){assert.equal(plan.status,"pending");assert.equal(new Set(plan.items.map(item=>item.matchId)).size,plan.items.length);assert.ok(plan.maxWinningReturn>=plan.minWinningReturn)}
  const first=set.plans[0],results=first.items.map(item=>({id:item.matchId,matchId:item.officialMatchId,date:"2026-09-08",fullScore:"2:0",scoreResult:"2:0",status:"settled"}));
  assert.equal(settlePurchasePlan(first,results).status,"won");
