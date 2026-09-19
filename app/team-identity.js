@@ -88,9 +88,12 @@ const aliasGroups={
  "bristolCity":["布城","布里斯托尔城"],
  "rbOmiyaArdija":["大宫松鼠","RB大宫松鼠"],
  "ulsanHd":["蔚山现代","蔚山HD"],
+ "vasterasSk":["韦斯特罗","瓦斯特拉斯"],
+ "kristiansundBk":["克里斯蒂","克里斯蒂安松"],
+ "mirassol":["米拉索尔","米拉索"],
 };
 
-export const TEAM_ALIAS_VERSION="verified-zh-aliases-2026-09-19.1";
+export const TEAM_ALIAS_VERSION="verified-zh-aliases-2026-09-19.2";
 export const TEAM_ALIAS_INDEX=new Map(Object.entries(aliasGroups).flatMap(([identity,names])=>names.map(name=>[normalize(name),identity])));
 export const teamIdentity=(value,league="")=>{
  const name=normalize(value);

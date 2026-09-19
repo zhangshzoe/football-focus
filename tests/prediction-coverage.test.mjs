@@ -25,6 +25,9 @@ const fixtures=[
  ["010","利兹联","纽卡斯尔","利兹联","纽卡斯尔联","英超","2026-09-15 03:00:00"],
  ["011","比利亚雷","贝蒂斯","比利亚雷亚尔","贝蒂斯","西甲","2026-09-15 03:00:00"],
  ["012","布拉加","埃斯托里","布拉加","埃斯托里尔","葡超","2026-09-15 03:45:00"],
+ ["110","韦斯特罗","马尔默","瓦斯特拉斯","马尔默","瑞超","2026-09-19 21:00:00"],
+ ["117","克里斯蒂","罗森博格","克里斯蒂安松","罗森博格","挪超","2026-09-19 22:00:00"],
+ ["130","米拉索尔","博塔弗戈","米拉索","博塔弗戈","巴甲","2026-09-20 04:00:00"],
  ["014","中国女","中国港女","中国香港女足","中国女足","亚运女足","2026-09-14 18:00:00"],
 ];
 
@@ -38,6 +41,7 @@ test("confirmed aliases match in context without weakening team or home/away ide
  assert.notEqual(teamIdentity("国米"),teamIdentity("迈阿密国际"));
  assert.notEqual(teamIdentity("中国女"),teamIdentity("中国港女"));
  assert.notEqual(teamIdentity("曼联"),teamIdentity("曼城"));
+  assert.notEqual(teamIdentity("米拉索"),teamIdentity("博塔弗戈"));
 });
 
 async function loadRoute(){
@@ -50,7 +54,7 @@ async function loadRoute(){
  return import(compile(source));
 }
 
-test("prediction API recovers eleven matches and explains the reversed twelfth instead of dropping it",async()=>{
+test("prediction API recovers every confirmed alias and explains the reversed fixture instead of dropping it",async()=>{
  const official=fixtures.map(([id,home,away,,,league,kickoff])=>({id:`周一${id}`,officialMatchId:`test-${id}`,salesDate:"2026-09-14",matchDate:kickoff.slice(0,10),time:kickoff.slice(11),kickoffAt:kickoff.replace(" ","T")+"+08:00",home,away,league,odds:[2.1,3.2,3.4],marketEligibility:{}}));
  const external=fixtures.map(([id,,,home,away,league,kickoff])=>({ID:`test-feed-${id}`,CC_ID:`周一${id}`,HOST_NAME:home,GUEST_NAME:away,LEAGUE_NAME_SIMPLY:league,MATCH_TIME:kickoff,listOdds:[2,3,22].map(company=>({SOURCE_COMPANY_ID:company,COMPANY_NAME:`测试公司${company}`,WIN:2.1,SAME:3.2,LOST:3.4,HANDICAP:-.25,HOST:.9,GUEST:.9,DW_HANDICAP:2.5,BIG:.9,SMALL:.9,FIRST_WIN:2.2,FIRST_SAME:3.2,FIRST_LOST:3.3,FIRST_HANDICAP:-.25,FIRST_HOST:.9,FIRST_GUEST:.9,DW_FIRST_HANDICAP:2.5,FIRST_BIG:.9,FIRST_SMALL:.9}))}));
  const {POST}=await loadRoute(),originalFetch=globalThis.fetch;
@@ -59,8 +63,8 @@ test("prediction API recovers eleven matches and explains the reversed twelfth i
  try{
   const response=await predict(official),result=await response.json();
   assert.equal(response.status,200);
-  assert.deepEqual(result.coverage,{officialMatches:12,predictedMatches:11,unavailableMatches:1,pendingExternalMappings:1});
-  assert.equal(result.reports.length,11);
+  assert.deepEqual(result.coverage,{officialMatches:fixtures.length,predictedMatches:fixtures.length-1,unavailableMatches:1,pendingExternalMappings:1});
+  assert.equal(result.reports.length,fixtures.length-1);
   for(const match of official.slice(0,-1)){
    const report=result.reports.find(item=>item.officialMatchId===match.officialMatchId);
    assert.ok(report,match.id);
