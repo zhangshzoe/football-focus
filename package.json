@@ -15,7 +15,7 @@
     "snapshot:due": "node scripts/capture-due-prediction-snapshots.mjs",
     "audit:predictions": "node scripts/audit-prediction-history.mjs",
     "sync:decision-index": "node scripts/sync-prediction-decision-index.mjs",
-    "test": "npm run build && node --test tests/rendered-html.test.mjs tests/prediction-coverage.test.mjs tests/prediction-dom.test.mjs tests/browser-storage.test.mjs tests/recommendation-returns.test.mjs",
+    "test": "npm run build && node --test tests/model-evaluation.test.mjs tests/rendered-html.test.mjs tests/prediction-coverage.test.mjs tests/prediction-dom.test.mjs tests/browser-storage.test.mjs tests/recommendation-returns.test.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next --ignore-pattern work --ignore-pattern backups",
     "db:generate": "drizzle-kit generate"
   },

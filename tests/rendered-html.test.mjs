@@ -194,7 +194,9 @@ test("historical calibration is wired into predictions without treating missing 
  assert.match(calibration,/selected\.slice\(trainEnd,calibrationEnd\)/);
  assert.match(calibration,/selected\.slice\(calibrationEnd\)/);
  assert.match(calibration,/futureTest:\{raw:testRaw,calibrated:testCalibrated,marketBaseline:testMarket\}/);
- assert.match(calibration,/flag:"wx"/);
+  assert.match(calibration,/promotionCandidate:evaluation\.status==="validated"/);
+  assert.match(calibration,/未来独立样本 ≥ 100/);
+  assert.doesNotMatch(calibration,/flag:"wx"/);
  assert.match(ai,/intelligenceCoverage/);
  assert.match(ai,/只有盘口、没有独立赛前情报时必须返回0/);
 });
