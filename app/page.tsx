@@ -11,6 +11,7 @@ import MarketPredictionTable from "./components/MarketPredictionTable";
 import {SavedPredictionSet} from "./prediction-config";
 import {readBrowserData,writeBrowserData,savePredictionSet,writeLocalData,reportStorageWarning} from "./browser-storage";
 import {fetchOfficialSporttery} from "./sporttery-official";
+import {buildOfficialPredictionFallback} from "./official-prediction-fallback";
 type Pick={matchId:string;market:string;label:string;odd:number};
 type Rec={id:number;date?:string;match:string;type?:string;pick:string;stake:number;odd:number;result:"待定"|"命中"|"未中";note:string};
 const markets={
@@ -131,7 +132,7 @@ export default function Home(){
    });
    setUnavailablePredictions(unavailable);setPredictionCoverage({officialMatches:predictionMatches.length,predictedMatches:reports.length,unavailableMatches:unavailable.length});
    setPredictionRows(reports);setPredictionVersion(data.version||null);setPredictionAiProvider("");setPredictionMeta({fetchedAt:data.fetchedAt||"",sourceUrl:data.sourceUrl||"",methodology:`预测版本 ${data.predictionId||"—"}；${data.methodology||""}`});
-  }).catch(error=>{if(active){setPredictionRows([]);setPredictionVersion(null);setPredictionError(error instanceof Error?error.message:"今日赔率读取失败")}}).finally(()=>{if(active)setPredictionLoading(false)});
+  }).catch(error=>{if(active){const fallback=buildOfficialPredictionFallback(predictionMatches,dataMeta.fetchedAt||new Date().toISOString());setPredictionRows(fallback.reports as PredictionReport[]);setPredictionVersion(fallback.version);setUnavailablePredictions(fallback.unavailableMatches);setPredictionCoverage(fallback.coverage);setPredictionAiProvider("体彩官方五玩法浏览器基线（外围赔率暂不可达）");setPredictionMeta({fetchedAt:fallback.version.generatedAt,sourceUrl:"https://www.sporttery.cn/",methodology:`预测版本 ${fallback.version.predictionId}；仅使用体彩官方五玩法去水概率，外围赔率恢复后将自动回到完整模型。`});setPredictionError(`外围赔率模型暂不可用：${error instanceof Error?error.message:"读取失败"}。当前已切换为体彩官方五玩法基线，未补造任何赔率。`)}}).finally(()=>{if(active)setPredictionLoading(false)});
   return()=>{active=false}
  },[view,dataLoading,dataState,liveMatches,predictionRetryNonce]);
  useEffect(()=>{

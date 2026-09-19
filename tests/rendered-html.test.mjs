@@ -114,6 +114,13 @@ test("official markets never fall back to demo odds and tolerate independent poo
  }finally{globalThis.fetch=originalFetch}
 });
 
+test("mobile prediction fallback derives a traceable baseline only from official markets",async()=>{
+ const source=await readFile(new URL("../app/official-prediction-fallback.ts",import.meta.url),"utf8"),javascript=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText,{buildOfficialPredictionFallback}=await import(`data:text/javascript;base64,${Buffer.from(javascript).toString("base64")}#${Date.now()}-${Math.random()}`);
+ const match={id:"周六001",matchId:"m1",officialMatchId:"m1",salesDate:"2026-09-19",matchDate:"2026-09-19",time:"20:00:00",home:"主队",away:"客队",league:"测试联赛",handicap:"-1",marketEligibility:{"让球胜平负":{qualification:"qualified"}},marketOdds:{"胜平负":[2.1,3.2,3.4],"让球胜平负":[3.1,3.4,1.9],"比分":[7.2],"总进球数":[20,8,3.3,3.2,5,10,18,25],"半全场":[3,12,30,5,6,10,20,11,8]}};
+ const fallback=buildOfficialPredictionFallback([match],"2026-09-19T05:00:00.000Z"),report=fallback.reports[0];
+ assert.equal(fallback.reports.length,1);assert.match(fallback.version.predictionId,/^official-browser-/);assert.equal(report.companies.length,0);assert.equal(report.marketSignal.hhadAvailable,true);assert.equal(report.marketSignal.officialHandicap,"-1");assert.equal(report.marketSignal.officialOdds[0],2.1);assert.ok(report.scores.length>0);assert.ok(Math.abs(report.marketProbabilities.reduce((sum,value)=>sum+value,0)-100)<0.001);
+});
+
 test("production match board has explicit official-data states and no demo fallback",async()=>{
  const page=await readFile(new URL("../app/page.tsx",import.meta.url),"utf8");
  assert.match(page,/type DataState="loading"\|"success"\|"stale"\|"empty"\|"error"/);
