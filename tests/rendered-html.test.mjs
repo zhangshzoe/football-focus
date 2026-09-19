@@ -24,7 +24,8 @@ async function render(path="/"){
 }
 
 async function loadSportteryRoute(){
- const source=(await readFile(new URL("../app/api/sporttery/route.ts",import.meta.url),"utf8")).replace('import {NextResponse} from "next/server";','const NextResponse={json:(body,init={})=>new Response(JSON.stringify(body),{...init,headers:{"Content-Type":"application/json",...(init.headers||{})}})};');
+ const sharedSource=await readFile(new URL("../app/sporttery-official.ts",import.meta.url),"utf8"),sharedJavascript=ts.transpileModule(sharedSource,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText,sharedUrl=`data:text/javascript;base64,${Buffer.from(sharedJavascript).toString("base64")}#${Date.now()}-${Math.random()}`;
+ const source=(await readFile(new URL("../app/api/sporttery/route.ts",import.meta.url),"utf8")).replace('import {NextResponse} from "next/server";','const NextResponse={json:(body,init={})=>new Response(JSON.stringify(body),{...init,headers:{"Content-Type":"application/json",...(init.headers||{})}})};').replace('from "../../sporttery-official"',`from "${sharedUrl}"`);
  const javascript=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText;
  return import(`data:text/javascript;base64,${Buffer.from(javascript).toString("base64")}#${Date.now()}-${Math.random()}`);
 }
