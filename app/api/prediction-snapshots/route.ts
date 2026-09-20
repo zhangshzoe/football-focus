@@ -17,10 +17,9 @@ type RawPurchaseSnapshot={recordType?:string;immutable?:boolean;snapshotId?:stri
 
 const directory=join(process.cwd(),"data","prediction-snapshots");
 const purchaseDirectory=join(process.cwd(),"data","purchase-plan-snapshots");
-// Vinext 的本地 Cloudflare 运行时以 /bundle 为工作目录，不能只依赖 process.cwd()。
-// 将已有快照同时纳入 Vite 模块图，保证本地页面重启后仍能读取真实定时文件。
-const bundledSnapshotFiles=import.meta.glob<RawSnapshot>("../../../data/prediction-snapshots/*.json",{eager:true,import:"default"});
-const bundledPurchaseFiles=import.meta.glob<RawPurchaseSnapshot>("../../../data/purchase-plan-snapshots/*.json",{eager:true,import:"default"});
+// 线上 Worker 只加载预先生成的紧凑索引。原始快照和 AI 补充文件仍完整保留在
+// data/prediction-snapshots 供本地审计，但不得逐个 eager import 到 128MB Worker。
+const bundledIndexFiles=import.meta.glob<{snapshots?:unknown[];purchasePlanSnapshots?:unknown[]}>("../../../data/generated-prediction-snapshot-index.json",{eager:true,import:"default"});
 const toPurchaseSnapshot=(record:RawPurchaseSnapshot)=>record.recordType==="purchase-plan-snapshot"&&record.immutable===true&&record.snapshotId&&record.planSet?.plans?.length?{snapshotId:record.snapshotId,capturedAt:record.capturedAt,sourceFetchedAt:record.sourceFetchedAt,predictionId:record.predictionId,contentHash:record.contentHash,previousSnapshotId:record.previousSnapshotId,planSet:{...record.planSet,snapshotId:record.snapshotId,contentHash:record.contentHash}}:null;
 const labelFor=(slot:string)=>`${slot.slice(0,2)}:${slot.slice(2)}批次`;
 const number=(value:unknown)=>Number.isFinite(Number(value))?Number(value):0;
@@ -51,10 +50,13 @@ function toSnapshot(raw:RawSnapshot,fileName:string,supplements:Supplement[]=[])
  };
 }
 
-export async function GET(){
+export async function GET(request:Request){
  try{
-  const bundledEntries=Object.entries(bundledSnapshotFiles),bundledSupplements=bundledEntries.map(([,raw])=>raw as unknown as Supplement).filter(raw=>raw.kind&&raw.baseSnapshotId);
-  const bundled=bundledEntries.map(([path,raw])=>toSnapshot(raw,path.split("/").pop()||"",bundledSupplements));
+  const view=new URL(request.url).searchParams.get("view");
+  const bundledIndex=(Object.values(bundledIndexFiles)[0]||{}) as {snapshots?:Array<Record<string,unknown>>;purchasePlanSnapshots?:Array<Record<string,unknown>>};
+  const bundledSnapshots=Array.isArray(bundledIndex.snapshots)?bundledIndex.snapshots:[];
+  const bundledPurchaseSnapshots=Array.isArray(bundledIndex.purchasePlanSnapshots)?bundledIndex.purchasePlanSnapshots:[];
+  if(view==="recommendations")return NextResponse.json({snapshots:[],purchasePlanSnapshots:bundledPurchaseSnapshots,storage:"bundle-index"},{headers:{"Cache-Control":"no-store, max-age=0"}});
   let disk:Array<ReturnType<typeof toSnapshot>>=[];
   try{
    const allNames=await readdir(directory),supplementNames=allNames.filter(name=>name.includes(".supplement."));
@@ -64,7 +66,8 @@ export async function GET(){
    try{return toSnapshot(JSON.parse(await readFile(join(directory,name),"utf8")) as RawSnapshot,name,diskSupplements);}catch{return null}
    }));
   }catch{/* Worker 运行时使用已打包快照；Node 运行时额外读取最新磁盘文件。 */}
-  const sourceSnapshots=Array.from(new Map([...bundled,...disk].filter(Boolean).map(snapshot=>[snapshot!.snapshotId,snapshot])).values()).sort((a,b)=>String(b!.capturedAt||b!.sourceFetchedAt).localeCompare(String(a!.capturedAt||a!.sourceFetchedAt)));
+  const diskSnapshots=Array.from(new Map(disk.filter(Boolean).map(snapshot=>[snapshot!.snapshotId,snapshot])).values()).sort((a,b)=>String(b!.capturedAt||b!.sourceFetchedAt).localeCompare(String(a!.capturedAt||a!.sourceFetchedAt)));
+  const sourceSnapshots=diskSnapshots.length?diskSnapshots:bundledSnapshots;
   const decisionRows=selectOfficialDecisionRows(sourceSnapshots);
   const snapshots=Array.from(new Set(decisionRows.map(row=>row.salesDate))).map(date=>{
    const rows=decisionRows.filter(row=>row.salesDate===date).sort((a,b)=>String(a.match.id).localeCompare(String(b.match.id),"zh-CN",{numeric:true}));
@@ -76,8 +79,8 @@ export async function GET(){
    const names=(await readdir(purchaseDirectory)).filter(name=>name.endsWith(".json"));
    diskPurchaseSnapshots=await Promise.all(names.map(async name=>{try{return toPurchaseSnapshot(JSON.parse(await readFile(join(purchaseDirectory,name),"utf8")))}catch{return null}}));
   }catch{/* Worker 使用打包的独立方案快照，不能依赖本机磁盘。 */}
-  const purchasePlanSnapshots=Array.from(new Map([...Object.values(bundledPurchaseFiles).map(toPurchaseSnapshot),...diskPurchaseSnapshots].filter(record=>record!==null).map(record=>[record.snapshotId,record])).values()).sort((a,b)=>String(b.capturedAt||"").localeCompare(String(a.capturedAt||"")));
-  return NextResponse.json({snapshots,purchasePlanSnapshots,storage:disk.some(Boolean)||diskPurchaseSnapshots.some(Boolean)?"disk+bundle":"bundle"},{headers:{"Cache-Control":"no-store, max-age=0"}});
+  const purchasePlanSnapshots=diskPurchaseSnapshots.some(Boolean)?Array.from(new Map(diskPurchaseSnapshots.filter(record=>record!==null).map(record=>[record!.snapshotId,record])).values()).sort((a,b)=>String(b!.capturedAt||"").localeCompare(String(a!.capturedAt||""))):bundledPurchaseSnapshots;
+  return NextResponse.json({snapshots:diskSnapshots.length?snapshots:bundledSnapshots,purchasePlanSnapshots,storage:diskSnapshots.length||diskPurchaseSnapshots.some(Boolean)?"disk":"bundle-index"},{headers:{"Cache-Control":"no-store, max-age=0"}});
  }catch(error){
   return NextResponse.json({snapshots:[],error:error instanceof Error?error.message:"快照读取失败"},{status:500,headers:{"Cache-Control":"no-store, max-age=0"}});
  }

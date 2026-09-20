@@ -334,11 +334,12 @@ test("invalid or expired kickoff data cannot enter purchase plans",()=>{
 });
 
 test("17:00 snapshot persists purchase drafts and the recommendation page exposes settlement",async()=>{
- const [capture,api,component,styles]=await Promise.all([
+ const [capture,api,component,styles,sync]=await Promise.all([
   readFile(new URL("../scripts/capture-prediction-snapshot.mjs",import.meta.url),"utf8"),
   readFile(new URL("../app/api/prediction-snapshots/route.ts",import.meta.url),"utf8"),
   readFile(new URL("../app/components/TodayRecommendations.tsx",import.meta.url),"utf8"),
   readFile(new URL("../app/reference-ui.css",import.meta.url),"utf8"),
+  readFile(new URL("../scripts/sync-prediction-decision-index.mjs",import.meta.url),"utf8"),
  ]);
  assert.match(capture,/slot !== "1700"/);
  assert.match(capture,/generatePurchasePlans/);
@@ -348,6 +349,10 @@ test("17:00 snapshot persists purchase drafts and the recommendation page expose
  assert.doesNotMatch(component,/高覆盖门槛更新后按当前盘口重新试算/);
  assert.match(component,/settlePurchasePlan/);
  assert.match(component,/每注2元/);
+ assert.match(component,/prediction-snapshots\?view=recommendations/);
+ assert.match(api,/generated-prediction-snapshot-index\.json/);
+ assert.doesNotMatch(api,/prediction-snapshots\/\*\.json/);
+ assert.match(sync,/bundlePath/);
  assert.match(styles,/purchase-plan-grid/);
 });
 

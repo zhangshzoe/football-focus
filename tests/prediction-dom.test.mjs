@@ -86,7 +86,7 @@ test("full prediction page keeps eleven matches visible when localStorage is ful
   if(path==="/api/sporttery")return Response.json({matches,fetchedAt:now});
   if(path==="/api/predictions")return Response.json({reports:rows,...version,version,fetchedAt:now,unavailableOfficialMatches:[]});
   if(path.startsWith("/api/sporttery/results"))return Response.json({results:[]});
-  if(path==="/api/prediction-snapshots")return Response.json({snapshots:[]});
+  if(path.startsWith("/api/prediction-snapshots"))return Response.json({snapshots:[]});
   if(path==="/api/model-audit")return Response.json({});
   throw new Error(`Unexpected request during quota regression: ${path}`);
  };
@@ -138,7 +138,7 @@ test("today recommendations refresh official SP on generation, show net ranges a
     return {...match,matchStatus:"Selling",marketOdds:{"比分":odds},marketEligibility:{"比分":{marketCode:"CRS",qualification:"qualified",salesStatus:"Selling",allowedPassCounts:[1,2,3,4],cutoffAt:kickoff}}};
    })});
   }
-  if(path==="/api/prediction-snapshots")return Response.json({snapshots:[]});
+  if(path.startsWith("/api/prediction-snapshots"))return Response.json({snapshots:[]});
   if(path.startsWith("/api/sporttery/results"))return Response.json({results:[]});
   throw new Error(`Unexpected request: ${path}`);
  };

@@ -318,7 +318,7 @@ function DailyPurchasePlans({
   useEffect(() => {
     let active = true;
     setBusy(true);
-    fetch("/api/prediction-snapshots", { cache: "no-store" })
+    fetch("/api/prediction-snapshots?view=recommendations", { cache: "no-store" })
       .then((response) => response.json())
       .catch(() => ({ snapshots: [] }))
       .then(async (archive) => {
