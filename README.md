@@ -94,6 +94,16 @@ actions tied to the current ChatGPT user. Leave public content anonymous.
 - `npm test`: build the starter and verify its rendered loading skeleton
 - `npm run db:generate`: generate Drizzle migrations after schema changes
 
+## Release and scheduled publishing
+
+Every production change uses a one-to-one release pair: one immutable Git commit
+for the local/source version and one separately numbered Sites version built from
+that exact commit. Scheduled snapshots follow the same rule and do not publish
+empty versions when the source data has not changed.
+
+See [docs/release-and-scheduled-publishing.md](docs/release-and-scheduled-publishing.md)
+for the release contract and the active recurring jobs.
+
 ## Learn More
 
 - [vinext Documentation](https://github.com/cloudflare/vinext)
