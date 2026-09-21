@@ -1,5 +1,5 @@
 export const PURCHASE_PLAN_STORAGE_KEY="ff-daily-purchase-plans-v1";
-export const PURCHASE_PLAN_VERSION=8;
+export const PURCHASE_PLAN_VERSION=9;
 export const PURCHASE_PLAN_DEFINITIONS=[
  {id:"score-double-3",title:"比分双选",rule:"每场2个比分 · 3串1",markets:["score"],matches:3,selections:2},
  {id:"score-single-2",title:"比分单选",rule:"每场1个比分 · 2串1",markets:["score"],matches:2,selections:1},
@@ -14,9 +14,8 @@ export const PURCHASE_PLAN_DEFINITIONS=[
  {id:"result-mixed-4",title:"赛果混合4串1",rule:"胜平负/让球胜平负 · 4串1",markets:["had","hhad"],matches:4,selections:1,mixed:true},
  {id:"result-mixed-5",title:"赛果混合5串1",rule:"胜平负/让球胜平负 · 5串1",markets:["had","hhad"],matches:5,selections:1,mixed:true},
  {id:"had-safe-2",title:"胜平负稳健2串1",rule:"每场首选≥50% · 2串1",markets:["had"],matches:2,selections:1,minLegProbability:50},
- {id:"had-double-2",title:"胜平负双选2串1",rule:"每场覆盖2个赛果 · 2串1",markets:["had"],matches:2,selections:2},
  {id:"total-adjacent-double-2",title:"相邻进球双选2串1",rule:"每场相邻2个进球数 · 2串1",markets:["total"],matches:2,selections:2,adjacentPicks:true},
- {id:"half-full-double-2",title:"半全场双选2串1",rule:"每场覆盖2个走势 · 2串1",markets:["halfFull"],matches:2,selections:2},
+ {id:"half-full-double-3",title:"半全场双选3串1",rule:"每场覆盖2个走势 · 3串1",markets:["halfFull"],matches:3,selections:2,requirePositiveMinProfit:true},
 ];
 export const PURCHASE_PLAN_DAILY_TIME="17:00";
 
@@ -88,6 +87,7 @@ function choosePlan(groups,definition){
    const probability=legs.reduce((value,leg)=>value*leg.probability/100,1),betCount=legs.reduce((value,leg)=>value*leg.picks.length,1),stake=betCount*2;
    const minWinningReturn=2*legs.reduce((value,leg)=>value*Math.min(...leg.picks.map(item=>item.odd)),1),maxWinningReturn=2*legs.reduce((value,leg)=>value*Math.max(...leg.picks.map(item=>item.odd)),1);
    const candidate={items:legs,probability,betCount,stake,minWinningReturn,maxWinningReturn,minWinningProfit:minWinningReturn-stake,maxWinningProfit:maxWinningReturn-stake};
+   if(definition.requirePositiveMinProfit&&candidate.minWinningProfit<=0)return;
    if(!best||candidate.probability>best.probability)best=candidate;
   };walk(0,[]);
  }
