@@ -5,6 +5,7 @@ import ts from "typescript";
 import {generatePurchasePlans,settlePurchasePlan} from "../app/purchase-plan-engine.js";
 import {teamIdentity} from "../app/team-identity.js";
 import {decisionTargetAt,selectOfficialDecisionRows} from "../app/snapshot-decision-policy.js";
+import {snapshotIdFromFileName} from "../app/snapshot-file-policy.js";
 
 test("official snapshot timing follows weekday and weekend decision rules",()=>{
  assert.equal(decisionTargetAt("2026-09-14","2026-09-14T21:00:00+08:00"),"2026-09-14T12:30:00.000Z");
@@ -16,6 +17,12 @@ test("official snapshot timing follows weekday and weekend decision rules",()=>{
  assert.equal(rows.length,1);assert.equal(rows[0].snapshot.snapshotId,"chosen");
  const delayedScheduled=selectOfficialDecisionRows([{snapshotId:"scheduled",date:"2026-09-14",scheduledAt:"2026-09-14T21:30:00+08:00",capturedAt:"2026-09-14T13:32:00.000Z",matches:[match]}]);
  assert.equal(delayedScheduled.length,1);assert.equal(delayedScheduled[0].snapshot.snapshotId,"scheduled");
+});
+
+test("legacy and immutable raw snapshot filenames share the same online index identity",()=>{
+ assert.equal(snapshotIdFromFileName("2026-09-07_2000.json"),"2026-09-07-2000");
+ assert.equal(snapshotIdFromFileName("2026-09-22_2130.raw.json"),"2026-09-22-2130");
+ assert.equal(snapshotIdFromFileName("2026-09-22_2130.supplement.ai.json"),"");
 });
 
 async function render(path="/"){

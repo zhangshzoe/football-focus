@@ -1,6 +1,7 @@
 import {spawnSync} from "node:child_process";
 import {mkdir,readFile,readdir,writeFile} from "node:fs/promises";
 import {join} from "node:path";
+import {snapshotIdFromFileName} from "../app/snapshot-file-policy.js";
 
 const baseUrl=process.env.FOOTBALL_FOCUS_URL||"http://127.0.0.1:3000";
 const response=await fetch(`${baseUrl}/api/prediction-snapshots`,{cache:"no-store"});
@@ -20,7 +21,11 @@ for(const name of await readdir(predictionDirectory).catch(()=>[])){
  const relative=`data/prediction-snapshots/${name}`;
  if(!tracked.has(relative)&&!name.startsWith(`${today}_`))continue;
  if(!/^\d{4}-\d{2}-\d{2}_(?:[01]\d|2[0-3])[0-5]\d(?:\.raw)?\.json$/.test(name))continue;
- try{const record=JSON.parse(await readFile(join(predictionDirectory,name),"utf8"));if(record.snapshotId)allowedPredictionIds.add(String(record.snapshotId))}catch{/* 损坏文件不会进入线上索引。 */}
+ try{
+  const record=JSON.parse(await readFile(join(predictionDirectory,name),"utf8"));
+  const snapshotId=String(record.snapshotId||snapshotIdFromFileName(name));
+  if(snapshotId)allowedPredictionIds.add(snapshotId);
+ }catch{/* 损坏文件不会进入线上索引。 */}
 }
 const snapshots=(Array.isArray(data.snapshots)?data.snapshots:[]).map(snapshot=>({...snapshot,matches:(snapshot.matches||[]).filter(match=>allowedPredictionIds.has(String(match.selectedSnapshotId||"")))})).filter(snapshot=>snapshot.matches.length);
 const allowedPurchaseIds=new Set(),purchaseDirectory=join(process.cwd(),"data","purchase-plan-snapshots");
