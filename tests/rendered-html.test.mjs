@@ -14,6 +14,8 @@ test("official snapshot timing follows weekday and weekend decision rules",()=>{
  const match={id:"周一001",officialMatchId:"m1",salesDate:"2026-09-14",kickoffAt:"2026-09-14T22:30:00+08:00",home:"甲",away:"乙"};
  const rows=selectOfficialDecisionRows([{snapshotId:"early",date:"2026-09-14",capturedAt:"2026-09-14T13:20:00.000Z",matches:[match]},{snapshotId:"chosen",date:"2026-09-14",capturedAt:"2026-09-14T13:30:00.000Z",matches:[match]},{snapshotId:"late",date:"2026-09-14",capturedAt:"2026-09-14T13:31:00.000Z",matches:[match]}]);
  assert.equal(rows.length,1);assert.equal(rows[0].snapshot.snapshotId,"chosen");
+ const delayedScheduled=selectOfficialDecisionRows([{snapshotId:"scheduled",date:"2026-09-14",scheduledAt:"2026-09-14T21:30:00+08:00",capturedAt:"2026-09-14T13:32:00.000Z",matches:[match]}]);
+ assert.equal(delayedScheduled.length,1);assert.equal(delayedScheduled[0].snapshot.snapshotId,"scheduled");
 });
 
 async function render(path="/"){

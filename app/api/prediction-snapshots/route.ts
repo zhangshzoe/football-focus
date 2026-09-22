@@ -72,7 +72,7 @@ export async function GET(request:Request){
   const snapshots=Array.from(new Set(decisionRows.map(row=>row.salesDate))).map(date=>{
    const rows=decisionRows.filter(row=>row.salesDate===date).sort((a,b)=>String(a.match.id).localeCompare(String(b.match.id),"zh-CN",{numeric:true}));
    const completedAt=rows.map(row=>row.capturedAt).sort().at(-1)||"";
-   return{snapshotId:`${date}-official-decision-v1`,immutable:true,schemaVersion:3,predictionId:`decision-${date}-v1`,date,scheduledAt:"",capturedAt:completedAt,sourceFetchedAt:completedAt,upstreamUpdatedAt:completedAt,decisionTiming:"pre_match",scheduleLabel:`每日正式复盘 · ${rows.length}场（按规定决策时点合并）`,storageOrigin:"server",matches:rows.map(row=>({...row.match,decisionTargetAt:row.targetAt,selectedSnapshotId:row.snapshot.snapshotId,selectedCapturedAt:row.capturedAt,decisionPolicy:"latest_not_after_official_target_v1"}))};
+   return{snapshotId:`${date}-official-decision-v1`,immutable:true,schemaVersion:3,predictionId:`decision-${date}-v1`,date,scheduledAt:"",capturedAt:completedAt,sourceFetchedAt:completedAt,upstreamUpdatedAt:completedAt,decisionTiming:"pre_match",scheduleLabel:`每日正式复盘 · ${rows.length}场（按规定决策时点合并）`,storageOrigin:"server",matches:rows.map(row=>({...row.match,decisionTargetAt:row.targetAt,selectedSnapshotId:row.snapshot.snapshotId,selectedScheduledAt:row.scheduledAt,selectedCapturedAt:row.capturedAt,decisionPolicy:"latest_not_after_official_target_v1"}))};
   }).sort((a,b)=>b.date.localeCompare(a.date));
   let diskPurchaseSnapshots:Array<ReturnType<typeof toPurchaseSnapshot>>=[];
   try{
