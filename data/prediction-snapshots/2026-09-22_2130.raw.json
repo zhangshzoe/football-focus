@@ -1,0 +1,4070 @@
+{
+  "schemaVersion": 2,
+  "recordType": "raw-prediction-snapshot",
+  "snapshotId": "2026-09-22-2130",
+  "immutable": true,
+  "predictionId": "pred-q0rkqn",
+  "version": {
+    "predictionId": "pred-q0rkqn",
+    "inputSnapshotId": "input-k31cqx",
+    "baseModelVersion": "multi-market-poisson-v5-dc-shadow",
+    "calibrationVersion": "cal-none",
+    "aiReviewVersion": null,
+    "generatedAt": "2026-09-22T13:33:52.616Z"
+  },
+  "scheduledAt": "2026-09-22T21:30:00+08:00",
+  "scheduledTime": "2130",
+  "capturedAt": "2026-09-22T13:33:52.830Z",
+  "upstreamUpdatedAt": "2026-09-22T13:33:52.616Z",
+  "sourceFetchedAt": "2026-09-22T13:33:52.616Z",
+  "decisionTiming": "pre_match",
+  "source": {
+    "sporttery": "中国体育彩票·竞彩网",
+    "market": "https://plzx.zgzcw.com/"
+  },
+  "sourceMatchCount": 3,
+  "inputHash": "input-k31cqx",
+  "modelVersion": "覆盖 3/3 场官方赛事；0 场因外围盘口缺失或身份未通过校验而不生成概率，另有 1 条外围记录待核验。多盘口交叉校准：三家公司欧赔初盘/即盘、亚洲让球水位、大小球与体彩胜平负/固定让球盘共同约束预期进球；尚无通过未来测试门槛的服务端校准版本，保持盘口模型基线，Dixon–Coles 低比分修正处于影子验证；外围赛事仅在日期、主客队与开赛时间全部通过官方校验后进入可执行预测，盘口冲突会降低一致度。",
+  "officialMatches": [
+    {
+      "id": "周二002",
+      "matchId": "2041643",
+      "officialMatchId": "2041643",
+      "salesDate": "2026-09-22",
+      "kickoffAt": "2026-09-23T02:00:00+08:00",
+      "league": "英锦标赛",
+      "time": "02:00:00",
+      "matchDate": "2026-09-23",
+      "home": "米尔顿",
+      "away": "克劳利",
+      "homeTeamId": "78",
+      "awayTeamId": "1523",
+      "homeTeamCode": "MIK",
+      "awayTeamCode": "CWT",
+      "homeRank": "[南部赛区H组4]",
+      "awayRank": "[南部赛区H组3]",
+      "sellStatus": 2,
+      "matchStatus": "Selling",
+      "remark": "",
+      "handicap": "-1",
+      "odds": [
+        1.22,
+        5.5,
+        7.8
+      ],
+      "marketOdds": {
+        "胜平负": [
+          1.22,
+          5.5,
+          7.8
+        ],
+        "让球胜平负": [
+          1.81,
+          3.56,
+          3.38
+        ],
+        "比分": [
+          12,
+          8.5,
+          7,
+          12,
+          8.5,
+          16,
+          19,
+          16,
+          27,
+          35,
+          30,
+          50,
+          12.5,
+          32,
+          10.5,
+          14,
+          38,
+          150,
+          37,
+          65,
+          19,
+          80,
+          55,
+          43,
+          200,
+          150,
+          120,
+          550,
+          300,
+          300,
+          100
+        ],
+        "总进球数": [
+          32,
+          9.75,
+          5.15,
+          3.45,
+          4.25,
+          6.2,
+          9.75,
+          11.5
+        ],
+        "半全场": [
+          1.72,
+          18,
+          66,
+          4.4,
+          10,
+          21,
+          19,
+          18,
+          14.5
+        ]
+      },
+      "marketStatus": {
+        "胜平负": "available",
+        "让球胜平负": "available",
+        "比分": "available",
+        "总进球数": "available",
+        "半全场": "available"
+      },
+      "marketEligibility": {
+        "胜平负": {
+          "marketCode": "HAD",
+          "handicap": null,
+          "salesStatus": "Selling",
+          "supportsSingle": false,
+          "allowedPassCounts": [
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ],
+          "cutoffAt": null,
+          "ruleVersion": "sporttery-football-2026-09",
+          "qualification": "qualified"
+        },
+        "让球胜平负": {
+          "marketCode": "HHAD",
+          "handicap": "-1",
+          "salesStatus": "Selling",
+          "supportsSingle": false,
+          "allowedPassCounts": [
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ],
+          "cutoffAt": null,
+          "ruleVersion": "sporttery-football-2026-09",
+          "qualification": "qualified"
+        },
+        "比分": {
+          "marketCode": "CRS",
+          "handicap": null,
+          "salesStatus": "Selling",
+          "supportsSingle": true,
+          "allowedPassCounts": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "cutoffAt": null,
+          "ruleVersion": "sporttery-football-2026-09",
+          "qualification": "qualified"
+        },
+        "总进球数": {
+          "marketCode": "TTG",
+          "handicap": null,
+          "salesStatus": "Selling",
+          "supportsSingle": true,
+          "allowedPassCounts": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "cutoffAt": null,
+          "ruleVersion": "sporttery-football-2026-09",
+          "qualification": "qualified"
+        },
+        "半全场": {
+          "marketCode": "HAFU",
+          "handicap": null,
+          "salesStatus": "Selling",
+          "supportsSingle": true,
+          "allowedPassCounts": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "cutoffAt": null,
+          "ruleVersion": "sporttery-football-2026-09",
+          "qualification": "qualified"
+        }
+      },
+      "ruleVersion": "sporttery-football-2026-09",
+      "updatedAt": "2026-09-22 20:54:08",
+      "form": [],
+      "tag": "销售中",
+      "risk": "赔率会随官方发布更新，提交前请再次核对竞彩网。"
+    },
+    {
+      "id": "周二003",
+      "matchId": "2041655",
+      "officialMatchId": "2041655",
+      "salesDate": "2026-09-22",
+      "kickoffAt": "2026-09-23T02:00:00+08:00",
+      "league": "英锦标赛",
+      "time": "02:00:00",
+      "matchDate": "2026-09-23",
+      "home": "诺茨郡",
+      "away": "格里姆",
+      "homeTeamId": "103",
+      "awayTeamId": "96",
+      "homeTeamCode": "NOS",
+      "awayTeamCode": "GRI",
+      "homeRank": "[北部赛区F组4]",
+      "awayRank": "[北部赛区F组2]",
+      "sellStatus": 2,
+      "matchStatus": "Selling",
+      "remark": "",
+      "handicap": "-1",
+      "odds": [
+        2.35,
+        3.35,
+        2.47
+      ],
+      "marketOdds": {
+        "胜平负": [
+          2.35,
+          3.35,
+          2.47
+        ],
+        "让球胜平负": [
+          5.05,
+          4.3,
+          1.43
+        ],
+        "比分": [
+          11,
+          14,
+          7.5,
+          28,
+          16,
+          23,
+          60,
+          52,
+          55,
+          175,
+          100,
+          150,
+          55,
+          17.5,
+          6.85,
+          11,
+          37,
+          150,
+          11.5,
+          16,
+          8.5,
+          30,
+          19,
+          24,
+          70,
+          55,
+          60,
+          200,
+          125,
+          175,
+          60
+        ],
+        "总进球数": [
+          17.5,
+          6.4,
+          3.65,
+          3.35,
+          5,
+          8.75,
+          16,
+          24
+        ],
+        "半全场": [
+          4.1,
+          14,
+          24,
+          5.75,
+          5.45,
+          7,
+          23,
+          14,
+          4.3
+        ]
+      },
+      "marketStatus": {
+        "胜平负": "available",
+        "让球胜平负": "available",
+        "比分": "available",
+        "总进球数": "available",
+        "半全场": "available"
+      },
+      "marketEligibility": {
+        "胜平负": {
+          "marketCode": "HAD",
+          "handicap": null,
+          "salesStatus": "Selling",
+          "supportsSingle": false,
+          "allowedPassCounts": [
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ],
+          "cutoffAt": null,
+          "ruleVersion": "sporttery-football-2026-09",
+          "qualification": "qualified"
+        },
+        "让球胜平负": {
+          "marketCode": "HHAD",
+          "handicap": "-1",
+          "salesStatus": "Selling",
+          "supportsSingle": false,
+          "allowedPassCounts": [
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ],
+          "cutoffAt": null,
+          "ruleVersion": "sporttery-football-2026-09",
+          "qualification": "qualified"
+        },
+        "比分": {
+          "marketCode": "CRS",
+          "handicap": null,
+          "salesStatus": "Selling",
+          "supportsSingle": true,
+          "allowedPassCounts": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "cutoffAt": null,
+          "ruleVersion": "sporttery-football-2026-09",
+          "qualification": "qualified"
+        },
+        "总进球数": {
+          "marketCode": "TTG",
+          "handicap": null,
+          "salesStatus": "Selling",
+          "supportsSingle": true,
+          "allowedPassCounts": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "cutoffAt": null,
+          "ruleVersion": "sporttery-football-2026-09",
+          "qualification": "qualified"
+        },
+        "半全场": {
+          "marketCode": "HAFU",
+          "handicap": null,
+          "salesStatus": "Selling",
+          "supportsSingle": true,
+          "allowedPassCounts": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "cutoffAt": null,
+          "ruleVersion": "sporttery-football-2026-09",
+          "qualification": "qualified"
+        }
+      },
+      "ruleVersion": "sporttery-football-2026-09",
+      "updatedAt": "2026-09-22 21:05:13",
+      "form": [],
+      "tag": "销售中",
+      "risk": "赔率会随官方发布更新，提交前请再次核对竞彩网。"
+    },
+    {
+      "id": "周二004",
+      "matchId": "2041644",
+      "officialMatchId": "2041644",
+      "salesDate": "2026-09-22",
+      "kickoffAt": "2026-09-23T02:00:00+08:00",
+      "league": "英锦标赛",
+      "time": "02:00:00",
+      "matchDate": "2026-09-23",
+      "home": "维冈",
+      "away": "布莱克浦",
+      "homeTeamId": "63",
+      "awayTeamId": "66",
+      "homeTeamCode": "WIG",
+      "awayTeamCode": "BLP",
+      "homeRank": "[北部赛区B组1]",
+      "awayRank": "[北部赛区B组2]",
+      "sellStatus": 2,
+      "matchStatus": "Selling",
+      "remark": "",
+      "handicap": "-1",
+      "odds": [
+        2.7,
+        3.15,
+        2.27
+      ],
+      "marketOdds": {
+        "胜平负": [
+          2.7,
+          3.15,
+          2.27
+        ],
+        "让球胜平负": [
+          5.45,
+          5.15,
+          1.33
+        ],
+        "比分": [
+          13.5,
+          17,
+          9,
+          30,
+          20,
+          23,
+          60,
+          45,
+          55,
+          140,
+          120,
+          120,
+          40,
+          18,
+          6.75,
+          11,
+          33,
+          150,
+          12.5,
+          16,
+          8,
+          28,
+          17,
+          23,
+          50,
+          38,
+          40,
+          120,
+          100,
+          100,
+          38
+        ],
+        "总进球数": [
+          18,
+          7.15,
+          4.1,
+          3.3,
+          4.7,
+          7.85,
+          14.5,
+          19
+        ],
+        "半全场": [
+          4.6,
+          13,
+          23,
+          6,
+          6.1,
+          5.7,
+          25,
+          13,
+          4.1
+        ]
+      },
+      "marketStatus": {
+        "胜平负": "available",
+        "让球胜平负": "available",
+        "比分": "available",
+        "总进球数": "available",
+        "半全场": "available"
+      },
+      "marketEligibility": {
+        "胜平负": {
+          "marketCode": "HAD",
+          "handicap": null,
+          "salesStatus": "Selling",
+          "supportsSingle": false,
+          "allowedPassCounts": [
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ],
+          "cutoffAt": null,
+          "ruleVersion": "sporttery-football-2026-09",
+          "qualification": "qualified"
+        },
+        "让球胜平负": {
+          "marketCode": "HHAD",
+          "handicap": "-1",
+          "salesStatus": "Selling",
+          "supportsSingle": false,
+          "allowedPassCounts": [
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ],
+          "cutoffAt": null,
+          "ruleVersion": "sporttery-football-2026-09",
+          "qualification": "qualified"
+        },
+        "比分": {
+          "marketCode": "CRS",
+          "handicap": null,
+          "salesStatus": "Selling",
+          "supportsSingle": true,
+          "allowedPassCounts": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "cutoffAt": null,
+          "ruleVersion": "sporttery-football-2026-09",
+          "qualification": "qualified"
+        },
+        "总进球数": {
+          "marketCode": "TTG",
+          "handicap": null,
+          "salesStatus": "Selling",
+          "supportsSingle": true,
+          "allowedPassCounts": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "cutoffAt": null,
+          "ruleVersion": "sporttery-football-2026-09",
+          "qualification": "qualified"
+        },
+        "半全场": {
+          "marketCode": "HAFU",
+          "handicap": null,
+          "salesStatus": "Selling",
+          "supportsSingle": true,
+          "allowedPassCounts": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "cutoffAt": null,
+          "ruleVersion": "sporttery-football-2026-09",
+          "qualification": "qualified"
+        }
+      },
+      "ruleVersion": "sporttery-football-2026-09",
+      "updatedAt": "2026-09-22 21:25:52",
+      "form": [],
+      "tag": "销售中",
+      "risk": "赔率会随官方发布更新，提交前请再次核对竞彩网。"
+    }
+  ],
+  "reports": [
+    {
+      "id": "周二002",
+      "externalDisplayId": "周二002",
+      "officialMatchId": "2041643",
+      "salesDate": "2026-09-22",
+      "kickoffAt": "2026-09-23T02:00:00+08:00",
+      "homeTeamId": "78",
+      "awayTeamId": "1523",
+      "homeTeamCode": "MIK",
+      "awayTeamCode": "CWT",
+      "officialMappingStatus": "verified",
+      "mappingReason": "彩票编号、日期、主客队与开赛时间均已通过校验（球队别名版本 verified-zh-aliases-2026-09-22.1）",
+      "marketEligibility": {
+        "胜平负": {
+          "marketCode": "HAD",
+          "handicap": null,
+          "salesStatus": "Selling",
+          "supportsSingle": false,
+          "allowedPassCounts": [
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ],
+          "cutoffAt": null,
+          "ruleVersion": "sporttery-football-2026-09",
+          "qualification": "qualified"
+        },
+        "让球胜平负": {
+          "marketCode": "HHAD",
+          "handicap": "-1",
+          "salesStatus": "Selling",
+          "supportsSingle": false,
+          "allowedPassCounts": [
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ],
+          "cutoffAt": null,
+          "ruleVersion": "sporttery-football-2026-09",
+          "qualification": "qualified"
+        },
+        "比分": {
+          "marketCode": "CRS",
+          "handicap": null,
+          "salesStatus": "Selling",
+          "supportsSingle": true,
+          "allowedPassCounts": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "cutoffAt": null,
+          "ruleVersion": "sporttery-football-2026-09",
+          "qualification": "qualified"
+        },
+        "总进球数": {
+          "marketCode": "TTG",
+          "handicap": null,
+          "salesStatus": "Selling",
+          "supportsSingle": true,
+          "allowedPassCounts": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "cutoffAt": null,
+          "ruleVersion": "sporttery-football-2026-09",
+          "qualification": "qualified"
+        },
+        "半全场": {
+          "marketCode": "HAFU",
+          "handicap": null,
+          "salesStatus": "Selling",
+          "supportsSingle": true,
+          "allowedPassCounts": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "cutoffAt": null,
+          "ruleVersion": "sporttery-football-2026-09",
+          "qualification": "qualified"
+        }
+      },
+      "league": "英锦赛",
+      "time": "2026-09-23 02:00:00",
+      "matchDate": "2026-09-23",
+      "home": "米尔顿",
+      "away": "克劳利",
+      "matchStatus": "Selling",
+      "isMock": false,
+      "sourceUpdatedAt": "2026-09-22 20:54:08",
+      "companies": [
+        {
+          "companyId": 2,
+          "company": "36*",
+          "win": 1.4,
+          "draw": 4.75,
+          "lose": 6,
+          "handicap": -1.5,
+          "homePrice": 1,
+          "awayPrice": 0.8,
+          "total": 3.5,
+          "overPrice": 0.87,
+          "underPrice": 0.92,
+          "firstWin": 1.65,
+          "firstDraw": 4.1,
+          "firstLose": 4.2,
+          "firstHandicap": -0.75,
+          "firstHomePrice": 0.8,
+          "firstAwayPrice": 1,
+          "firstTotal": 3.5,
+          "firstOverPrice": 1,
+          "firstUnderPrice": 0.8
+        },
+        {
+          "companyId": 3,
+          "company": "ＳＢ/*",
+          "win": 1.29,
+          "draw": 5.4,
+          "lose": 7.1,
+          "handicap": -1.5,
+          "homePrice": 0.8,
+          "awayPrice": 1.02,
+          "total": 3.75,
+          "overPrice": 0.99,
+          "underPrice": 0.81,
+          "firstWin": 1.64,
+          "firstDraw": 4.3,
+          "firstLose": 3.9,
+          "firstHandicap": -0.75,
+          "firstHomePrice": 0.85,
+          "firstAwayPrice": 0.97,
+          "firstTotal": 3.25,
+          "firstOverPrice": 0.83,
+          "firstUnderPrice": 0.97
+        },
+        {
+          "companyId": 22,
+          "company": "平*",
+          "win": 1.31,
+          "draw": 5.2,
+          "lose": 6.56,
+          "handicap": -1.5,
+          "homePrice": 0.83,
+          "awayPrice": 0.93,
+          "total": 3.75,
+          "overPrice": 0.92,
+          "underPrice": 0.83,
+          "firstWin": 1.67,
+          "firstDraw": 4,
+          "firstLose": 3.98,
+          "firstHandicap": -0.75,
+          "firstHomePrice": 0.84,
+          "firstAwayPrice": 0.93,
+          "firstTotal": 3.25,
+          "firstOverPrice": 0.84,
+          "firstUnderPrice": 0.92
+        }
+      ],
+      "marketProbabilities": [
+        70.17253374879411,
+        16.913569235013338,
+        12.91389701619256
+      ],
+      "probabilities": {
+        "home": 70.46569804105575,
+        "draw": 16.37416001490264,
+        "away": 13.160141944041662
+      },
+      "consensus": {
+        "handicap": -1.5,
+        "totalLine": 3.75,
+        "agreement": "较一致"
+      },
+      "marketSignal": {
+        "direction": "主队方向",
+        "movementDirection": "主队方向",
+        "strength": 14.567407914388301,
+        "probabilityShifts": [
+          14.675809941791663,
+          -5.50273353063441,
+          -9.926364757825612
+        ],
+        "fairOdds": [
+          1.4191301978125095,
+          6.107183507977622,
+          7.5987022347639375
+        ],
+        "hadEv": [
+          -0.14031848389911994,
+          -0.09942119918035486,
+          0.026491071635249552
+        ],
+        "hhadEv": [
+          -0.1117511081113568,
+          -0.23847421886746045,
+          -0.0017405937876827648
+        ],
+        "evThreshold": 0.05,
+        "institutionAction": "让球加深+主队降赔，主队获得强支持",
+        "handicapExpectation": "主队让1.5，机构净胜球预期赢2球级",
+        "firstHandicap": -0.75,
+        "handicapChange": -0.75,
+        "narrative": "当前绝对概率最高为主队方向；变盘相对偏向主队方向。让球加深+主队降赔，主队获得强支持。该变盘信号表示相对强弱变化，不等同于赛果概率最高项；欧赔变化 14.7 个百分点，亚盘主队侧水位概率变化 -0.2 个百分点。主队让1.5，机构净胜球预期赢2球级；当前结论为“多盘口较一致”。历史有效样本不足，本场保持盘口模型基线；低比分相关修正保持影子状态，不以短样本强行启用。",
+        "officialOdds": [
+          1.22,
+          5.5,
+          7.8
+        ],
+        "officialHandicap": "-1",
+        "officialHhadOdds": [
+          1.81,
+          3.56,
+          3.38
+        ],
+        "officialHhadFair": [
+          48.9253563848387,
+          24.87497052150507,
+          26.19967309365623
+        ],
+        "modeledHhad": [
+          49.074524413737194,
+          21.391173627318526,
+          29.534301958944297
+        ],
+        "hhadAvailable": true,
+        "modeledTotalGoals": [
+          2.6130881343470547,
+          9.537771690366746,
+          17.406433334919306,
+          21.177827224151812,
+          19.324767342038523,
+          14.107080159688122,
+          8.581807097143606,
+          7.251225017344854
+        ],
+        "totalGoalLabels": [
+          "0球",
+          "1球",
+          "2球",
+          "3球",
+          "4球",
+          "5球",
+          "6球",
+          "7+球"
+        ],
+        "modeledHalfFull": [
+          48.426141373705306,
+          3.86953060157026,
+          1.1445352149919934,
+          18.33678275168253,
+          8.550043723073308,
+          4.733050532929297,
+          3.8547729694185384,
+          3.869530601570257,
+          7.215612231058508
+        ],
+        "halfFullLabels": [
+          "胜胜",
+          "胜平",
+          "胜负",
+          "平胜",
+          "平平",
+          "平负",
+          "负胜",
+          "负平",
+          "负负"
+        ],
+        "asianHomeProbability": 51.329787234042556,
+        "asianAwayProbability": 48.670212765957444,
+        "asianMovement": -0.24089339422969092,
+        "overProbability": 48.80000000000001,
+        "fitAgreement": "多盘口较一致",
+        "handicapMeaning": "外围主队让 1.5 球；体彩主队 -1，主队需净胜超过 1 球才是让胜，净胜 1 球为让平。",
+        "rawProbabilities": [
+          70.17253374879411,
+          16.913569235013338,
+          12.91389701619256
+        ],
+        "calibrationSampleSize": 0,
+        "probabilityTemperature": 1,
+        "lowScoreRho": 0
+      },
+      "expectedGoals": {
+        "home": 2.5999999999999988,
+        "away": 1.0500000000000003
+      },
+      "scores": [
+        {
+          "score": "2:1",
+          "probability": 9.273849788797687
+        },
+        {
+          "score": "2:0",
+          "probability": 8.832237894093035
+        },
+        {
+          "score": "3:1",
+          "probability": 8.037336483624658
+        },
+        {
+          "score": "3:0",
+          "probability": 7.654606174880627
+        }
+      ],
+      "fullScoreDistribution": [
+        {
+          "score": "2:1",
+          "probability": 9.273849788797687
+        },
+        {
+          "score": "2:0",
+          "probability": 8.832237894093035
+        },
+        {
+          "score": "3:1",
+          "probability": 8.037336483624658
+        },
+        {
+          "score": "3:0",
+          "probability": 7.654606174880627
+        },
+        {
+          "score": "1:1",
+          "probability": 7.133730606767457
+        },
+        {
+          "score": "1:0",
+          "probability": 6.794029149302339
+        },
+        {
+          "score": "4:1",
+          "probability": 5.224268714356026
+        },
+        {
+          "score": "4:0",
+          "probability": 4.975494013672406
+        },
+        {
+          "score": "2:2",
+          "probability": 4.868771139118787
+        },
+        {
+          "score": "3:2",
+          "probability": 4.219601653902947
+        },
+        {
+          "score": "1:2",
+          "probability": 3.7452085685529157
+        },
+        {
+          "score": "0:1",
+          "probability": 2.7437425410644076
+        },
+        {
+          "score": "4:2",
+          "probability": 2.7427410750369146
+        },
+        {
+          "score": "5:1",
+          "probability": 2.716619731465133
+        },
+        {
+          "score": "0:0",
+          "probability": 2.6130881343470547
+        },
+        {
+          "score": "5:0",
+          "probability": 2.5872568871096497
+        },
+        {
+          "score": "2:3",
+          "probability": 1.7040698986915763
+        },
+        {
+          "score": "3:3",
+          "probability": 1.4768605788660318
+        },
+        {
+          "score": "0:2",
+          "probability": 1.4404648340588144
+        },
+        {
+          "score": "5:2",
+          "probability": 1.4262253590191951
+        },
+        {
+          "score": "1:3",
+          "probability": 1.3108229989935205
+        },
+        {
+          "score": "6:1",
+          "probability": 1.1772018836348903
+        },
+        {
+          "score": "6:0",
+          "probability": 1.1211446510808476
+        },
+        {
+          "score": "4:3",
+          "probability": 0.9599593762629203
+        },
+        {
+          "score": "6:2",
+          "probability": 0.6180309889083174
+        },
+        {
+          "score": "0:3",
+          "probability": 0.5041626919205852
+        },
+        {
+          "score": "5:3",
+          "probability": 0.49917887565671837
+        },
+        {
+          "score": "2:4",
+          "probability": 0.44731834840653906
+        },
+        {
+          "score": "7:1",
+          "probability": 0.43724641392153046
+        },
+        {
+          "score": "7:0",
+          "probability": 0.4164251561157432
+        },
+        {
+          "score": "3:4",
+          "probability": 0.38767590195233353
+        },
+        {
+          "score": "1:4",
+          "probability": 0.34409103723579937
+        },
+        {
+          "score": "4:4",
+          "probability": 0.2519893362690167
+        },
+        {
+          "score": "7:2",
+          "probability": 0.22955436730880352
+        },
+        {
+          "score": "6:3",
+          "probability": 0.21631084611791118
+        },
+        {
+          "score": "0:4",
+          "probability": 0.13234270662915365
+        },
+        {
+          "score": "5:4",
+          "probability": 0.13103445485988863
+        },
+        {
+          "score": "2:5",
+          "probability": 0.0939368531653732
+        },
+        {
+          "score": "3:5",
+          "probability": 0.08141193940999009
+        },
+        {
+          "score": "7:3",
+          "probability": 0.08034402855808126
+        },
+        {
+          "score": "1:5",
+          "probability": 0.07225911781951787
+        },
+        {
+          "score": "6:4",
+          "probability": 0.05678159710595172
+        },
+        {
+          "score": "4:5",
+          "probability": 0.052917760616493524
+        },
+        {
+          "score": "0:5",
+          "probability": 0.02779196839212228
+        },
+        {
+          "score": "5:5",
+          "probability": 0.027517235520576618
+        },
+        {
+          "score": "7:4",
+          "probability": 0.021090307496496336
+        },
+        {
+          "score": "2:6",
+          "probability": 0.016438949303940315
+        },
+        {
+          "score": "3:6",
+          "probability": 0.014247089396748265
+        },
+        {
+          "score": "1:6",
+          "probability": 0.012645345618415628
+        },
+        {
+          "score": "6:5",
+          "probability": 0.011924135392249862
+        },
+        {
+          "score": "4:6",
+          "probability": 0.009260608107886367
+        },
+        {
+          "score": "0:6",
+          "probability": 0.004863594468621399
+        },
+        {
+          "score": "5:6",
+          "probability": 0.004815516216100909
+        },
+        {
+          "score": "7:5",
+          "probability": 0.004428964574264231
+        },
+        {
+          "score": "2:7",
+          "probability": 0.0024658423955910475
+        },
+        {
+          "score": "3:7",
+          "probability": 0.00213706340951224
+        },
+        {
+          "score": "6:6",
+          "probability": 0.0020867236936437258
+        },
+        {
+          "score": "1:7",
+          "probability": 0.001896801842762345
+        },
+        {
+          "score": "4:7",
+          "probability": 0.0013890912161829553
+        },
+        {
+          "score": "7:6",
+          "probability": 0.0007750688004962408
+        },
+        {
+          "score": "0:7",
+          "probability": 0.0007295391702932101
+        },
+        {
+          "score": "5:7",
+          "probability": 0.0007223274324151366
+        },
+        {
+          "score": "6:7",
+          "probability": 0.00031300855404655905
+        },
+        {
+          "score": "7:7",
+          "probability": 0.00011626032007443615
+        }
+      ],
+      "missingCompanies": [],
+      "predictionId": "pred-q0rkqn",
+      "inputSnapshotId": "input-k31cqx",
+      "baseModelVersion": "multi-market-poisson-v5-dc-shadow",
+      "calibrationVersion": "cal-none",
+      "predictionGeneratedAt": "2026-09-22T13:33:52.616Z",
+      "sourceFetchedAt": "2026-09-22T13:33:52.616Z",
+      "layers": {
+        "oddsBaseline": {
+          "fullScoreDistribution": [
+            {
+              "score": "2:1",
+              "probability": 9.273849788797687
+            },
+            {
+              "score": "2:0",
+              "probability": 8.832237894093035
+            },
+            {
+              "score": "3:1",
+              "probability": 8.037336483624658
+            },
+            {
+              "score": "3:0",
+              "probability": 7.654606174880627
+            },
+            {
+              "score": "1:1",
+              "probability": 7.133730606767457
+            },
+            {
+              "score": "1:0",
+              "probability": 6.794029149302339
+            },
+            {
+              "score": "4:1",
+              "probability": 5.224268714356026
+            },
+            {
+              "score": "4:0",
+              "probability": 4.975494013672406
+            },
+            {
+              "score": "2:2",
+              "probability": 4.868771139118787
+            },
+            {
+              "score": "3:2",
+              "probability": 4.219601653902947
+            },
+            {
+              "score": "1:2",
+              "probability": 3.7452085685529157
+            },
+            {
+              "score": "0:1",
+              "probability": 2.7437425410644076
+            },
+            {
+              "score": "4:2",
+              "probability": 2.7427410750369146
+            },
+            {
+              "score": "5:1",
+              "probability": 2.716619731465133
+            },
+            {
+              "score": "0:0",
+              "probability": 2.6130881343470547
+            },
+            {
+              "score": "5:0",
+              "probability": 2.5872568871096497
+            },
+            {
+              "score": "2:3",
+              "probability": 1.7040698986915763
+            },
+            {
+              "score": "3:3",
+              "probability": 1.4768605788660318
+            },
+            {
+              "score": "0:2",
+              "probability": 1.4404648340588144
+            },
+            {
+              "score": "5:2",
+              "probability": 1.4262253590191951
+            },
+            {
+              "score": "1:3",
+              "probability": 1.3108229989935205
+            },
+            {
+              "score": "6:1",
+              "probability": 1.1772018836348903
+            },
+            {
+              "score": "6:0",
+              "probability": 1.1211446510808476
+            },
+            {
+              "score": "4:3",
+              "probability": 0.9599593762629203
+            },
+            {
+              "score": "6:2",
+              "probability": 0.6180309889083174
+            },
+            {
+              "score": "0:3",
+              "probability": 0.5041626919205852
+            },
+            {
+              "score": "5:3",
+              "probability": 0.49917887565671837
+            },
+            {
+              "score": "2:4",
+              "probability": 0.44731834840653906
+            },
+            {
+              "score": "7:1",
+              "probability": 0.43724641392153046
+            },
+            {
+              "score": "7:0",
+              "probability": 0.4164251561157432
+            },
+            {
+              "score": "3:4",
+              "probability": 0.38767590195233353
+            },
+            {
+              "score": "1:4",
+              "probability": 0.34409103723579937
+            },
+            {
+              "score": "4:4",
+              "probability": 0.2519893362690167
+            },
+            {
+              "score": "7:2",
+              "probability": 0.22955436730880352
+            },
+            {
+              "score": "6:3",
+              "probability": 0.21631084611791118
+            },
+            {
+              "score": "0:4",
+              "probability": 0.13234270662915365
+            },
+            {
+              "score": "5:4",
+              "probability": 0.13103445485988863
+            },
+            {
+              "score": "2:5",
+              "probability": 0.0939368531653732
+            },
+            {
+              "score": "3:5",
+              "probability": 0.08141193940999009
+            },
+            {
+              "score": "7:3",
+              "probability": 0.08034402855808126
+            },
+            {
+              "score": "1:5",
+              "probability": 0.07225911781951787
+            },
+            {
+              "score": "6:4",
+              "probability": 0.05678159710595172
+            },
+            {
+              "score": "4:5",
+              "probability": 0.052917760616493524
+            },
+            {
+              "score": "0:5",
+              "probability": 0.02779196839212228
+            },
+            {
+              "score": "5:5",
+              "probability": 0.027517235520576618
+            },
+            {
+              "score": "7:4",
+              "probability": 0.021090307496496336
+            },
+            {
+              "score": "2:6",
+              "probability": 0.016438949303940315
+            },
+            {
+              "score": "3:6",
+              "probability": 0.014247089396748265
+            },
+            {
+              "score": "1:6",
+              "probability": 0.012645345618415628
+            },
+            {
+              "score": "6:5",
+              "probability": 0.011924135392249862
+            },
+            {
+              "score": "4:6",
+              "probability": 0.009260608107886367
+            },
+            {
+              "score": "0:6",
+              "probability": 0.004863594468621399
+            },
+            {
+              "score": "5:6",
+              "probability": 0.004815516216100909
+            },
+            {
+              "score": "7:5",
+              "probability": 0.004428964574264231
+            },
+            {
+              "score": "2:7",
+              "probability": 0.0024658423955910475
+            },
+            {
+              "score": "3:7",
+              "probability": 0.00213706340951224
+            },
+            {
+              "score": "6:6",
+              "probability": 0.0020867236936437258
+            },
+            {
+              "score": "1:7",
+              "probability": 0.001896801842762345
+            },
+            {
+              "score": "4:7",
+              "probability": 0.0013890912161829553
+            },
+            {
+              "score": "7:6",
+              "probability": 0.0007750688004962408
+            },
+            {
+              "score": "0:7",
+              "probability": 0.0007295391702932101
+            },
+            {
+              "score": "5:7",
+              "probability": 0.0007223274324151366
+            },
+            {
+              "score": "6:7",
+              "probability": 0.00031300855404655905
+            },
+            {
+              "score": "7:7",
+              "probability": 0.00011626032007443615
+            }
+          ],
+          "probabilities": {
+            "home": 70.17253374879411,
+            "draw": 16.913569235013338,
+            "away": 12.91389701619256
+          }
+        },
+        "intelligenceOutput": {
+          "scores": [],
+          "coverage": 0,
+          "summary": "",
+          "risk": "",
+          "evidence": []
+        },
+        "fusionOutput": {
+          "fullScoreDistribution": [
+            {
+              "score": "2:1",
+              "probability": 9.273849788797687
+            },
+            {
+              "score": "2:0",
+              "probability": 8.832237894093035
+            },
+            {
+              "score": "3:1",
+              "probability": 8.037336483624658
+            },
+            {
+              "score": "3:0",
+              "probability": 7.654606174880627
+            },
+            {
+              "score": "1:1",
+              "probability": 7.133730606767457
+            },
+            {
+              "score": "1:0",
+              "probability": 6.794029149302339
+            },
+            {
+              "score": "4:1",
+              "probability": 5.224268714356026
+            },
+            {
+              "score": "4:0",
+              "probability": 4.975494013672406
+            },
+            {
+              "score": "2:2",
+              "probability": 4.868771139118787
+            },
+            {
+              "score": "3:2",
+              "probability": 4.219601653902947
+            },
+            {
+              "score": "1:2",
+              "probability": 3.7452085685529157
+            },
+            {
+              "score": "0:1",
+              "probability": 2.7437425410644076
+            },
+            {
+              "score": "4:2",
+              "probability": 2.7427410750369146
+            },
+            {
+              "score": "5:1",
+              "probability": 2.716619731465133
+            },
+            {
+              "score": "0:0",
+              "probability": 2.6130881343470547
+            },
+            {
+              "score": "5:0",
+              "probability": 2.5872568871096497
+            },
+            {
+              "score": "2:3",
+              "probability": 1.7040698986915763
+            },
+            {
+              "score": "3:3",
+              "probability": 1.4768605788660318
+            },
+            {
+              "score": "0:2",
+              "probability": 1.4404648340588144
+            },
+            {
+              "score": "5:2",
+              "probability": 1.4262253590191951
+            },
+            {
+              "score": "1:3",
+              "probability": 1.3108229989935205
+            },
+            {
+              "score": "6:1",
+              "probability": 1.1772018836348903
+            },
+            {
+              "score": "6:0",
+              "probability": 1.1211446510808476
+            },
+            {
+              "score": "4:3",
+              "probability": 0.9599593762629203
+            },
+            {
+              "score": "6:2",
+              "probability": 0.6180309889083174
+            },
+            {
+              "score": "0:3",
+              "probability": 0.5041626919205852
+            },
+            {
+              "score": "5:3",
+              "probability": 0.49917887565671837
+            },
+            {
+              "score": "2:4",
+              "probability": 0.44731834840653906
+            },
+            {
+              "score": "7:1",
+              "probability": 0.43724641392153046
+            },
+            {
+              "score": "7:0",
+              "probability": 0.4164251561157432
+            },
+            {
+              "score": "3:4",
+              "probability": 0.38767590195233353
+            },
+            {
+              "score": "1:4",
+              "probability": 0.34409103723579937
+            },
+            {
+              "score": "4:4",
+              "probability": 0.2519893362690167
+            },
+            {
+              "score": "7:2",
+              "probability": 0.22955436730880352
+            },
+            {
+              "score": "6:3",
+              "probability": 0.21631084611791118
+            },
+            {
+              "score": "0:4",
+              "probability": 0.13234270662915365
+            },
+            {
+              "score": "5:4",
+              "probability": 0.13103445485988863
+            },
+            {
+              "score": "2:5",
+              "probability": 0.0939368531653732
+            },
+            {
+              "score": "3:5",
+              "probability": 0.08141193940999009
+            },
+            {
+              "score": "7:3",
+              "probability": 0.08034402855808126
+            },
+            {
+              "score": "1:5",
+              "probability": 0.07225911781951787
+            },
+            {
+              "score": "6:4",
+              "probability": 0.05678159710595172
+            },
+            {
+              "score": "4:5",
+              "probability": 0.052917760616493524
+            },
+            {
+              "score": "0:5",
+              "probability": 0.02779196839212228
+            },
+            {
+              "score": "5:5",
+              "probability": 0.027517235520576618
+            },
+            {
+              "score": "7:4",
+              "probability": 0.021090307496496336
+            },
+            {
+              "score": "2:6",
+              "probability": 0.016438949303940315
+            },
+            {
+              "score": "3:6",
+              "probability": 0.014247089396748265
+            },
+            {
+              "score": "1:6",
+              "probability": 0.012645345618415628
+            },
+            {
+              "score": "6:5",
+              "probability": 0.011924135392249862
+            },
+            {
+              "score": "4:6",
+              "probability": 0.009260608107886367
+            },
+            {
+              "score": "0:6",
+              "probability": 0.004863594468621399
+            },
+            {
+              "score": "5:6",
+              "probability": 0.004815516216100909
+            },
+            {
+              "score": "7:5",
+              "probability": 0.004428964574264231
+            },
+            {
+              "score": "2:7",
+              "probability": 0.0024658423955910475
+            },
+            {
+              "score": "3:7",
+              "probability": 0.00213706340951224
+            },
+            {
+              "score": "6:6",
+              "probability": 0.0020867236936437258
+            },
+            {
+              "score": "1:7",
+              "probability": 0.001896801842762345
+            },
+            {
+              "score": "4:7",
+              "probability": 0.0013890912161829553
+            },
+            {
+              "score": "7:6",
+              "probability": 0.0007750688004962408
+            },
+            {
+              "score": "0:7",
+              "probability": 0.0007295391702932101
+            },
+            {
+              "score": "5:7",
+              "probability": 0.0007223274324151366
+            },
+            {
+              "score": "6:7",
+              "probability": 0.00031300855404655905
+            },
+            {
+              "score": "7:7",
+              "probability": 0.00011626032007443615
+            }
+          ],
+          "probabilities": {
+            "home": 70.46569804105575,
+            "draw": 16.37416001490264,
+            "away": 13.160141944041662
+          },
+          "hhad": [
+            49.074524413737194,
+            21.391173627318526,
+            29.534301958944297
+          ],
+          "totalGoals": [
+            2.6130881343470547,
+            9.537771690366746,
+            17.406433334919306,
+            21.177827224151812,
+            19.324767342038523,
+            14.107080159688122,
+            8.581807097143606,
+            7.251225017344854
+          ],
+          "halfFull": [
+            48.426141373705306,
+            3.86953060157026,
+            1.1445352149919934,
+            18.33678275168253,
+            8.550043723073308,
+            4.733050532929297,
+            3.8547729694185384,
+            3.869530601570257,
+            7.215612231058508
+          ]
+        }
+      },
+      "inputHash": "input-k31cqx",
+      "parameters": {
+        "baseModelVersion": "multi-market-poisson-v5-dc-shadow",
+        "calibrationVersion": "cal-none",
+        "predictionId": "pred-q0rkqn"
+      }
+    },
+    {
+      "id": "周二003",
+      "externalDisplayId": "周二003",
+      "officialMatchId": "2041655",
+      "salesDate": "2026-09-22",
+      "kickoffAt": "2026-09-23T02:00:00+08:00",
+      "homeTeamId": "103",
+      "awayTeamId": "96",
+      "homeTeamCode": "NOS",
+      "awayTeamCode": "GRI",
+      "officialMappingStatus": "verified",
+      "mappingReason": "彩票编号、日期、主客队与开赛时间均已通过校验（球队别名版本 verified-zh-aliases-2026-09-22.1）",
+      "marketEligibility": {
+        "胜平负": {
+          "marketCode": "HAD",
+          "handicap": null,
+          "salesStatus": "Selling",
+          "supportsSingle": false,
+          "allowedPassCounts": [
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ],
+          "cutoffAt": null,
+          "ruleVersion": "sporttery-football-2026-09",
+          "qualification": "qualified"
+        },
+        "让球胜平负": {
+          "marketCode": "HHAD",
+          "handicap": "-1",
+          "salesStatus": "Selling",
+          "supportsSingle": false,
+          "allowedPassCounts": [
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ],
+          "cutoffAt": null,
+          "ruleVersion": "sporttery-football-2026-09",
+          "qualification": "qualified"
+        },
+        "比分": {
+          "marketCode": "CRS",
+          "handicap": null,
+          "salesStatus": "Selling",
+          "supportsSingle": true,
+          "allowedPassCounts": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "cutoffAt": null,
+          "ruleVersion": "sporttery-football-2026-09",
+          "qualification": "qualified"
+        },
+        "总进球数": {
+          "marketCode": "TTG",
+          "handicap": null,
+          "salesStatus": "Selling",
+          "supportsSingle": true,
+          "allowedPassCounts": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "cutoffAt": null,
+          "ruleVersion": "sporttery-football-2026-09",
+          "qualification": "qualified"
+        },
+        "半全场": {
+          "marketCode": "HAFU",
+          "handicap": null,
+          "salesStatus": "Selling",
+          "supportsSingle": true,
+          "allowedPassCounts": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "cutoffAt": null,
+          "ruleVersion": "sporttery-football-2026-09",
+          "qualification": "qualified"
+        }
+      },
+      "league": "英锦赛",
+      "time": "2026-09-23 02:00:00",
+      "matchDate": "2026-09-23",
+      "home": "诺茨郡",
+      "away": "格里姆",
+      "matchStatus": "Selling",
+      "isMock": false,
+      "sourceUpdatedAt": "2026-09-22 21:05:13",
+      "companies": [
+        {
+          "companyId": 2,
+          "company": "36*",
+          "win": 2.5,
+          "draw": 3.5,
+          "lose": 2.4,
+          "handicap": -0.25,
+          "homePrice": 0.92,
+          "awayPrice": 0.87,
+          "total": 3,
+          "overPrice": 1.02,
+          "underPrice": 0.77,
+          "firstWin": 1.9,
+          "firstDraw": 3.6,
+          "firstLose": 3.4,
+          "firstHandicap": -0.5,
+          "firstHomePrice": 0.95,
+          "firstAwayPrice": 0.85,
+          "firstTotal": 2.75,
+          "firstOverPrice": 0.87,
+          "firstUnderPrice": 0.92
+        },
+        {
+          "companyId": 3,
+          "company": "ＳＢ/*",
+          "win": 2.57,
+          "draw": 3.35,
+          "lose": 2.4,
+          "handicap": 0,
+          "homePrice": 1,
+          "awayPrice": 0.82,
+          "total": 3,
+          "overPrice": 0.95,
+          "underPrice": 0.85,
+          "firstWin": 2.16,
+          "firstDraw": 3.6,
+          "firstLose": 2.79,
+          "firstHandicap": -0.25,
+          "firstHomePrice": 0.93,
+          "firstAwayPrice": 0.89,
+          "firstTotal": 2.75,
+          "firstOverPrice": 0.91,
+          "firstUnderPrice": 0.89
+        },
+        {
+          "companyId": 22,
+          "company": "平*",
+          "win": 2.45,
+          "draw": 3.59,
+          "lose": 2.39,
+          "handicap": 0,
+          "homePrice": 0.9,
+          "awayPrice": 0.85,
+          "total": 2.75,
+          "overPrice": 0.75,
+          "underPrice": 1,
+          "firstWin": 1.99,
+          "firstDraw": 3.4,
+          "firstLose": 3.3,
+          "firstHandicap": -0.5,
+          "firstHomePrice": 1,
+          "firstAwayPrice": 0.78,
+          "firstTotal": 2.75,
+          "firstOverPrice": 0.91,
+          "firstUnderPrice": 0.84
+        }
+      ],
+      "marketProbabilities": [
+        36.7783751524874,
+        26.101486789377464,
+        37.12013805813513
+      ],
+      "probabilities": {
+        "home": 37.84586182513937,
+        "draw": 24.308276349721222,
+        "away": 37.84586182513937
+      },
+      "consensus": {
+        "handicap": 0,
+        "totalLine": 3,
+        "agreement": "较一致"
+      },
+      "marketSignal": {
+        "direction": "主队方向",
+        "movementDirection": "客队方向",
+        "strength": 9.271318747813957,
+        "probabilityShifts": [
+          -8.918688342808483,
+          0.8078297807635249,
+          9.563424010971849
+        ],
+        "fairOdds": [
+          2.6422968107328004,
+          4.113825207567498,
+          2.6422968107328004
+        ],
+        "hadEv": [
+          -0.11062224710922475,
+          -0.18567274228433905,
+          -0.06520721291905751
+        ],
+        "hhadEv": [
+          -0.083095494560679,
+          -0.15335851050694382,
+          -0.11119582409949347
+        ],
+        "evThreshold": 0.05,
+        "institutionAction": "受让加深；主队降赔、客队持平",
+        "handicapExpectation": "平手盘，净胜球预期接近",
+        "firstHandicap": -0.5,
+        "handicapChange": 0.5,
+        "narrative": "当前绝对概率最高为主队方向；变盘相对偏向客队方向。受让加深；主队降赔、客队持平。该变盘信号表示相对强弱变化，不等同于赛果概率最高项；欧赔变化 9.6 个百分点，亚盘主队侧水位概率变化 +0.6 个百分点。平手盘，净胜球预期接近；当前结论为“多盘口较一致”。历史有效样本不足，本场保持盘口模型基线；低比分相关修正保持影子状态，不以短样本强行启用。",
+        "officialOdds": [
+          2.35,
+          3.35,
+          2.47
+        ],
+        "officialHandicap": "-1",
+        "officialHhadOdds": [
+          5.05,
+          4.3,
+          1.43
+        ],
+        "officialHhadFair": [
+          17.525758504225394,
+          20.582576847985635,
+          61.89166464778898
+        ],
+        "modeledHhad": [
+          18.156524860184575,
+          19.689336964954794,
+          62.15413817486059
+        ],
+        "hhadAvailable": true,
+        "modeledTotalGoals": [
+          4.980395702442065,
+          14.941187107326204,
+          22.411780660989315,
+          22.411780660989322,
+          16.808835495742,
+          10.085301297445206,
+          5.042650648722604,
+          3.3180684263432534
+        ],
+        "totalGoalLabels": [
+          "0球",
+          "1球",
+          "2球",
+          "3球",
+          "4球",
+          "5球",
+          "6球",
+          "7+球"
+        ],
+        "modeledHalfFull": [
+          22.52500006025194,
+          5.3619977568208155,
+          2.537395841050294,
+          12.78750978777029,
+          13.576193108213335,
+          12.787509787770288,
+          2.5373958410502935,
+          5.361997756820816,
+          22.525000060251937
+        ],
+        "halfFullLabels": [
+          "胜胜",
+          "胜平",
+          "胜负",
+          "平胜",
+          "平平",
+          "平负",
+          "负胜",
+          "负平",
+          "负负"
+        ],
+        "asianHomeProbability": 49.333333333333336,
+        "asianAwayProbability": 50.66666666666666,
+        "asianMovement": 0.6491228070175381,
+        "overProbability": 48.684210526315795,
+        "fitAgreement": "多盘口较一致",
+        "handicapMeaning": "外围平手盘；体彩主队 -1，主队需净胜超过 1 球才是让胜，净胜 1 球为让平。",
+        "rawProbabilities": [
+          36.7783751524874,
+          26.101486789377464,
+          37.12013805813513
+        ],
+        "calibrationSampleSize": 0,
+        "probabilityTemperature": 1,
+        "lowScoreRho": 0
+      },
+      "expectedGoals": {
+        "home": 1.5000000000000007,
+        "away": 1.5000000000000007
+      },
+      "scores": [
+        {
+          "score": "1:1",
+          "probability": 11.205890330494656
+        },
+        {
+          "score": "1:2",
+          "probability": 8.404417747870996
+        },
+        {
+          "score": "2:1",
+          "probability": 8.404417747870996
+        },
+        {
+          "score": "0:1",
+          "probability": 7.4705935536631
+        }
+      ],
+      "fullScoreDistribution": [
+        {
+          "score": "1:1",
+          "probability": 11.205890330494656
+        },
+        {
+          "score": "1:2",
+          "probability": 8.404417747870996
+        },
+        {
+          "score": "2:1",
+          "probability": 8.404417747870996
+        },
+        {
+          "score": "0:1",
+          "probability": 7.4705935536631
+        },
+        {
+          "score": "1:0",
+          "probability": 7.4705935536631
+        },
+        {
+          "score": "2:2",
+          "probability": 6.30331331090325
+        },
+        {
+          "score": "0:2",
+          "probability": 5.602945165247328
+        },
+        {
+          "score": "2:0",
+          "probability": 5.602945165247328
+        },
+        {
+          "score": "0:0",
+          "probability": 4.980395702442064
+        },
+        {
+          "score": "1:3",
+          "probability": 4.202208873935499
+        },
+        {
+          "score": "3:1",
+          "probability": 4.202208873935499
+        },
+        {
+          "score": "2:3",
+          "probability": 3.1516566554516263
+        },
+        {
+          "score": "3:2",
+          "probability": 3.1516566554516263
+        },
+        {
+          "score": "0:3",
+          "probability": 2.8014725826236644
+        },
+        {
+          "score": "3:0",
+          "probability": 2.8014725826236644
+        },
+        {
+          "score": "3:3",
+          "probability": 1.5758283277258132
+        },
+        {
+          "score": "1:4",
+          "probability": 1.5758283277258132
+        },
+        {
+          "score": "4:1",
+          "probability": 1.5758283277258132
+        },
+        {
+          "score": "2:4",
+          "probability": 1.18187124579436
+        },
+        {
+          "score": "4:2",
+          "probability": 1.18187124579436
+        },
+        {
+          "score": "0:4",
+          "probability": 1.0505522184838747
+        },
+        {
+          "score": "4:0",
+          "probability": 1.0505522184838747
+        },
+        {
+          "score": "3:4",
+          "probability": 0.5909356228971803
+        },
+        {
+          "score": "4:3",
+          "probability": 0.5909356228971803
+        },
+        {
+          "score": "1:5",
+          "probability": 0.4727484983177441
+        },
+        {
+          "score": "5:1",
+          "probability": 0.4727484983177441
+        },
+        {
+          "score": "2:5",
+          "probability": 0.35456137373830826
+        },
+        {
+          "score": "5:2",
+          "probability": 0.35456137373830826
+        },
+        {
+          "score": "0:5",
+          "probability": 0.3151656655451625
+        },
+        {
+          "score": "5:0",
+          "probability": 0.3151656655451625
+        },
+        {
+          "score": "4:4",
+          "probability": 0.2216008585864427
+        },
+        {
+          "score": "3:5",
+          "probability": 0.17728068686915416
+        },
+        {
+          "score": "5:3",
+          "probability": 0.17728068686915416
+        },
+        {
+          "score": "1:6",
+          "probability": 0.11818712457943607
+        },
+        {
+          "score": "6:1",
+          "probability": 0.11818712457943607
+        },
+        {
+          "score": "2:6",
+          "probability": 0.08864034343457709
+        },
+        {
+          "score": "6:2",
+          "probability": 0.08864034343457709
+        },
+        {
+          "score": "0:6",
+          "probability": 0.07879141638629068
+        },
+        {
+          "score": "6:0",
+          "probability": 0.07879141638629068
+        },
+        {
+          "score": "4:5",
+          "probability": 0.06648025757593284
+        },
+        {
+          "score": "5:4",
+          "probability": 0.06648025757593284
+        },
+        {
+          "score": "3:6",
+          "probability": 0.04432017171728856
+        },
+        {
+          "score": "6:3",
+          "probability": 0.04432017171728856
+        },
+        {
+          "score": "1:7",
+          "probability": 0.02532581240987917
+        },
+        {
+          "score": "7:1",
+          "probability": 0.02532581240987917
+        },
+        {
+          "score": "5:5",
+          "probability": 0.019944077272779866
+        },
+        {
+          "score": "2:7",
+          "probability": 0.018994359307409385
+        },
+        {
+          "score": "7:2",
+          "probability": 0.018994359307409385
+        },
+        {
+          "score": "0:7",
+          "probability": 0.016883874939919434
+        },
+        {
+          "score": "7:0",
+          "probability": 0.016883874939919434
+        },
+        {
+          "score": "4:6",
+          "probability": 0.016620064393983218
+        },
+        {
+          "score": "6:4",
+          "probability": 0.016620064393983218
+        },
+        {
+          "score": "3:7",
+          "probability": 0.009497179653704694
+        },
+        {
+          "score": "7:3",
+          "probability": 0.009497179653704694
+        },
+        {
+          "score": "5:6",
+          "probability": 0.004986019318194968
+        },
+        {
+          "score": "6:5",
+          "probability": 0.004986019318194968
+        },
+        {
+          "score": "4:7",
+          "probability": 0.0035614423701392623
+        },
+        {
+          "score": "7:4",
+          "probability": 0.0035614423701392623
+        },
+        {
+          "score": "6:6",
+          "probability": 0.0012465048295487423
+        },
+        {
+          "score": "5:7",
+          "probability": 0.0010684327110417793
+        },
+        {
+          "score": "7:5",
+          "probability": 0.0010684327110417793
+        },
+        {
+          "score": "6:7",
+          "probability": 0.00026710817776044493
+        },
+        {
+          "score": "7:6",
+          "probability": 0.00026710817776044493
+        },
+        {
+          "score": "7:7",
+          "probability": 0.00005723746666295252
+        }
+      ],
+      "missingCompanies": [],
+      "predictionId": "pred-q0rkqn",
+      "inputSnapshotId": "input-k31cqx",
+      "baseModelVersion": "multi-market-poisson-v5-dc-shadow",
+      "calibrationVersion": "cal-none",
+      "predictionGeneratedAt": "2026-09-22T13:33:52.616Z",
+      "sourceFetchedAt": "2026-09-22T13:33:52.616Z",
+      "layers": {
+        "oddsBaseline": {
+          "fullScoreDistribution": [
+            {
+              "score": "1:1",
+              "probability": 11.205890330494656
+            },
+            {
+              "score": "1:2",
+              "probability": 8.404417747870996
+            },
+            {
+              "score": "2:1",
+              "probability": 8.404417747870996
+            },
+            {
+              "score": "0:1",
+              "probability": 7.4705935536631
+            },
+            {
+              "score": "1:0",
+              "probability": 7.4705935536631
+            },
+            {
+              "score": "2:2",
+              "probability": 6.30331331090325
+            },
+            {
+              "score": "0:2",
+              "probability": 5.602945165247328
+            },
+            {
+              "score": "2:0",
+              "probability": 5.602945165247328
+            },
+            {
+              "score": "0:0",
+              "probability": 4.980395702442064
+            },
+            {
+              "score": "1:3",
+              "probability": 4.202208873935499
+            },
+            {
+              "score": "3:1",
+              "probability": 4.202208873935499
+            },
+            {
+              "score": "2:3",
+              "probability": 3.1516566554516263
+            },
+            {
+              "score": "3:2",
+              "probability": 3.1516566554516263
+            },
+            {
+              "score": "0:3",
+              "probability": 2.8014725826236644
+            },
+            {
+              "score": "3:0",
+              "probability": 2.8014725826236644
+            },
+            {
+              "score": "3:3",
+              "probability": 1.5758283277258132
+            },
+            {
+              "score": "1:4",
+              "probability": 1.5758283277258132
+            },
+            {
+              "score": "4:1",
+              "probability": 1.5758283277258132
+            },
+            {
+              "score": "2:4",
+              "probability": 1.18187124579436
+            },
+            {
+              "score": "4:2",
+              "probability": 1.18187124579436
+            },
+            {
+              "score": "0:4",
+              "probability": 1.0505522184838747
+            },
+            {
+              "score": "4:0",
+              "probability": 1.0505522184838747
+            },
+            {
+              "score": "3:4",
+              "probability": 0.5909356228971803
+            },
+            {
+              "score": "4:3",
+              "probability": 0.5909356228971803
+            },
+            {
+              "score": "1:5",
+              "probability": 0.4727484983177441
+            },
+            {
+              "score": "5:1",
+              "probability": 0.4727484983177441
+            },
+            {
+              "score": "2:5",
+              "probability": 0.35456137373830826
+            },
+            {
+              "score": "5:2",
+              "probability": 0.35456137373830826
+            },
+            {
+              "score": "0:5",
+              "probability": 0.3151656655451625
+            },
+            {
+              "score": "5:0",
+              "probability": 0.3151656655451625
+            },
+            {
+              "score": "4:4",
+              "probability": 0.2216008585864427
+            },
+            {
+              "score": "3:5",
+              "probability": 0.17728068686915416
+            },
+            {
+              "score": "5:3",
+              "probability": 0.17728068686915416
+            },
+            {
+              "score": "1:6",
+              "probability": 0.11818712457943607
+            },
+            {
+              "score": "6:1",
+              "probability": 0.11818712457943607
+            },
+            {
+              "score": "2:6",
+              "probability": 0.08864034343457709
+            },
+            {
+              "score": "6:2",
+              "probability": 0.08864034343457709
+            },
+            {
+              "score": "0:6",
+              "probability": 0.07879141638629068
+            },
+            {
+              "score": "6:0",
+              "probability": 0.07879141638629068
+            },
+            {
+              "score": "4:5",
+              "probability": 0.06648025757593284
+            },
+            {
+              "score": "5:4",
+              "probability": 0.06648025757593284
+            },
+            {
+              "score": "3:6",
+              "probability": 0.04432017171728856
+            },
+            {
+              "score": "6:3",
+              "probability": 0.04432017171728856
+            },
+            {
+              "score": "1:7",
+              "probability": 0.02532581240987917
+            },
+            {
+              "score": "7:1",
+              "probability": 0.02532581240987917
+            },
+            {
+              "score": "5:5",
+              "probability": 0.019944077272779866
+            },
+            {
+              "score": "2:7",
+              "probability": 0.018994359307409385
+            },
+            {
+              "score": "7:2",
+              "probability": 0.018994359307409385
+            },
+            {
+              "score": "0:7",
+              "probability": 0.016883874939919434
+            },
+            {
+              "score": "7:0",
+              "probability": 0.016883874939919434
+            },
+            {
+              "score": "4:6",
+              "probability": 0.016620064393983218
+            },
+            {
+              "score": "6:4",
+              "probability": 0.016620064393983218
+            },
+            {
+              "score": "3:7",
+              "probability": 0.009497179653704694
+            },
+            {
+              "score": "7:3",
+              "probability": 0.009497179653704694
+            },
+            {
+              "score": "5:6",
+              "probability": 0.004986019318194968
+            },
+            {
+              "score": "6:5",
+              "probability": 0.004986019318194968
+            },
+            {
+              "score": "4:7",
+              "probability": 0.0035614423701392623
+            },
+            {
+              "score": "7:4",
+              "probability": 0.0035614423701392623
+            },
+            {
+              "score": "6:6",
+              "probability": 0.0012465048295487423
+            },
+            {
+              "score": "5:7",
+              "probability": 0.0010684327110417793
+            },
+            {
+              "score": "7:5",
+              "probability": 0.0010684327110417793
+            },
+            {
+              "score": "6:7",
+              "probability": 0.00026710817776044493
+            },
+            {
+              "score": "7:6",
+              "probability": 0.00026710817776044493
+            },
+            {
+              "score": "7:7",
+              "probability": 0.00005723746666295252
+            }
+          ],
+          "probabilities": {
+            "home": 36.7783751524874,
+            "draw": 26.101486789377464,
+            "away": 37.12013805813513
+          }
+        },
+        "intelligenceOutput": {
+          "scores": [],
+          "coverage": 0,
+          "summary": "",
+          "risk": "",
+          "evidence": []
+        },
+        "fusionOutput": {
+          "fullScoreDistribution": [
+            {
+              "score": "1:1",
+              "probability": 11.205890330494656
+            },
+            {
+              "score": "1:2",
+              "probability": 8.404417747870996
+            },
+            {
+              "score": "2:1",
+              "probability": 8.404417747870996
+            },
+            {
+              "score": "0:1",
+              "probability": 7.4705935536631
+            },
+            {
+              "score": "1:0",
+              "probability": 7.4705935536631
+            },
+            {
+              "score": "2:2",
+              "probability": 6.30331331090325
+            },
+            {
+              "score": "0:2",
+              "probability": 5.602945165247328
+            },
+            {
+              "score": "2:0",
+              "probability": 5.602945165247328
+            },
+            {
+              "score": "0:0",
+              "probability": 4.980395702442064
+            },
+            {
+              "score": "1:3",
+              "probability": 4.202208873935499
+            },
+            {
+              "score": "3:1",
+              "probability": 4.202208873935499
+            },
+            {
+              "score": "2:3",
+              "probability": 3.1516566554516263
+            },
+            {
+              "score": "3:2",
+              "probability": 3.1516566554516263
+            },
+            {
+              "score": "0:3",
+              "probability": 2.8014725826236644
+            },
+            {
+              "score": "3:0",
+              "probability": 2.8014725826236644
+            },
+            {
+              "score": "3:3",
+              "probability": 1.5758283277258132
+            },
+            {
+              "score": "1:4",
+              "probability": 1.5758283277258132
+            },
+            {
+              "score": "4:1",
+              "probability": 1.5758283277258132
+            },
+            {
+              "score": "2:4",
+              "probability": 1.18187124579436
+            },
+            {
+              "score": "4:2",
+              "probability": 1.18187124579436
+            },
+            {
+              "score": "0:4",
+              "probability": 1.0505522184838747
+            },
+            {
+              "score": "4:0",
+              "probability": 1.0505522184838747
+            },
+            {
+              "score": "3:4",
+              "probability": 0.5909356228971803
+            },
+            {
+              "score": "4:3",
+              "probability": 0.5909356228971803
+            },
+            {
+              "score": "1:5",
+              "probability": 0.4727484983177441
+            },
+            {
+              "score": "5:1",
+              "probability": 0.4727484983177441
+            },
+            {
+              "score": "2:5",
+              "probability": 0.35456137373830826
+            },
+            {
+              "score": "5:2",
+              "probability": 0.35456137373830826
+            },
+            {
+              "score": "0:5",
+              "probability": 0.3151656655451625
+            },
+            {
+              "score": "5:0",
+              "probability": 0.3151656655451625
+            },
+            {
+              "score": "4:4",
+              "probability": 0.2216008585864427
+            },
+            {
+              "score": "3:5",
+              "probability": 0.17728068686915416
+            },
+            {
+              "score": "5:3",
+              "probability": 0.17728068686915416
+            },
+            {
+              "score": "1:6",
+              "probability": 0.11818712457943607
+            },
+            {
+              "score": "6:1",
+              "probability": 0.11818712457943607
+            },
+            {
+              "score": "2:6",
+              "probability": 0.08864034343457709
+            },
+            {
+              "score": "6:2",
+              "probability": 0.08864034343457709
+            },
+            {
+              "score": "0:6",
+              "probability": 0.07879141638629068
+            },
+            {
+              "score": "6:0",
+              "probability": 0.07879141638629068
+            },
+            {
+              "score": "4:5",
+              "probability": 0.06648025757593284
+            },
+            {
+              "score": "5:4",
+              "probability": 0.06648025757593284
+            },
+            {
+              "score": "3:6",
+              "probability": 0.04432017171728856
+            },
+            {
+              "score": "6:3",
+              "probability": 0.04432017171728856
+            },
+            {
+              "score": "1:7",
+              "probability": 0.02532581240987917
+            },
+            {
+              "score": "7:1",
+              "probability": 0.02532581240987917
+            },
+            {
+              "score": "5:5",
+              "probability": 0.019944077272779866
+            },
+            {
+              "score": "2:7",
+              "probability": 0.018994359307409385
+            },
+            {
+              "score": "7:2",
+              "probability": 0.018994359307409385
+            },
+            {
+              "score": "0:7",
+              "probability": 0.016883874939919434
+            },
+            {
+              "score": "7:0",
+              "probability": 0.016883874939919434
+            },
+            {
+              "score": "4:6",
+              "probability": 0.016620064393983218
+            },
+            {
+              "score": "6:4",
+              "probability": 0.016620064393983218
+            },
+            {
+              "score": "3:7",
+              "probability": 0.009497179653704694
+            },
+            {
+              "score": "7:3",
+              "probability": 0.009497179653704694
+            },
+            {
+              "score": "5:6",
+              "probability": 0.004986019318194968
+            },
+            {
+              "score": "6:5",
+              "probability": 0.004986019318194968
+            },
+            {
+              "score": "4:7",
+              "probability": 0.0035614423701392623
+            },
+            {
+              "score": "7:4",
+              "probability": 0.0035614423701392623
+            },
+            {
+              "score": "6:6",
+              "probability": 0.0012465048295487423
+            },
+            {
+              "score": "5:7",
+              "probability": 0.0010684327110417793
+            },
+            {
+              "score": "7:5",
+              "probability": 0.0010684327110417793
+            },
+            {
+              "score": "6:7",
+              "probability": 0.00026710817776044493
+            },
+            {
+              "score": "7:6",
+              "probability": 0.00026710817776044493
+            },
+            {
+              "score": "7:7",
+              "probability": 0.00005723746666295252
+            }
+          ],
+          "probabilities": {
+            "home": 37.84586182513937,
+            "draw": 24.308276349721222,
+            "away": 37.84586182513937
+          },
+          "hhad": [
+            18.156524860184575,
+            19.689336964954794,
+            62.15413817486059
+          ],
+          "totalGoals": [
+            4.980395702442065,
+            14.941187107326204,
+            22.411780660989315,
+            22.411780660989322,
+            16.808835495742,
+            10.085301297445206,
+            5.042650648722604,
+            3.3180684263432534
+          ],
+          "halfFull": [
+            22.52500006025194,
+            5.3619977568208155,
+            2.537395841050294,
+            12.78750978777029,
+            13.576193108213335,
+            12.787509787770288,
+            2.5373958410502935,
+            5.361997756820816,
+            22.525000060251937
+          ]
+        }
+      },
+      "inputHash": "input-k31cqx",
+      "parameters": {
+        "baseModelVersion": "multi-market-poisson-v5-dc-shadow",
+        "calibrationVersion": "cal-none",
+        "predictionId": "pred-q0rkqn"
+      }
+    },
+    {
+      "id": "周二004",
+      "externalDisplayId": "周二004",
+      "officialMatchId": "2041644",
+      "salesDate": "2026-09-22",
+      "kickoffAt": "2026-09-23T02:00:00+08:00",
+      "homeTeamId": "63",
+      "awayTeamId": "66",
+      "homeTeamCode": "WIG",
+      "awayTeamCode": "BLP",
+      "officialMappingStatus": "verified",
+      "mappingReason": "彩票编号、日期、主客队与开赛时间均已通过校验（球队别名版本 verified-zh-aliases-2026-09-22.1）",
+      "marketEligibility": {
+        "胜平负": {
+          "marketCode": "HAD",
+          "handicap": null,
+          "salesStatus": "Selling",
+          "supportsSingle": false,
+          "allowedPassCounts": [
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ],
+          "cutoffAt": null,
+          "ruleVersion": "sporttery-football-2026-09",
+          "qualification": "qualified"
+        },
+        "让球胜平负": {
+          "marketCode": "HHAD",
+          "handicap": "-1",
+          "salesStatus": "Selling",
+          "supportsSingle": false,
+          "allowedPassCounts": [
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ],
+          "cutoffAt": null,
+          "ruleVersion": "sporttery-football-2026-09",
+          "qualification": "qualified"
+        },
+        "比分": {
+          "marketCode": "CRS",
+          "handicap": null,
+          "salesStatus": "Selling",
+          "supportsSingle": true,
+          "allowedPassCounts": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "cutoffAt": null,
+          "ruleVersion": "sporttery-football-2026-09",
+          "qualification": "qualified"
+        },
+        "总进球数": {
+          "marketCode": "TTG",
+          "handicap": null,
+          "salesStatus": "Selling",
+          "supportsSingle": true,
+          "allowedPassCounts": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "cutoffAt": null,
+          "ruleVersion": "sporttery-football-2026-09",
+          "qualification": "qualified"
+        },
+        "半全场": {
+          "marketCode": "HAFU",
+          "handicap": null,
+          "salesStatus": "Selling",
+          "supportsSingle": true,
+          "allowedPassCounts": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "cutoffAt": null,
+          "ruleVersion": "sporttery-football-2026-09",
+          "qualification": "qualified"
+        }
+      },
+      "league": "英锦赛",
+      "time": "2026-09-23 02:00:00",
+      "matchDate": "2026-09-23",
+      "home": "维冈",
+      "away": "布莱克浦",
+      "matchStatus": "Selling",
+      "isMock": false,
+      "sourceUpdatedAt": "2026-09-22 21:25:52",
+      "companies": [
+        {
+          "companyId": 2,
+          "company": "36*",
+          "win": 2.35,
+          "draw": 3.5,
+          "lose": 2.5,
+          "handicap": 0,
+          "homePrice": 0.85,
+          "awayPrice": 0.95,
+          "total": 3.25,
+          "overPrice": 0.97,
+          "underPrice": 0.82,
+          "firstWin": 2.25,
+          "firstDraw": 3.25,
+          "firstLose": 2.75,
+          "firstHandicap": -0.25,
+          "firstHomePrice": 1.02,
+          "firstAwayPrice": 0.77,
+          "firstTotal": 2.5,
+          "firstOverPrice": 0.9,
+          "firstUnderPrice": 0.9
+        },
+        {
+          "companyId": 3,
+          "company": "ＳＢ/*",
+          "win": 2.79,
+          "draw": 3.45,
+          "lose": 2.17,
+          "handicap": 0.25,
+          "homePrice": 0.92,
+          "awayPrice": 0.9,
+          "total": 3.25,
+          "overPrice": 0.95,
+          "underPrice": 0.85,
+          "firstWin": 2.28,
+          "firstDraw": 3.45,
+          "firstLose": 2.68,
+          "firstHandicap": -0.25,
+          "firstHomePrice": 1.04,
+          "firstAwayPrice": 0.78,
+          "firstTotal": 2.75,
+          "firstOverPrice": 0.85,
+          "firstUnderPrice": 0.95
+        },
+        {
+          "companyId": 22,
+          "company": "平*",
+          "win": 2.96,
+          "draw": 3.52,
+          "lose": 2.07,
+          "handicap": 0.25,
+          "homePrice": 0.93,
+          "awayPrice": 0.83,
+          "total": 3.25,
+          "overPrice": 0.93,
+          "underPrice": 0.81,
+          "firstWin": 2.35,
+          "firstDraw": 3.21,
+          "firstLose": 2.77,
+          "firstHandicap": -0.25,
+          "firstHomePrice": 1.05,
+          "firstAwayPrice": 0.75,
+          "firstTotal": 2.5,
+          "firstOverPrice": 0.78,
+          "firstUnderPrice": 0.98
+        }
+      ],
+      "marketProbabilities": [
+        32.58352116549495,
+        26.632605863514,
+        40.78387297099104
+      ],
+      "probabilities": {
+        "home": 33.45837276730072,
+        "draw": 22.672142954021812,
+        "away": 43.869484278677476
+      },
+      "consensus": {
+        "handicap": 0.25,
+        "totalLine": 3.25,
+        "agreement": "有分歧"
+      },
+      "marketSignal": {
+        "direction": "客队方向",
+        "movementDirection": "客队方向",
+        "strength": 6.493386879197879,
+        "probabilityShifts": [
+          -7.23148503541452,
+          -0.9439958077951893,
+          7.906999444642909
+        ],
+        "fairOdds": [
+          2.988788507303954,
+          4.410699076959595,
+          2.279488843879673
+        ],
+        "hadEv": [
+          -0.09662393528288038,
+          -0.2858274969483129,
+          -0.004162706874021316
+        ],
+        "hhadEv": [
+          -0.13087750684555444,
+          -0.09817469051069205,
+          -0.11499635780509931
+        ],
+        "evThreshold": 0.05,
+        "institutionAction": "受让加深但客队升赔，盘口与赔付信号分歧",
+        "handicapExpectation": "主队受让0.25，机构倾向客队赢1球级",
+        "firstHandicap": -0.25,
+        "handicapChange": 0.5,
+        "narrative": "当前绝对概率最高为客队方向；变盘相对偏向客队方向。受让加深但客队升赔，盘口与赔付信号分歧。该变盘信号表示相对强弱变化，不等同于赛果概率最高项；欧赔变化 7.9 个百分点，亚盘主队侧水位概率变化 +3.1 个百分点。主队受让0.25，机构倾向客队赢1球级；当前结论为“多盘口较一致”。历史有效样本不足，本场保持盘口模型基线；低比分相关修正保持影子状态，不以短样本强行启用。",
+        "officialOdds": [
+          2.7,
+          3.15,
+          2.27
+        ],
+        "officialHandicap": "-1",
+        "officialHhadOdds": [
+          5.45,
+          5.15,
+          1.33
+        ],
+        "officialHhadFair": [
+          16.244322965457542,
+          17.19059420616381,
+          66.56508282837865
+        ],
+        "modeledHhad": [
+          15.947201709255882,
+          17.511171058044813,
+          66.5416272326993
+        ],
+        "hhadAvailable": true,
+        "modeledTotalGoals": [
+          3.5111475234487863,
+          11.76234420355344,
+          19.701926540952016,
+          22.000484637396433,
+          18.425405883819522,
+          12.34502194215908,
+          6.892637251038826,
+          5.361032017631887
+        ],
+        "totalGoalLabels": [
+          "0球",
+          "1球",
+          "2球",
+          "3球",
+          "4球",
+          "5球",
+          "6球",
+          "7+球"
+        ],
+        "modeledHalfFull": [
+          19.851554828210254,
+          5.423823185245789,
+          3.1638859358450593,
+          11.007691844008269,
+          11.807349688018508,
+          13.725668044195999,
+          2.5945016288356415,
+          5.423823185245789,
+          27.001701660394694
+        ],
+        "halfFullLabels": [
+          "胜胜",
+          "胜平",
+          "胜负",
+          "平胜",
+          "平平",
+          "平负",
+          "负胜",
+          "负平",
+          "负负"
+        ],
+        "asianHomeProbability": 49.73821989528796,
+        "asianAwayProbability": 50.26178010471204,
+        "asianMovement": 3.1413612565445117,
+        "overProbability": 48.395721925133685,
+        "fitAgreement": "多盘口较一致",
+        "handicapMeaning": "外围主队受让 0.25 球；体彩主队 -1，主队需净胜超过 1 球才是让胜，净胜 1 球为让平。",
+        "rawProbabilities": [
+          32.58352116549495,
+          26.632605863514,
+          40.78387297099104
+        ],
+        "calibrationSampleSize": 0,
+        "probabilityTemperature": 1,
+        "lowScoreRho": 0
+      },
+      "expectedGoals": {
+        "home": 1.5500000000000007,
+        "away": 1.800000000000001
+      },
+      "scores": [
+        {
+          "score": "1:1",
+          "probability": 9.79610159042212
+        },
+        {
+          "score": "1:2",
+          "probability": 8.81649143137991
+        },
+        {
+          "score": "2:1",
+          "probability": 7.591978732577146
+        },
+        {
+          "score": "2:2",
+          "probability": 6.832780859319433
+        }
+      ],
+      "fullScoreDistribution": [
+        {
+          "score": "1:1",
+          "probability": 9.79610159042212
+        },
+        {
+          "score": "1:2",
+          "probability": 8.81649143137991
+        },
+        {
+          "score": "2:1",
+          "probability": 7.591978732577146
+        },
+        {
+          "score": "2:2",
+          "probability": 6.832780859319433
+        },
+        {
+          "score": "0:1",
+          "probability": 6.320065542207817
+        },
+        {
+          "score": "0:2",
+          "probability": 5.688058987987037
+        },
+        {
+          "score": "1:0",
+          "probability": 5.44227866134562
+        },
+        {
+          "score": "1:3",
+          "probability": 5.2898948588279495
+        },
+        {
+          "score": "2:0",
+          "probability": 4.217765962542855
+        },
+        {
+          "score": "2:3",
+          "probability": 4.099668515591662
+        },
+        {
+          "score": "3:1",
+          "probability": 3.922522345164861
+        },
+        {
+          "score": "3:2",
+          "probability": 3.5302701106483756
+        },
+        {
+          "score": "0:0",
+          "probability": 3.511147523448785
+        },
+        {
+          "score": "0:3",
+          "probability": 3.412835392792224
+        },
+        {
+          "score": "1:4",
+          "probability": 2.380452686472579
+        },
+        {
+          "score": "3:0",
+          "probability": 2.1791790806471436
+        },
+        {
+          "score": "3:3",
+          "probability": 2.118162066389027
+        },
+        {
+          "score": "2:4",
+          "probability": 1.8448508320162493
+        },
+        {
+          "score": "0:4",
+          "probability": 1.5357759267565017
+        },
+        {
+          "score": "4:1",
+          "probability": 1.519977408751384
+        },
+        {
+          "score": "4:2",
+          "probability": 1.3679796678762461
+        },
+        {
+          "score": "3:4",
+          "probability": 0.9531729298750627
+        },
+        {
+          "score": "1:5",
+          "probability": 0.8569629671301288
+        },
+        {
+          "score": "4:0",
+          "probability": 0.8444318937507683
+        },
+        {
+          "score": "4:3",
+          "probability": 0.8207878007257483
+        },
+        {
+          "score": "2:5",
+          "probability": 0.66414629952585
+        },
+        {
+          "score": "0:5",
+          "probability": 0.5528793336323409
+        },
+        {
+          "score": "5:1",
+          "probability": 0.47119299671292936
+        },
+        {
+          "score": "5:2",
+          "probability": 0.42407369704163655
+        },
+        {
+          "score": "4:4",
+          "probability": 0.36935451032658695
+        },
+        {
+          "score": "3:5",
+          "probability": 0.34314225475502275
+        },
+        {
+          "score": "5:0",
+          "probability": 0.2617738870627384
+        },
+        {
+          "score": "1:6",
+          "probability": 0.25708889013903874
+        },
+        {
+          "score": "5:3",
+          "probability": 0.2544442182249821
+        },
+        {
+          "score": "2:6",
+          "probability": 0.1992438898577551
+        },
+        {
+          "score": "0:6",
+          "probability": 0.1658638000897023
+        },
+        {
+          "score": "4:5",
+          "probability": 0.13296762371757137
+        },
+        {
+          "score": "6:1",
+          "probability": 0.12172485748417347
+        },
+        {
+          "score": "5:4",
+          "probability": 0.11449989820124201
+        },
+        {
+          "score": "6:2",
+          "probability": 0.10955237173575616
+        },
+        {
+          "score": "3:6",
+          "probability": 0.10294267642650687
+        },
+        {
+          "score": "6:0",
+          "probability": 0.06762492082454079
+        },
+        {
+          "score": "1:7",
+          "probability": 0.06610857175003856
+        },
+        {
+          "score": "6:3",
+          "probability": 0.06573142304145374
+        },
+        {
+          "score": "2:7",
+          "probability": 0.05123414310627991
+        },
+        {
+          "score": "0:7",
+          "probability": 0.042650691451637766
+        },
+        {
+          "score": "5:5",
+          "probability": 0.04121996335244714
+        },
+        {
+          "score": "4:6",
+          "probability": 0.03989028711527142
+        },
+        {
+          "score": "6:4",
+          "probability": 0.029579140368654198
+        },
+        {
+          "score": "7:1",
+          "probability": 0.026953361300066987
+        },
+        {
+          "score": "3:7",
+          "probability": 0.026470973938244633
+        },
+        {
+          "score": "7:2",
+          "probability": 0.024258025170060298
+        },
+        {
+          "score": "7:0",
+          "probability": 0.01497408961114832
+        },
+        {
+          "score": "7:3",
+          "probability": 0.014554815102036189
+        },
+        {
+          "score": "5:6",
+          "probability": 0.012365989005734147
+        },
+        {
+          "score": "6:5",
+          "probability": 0.010648490532715518
+        },
+        {
+          "score": "4:7",
+          "probability": 0.0102575024010698
+        },
+        {
+          "score": "7:4",
+          "probability": 0.006549666795916289
+        },
+        {
+          "score": "6:6",
+          "probability": 0.003194547159814656
+        },
+        {
+          "score": "5:7",
+          "probability": 0.0031798257443316396
+        },
+        {
+          "score": "7:5",
+          "probability": 0.0023578800465298647
+        },
+        {
+          "score": "6:7",
+          "probability": 0.0008214549839523407
+        },
+        {
+          "score": "7:6",
+          "probability": 0.0007073640139589599
+        },
+        {
+          "score": "7:7",
+          "probability": 0.00018189360358944693
+        }
+      ],
+      "missingCompanies": [],
+      "predictionId": "pred-q0rkqn",
+      "inputSnapshotId": "input-k31cqx",
+      "baseModelVersion": "multi-market-poisson-v5-dc-shadow",
+      "calibrationVersion": "cal-none",
+      "predictionGeneratedAt": "2026-09-22T13:33:52.616Z",
+      "sourceFetchedAt": "2026-09-22T13:33:52.616Z",
+      "layers": {
+        "oddsBaseline": {
+          "fullScoreDistribution": [
+            {
+              "score": "1:1",
+              "probability": 9.79610159042212
+            },
+            {
+              "score": "1:2",
+              "probability": 8.81649143137991
+            },
+            {
+              "score": "2:1",
+              "probability": 7.591978732577146
+            },
+            {
+              "score": "2:2",
+              "probability": 6.832780859319433
+            },
+            {
+              "score": "0:1",
+              "probability": 6.320065542207817
+            },
+            {
+              "score": "0:2",
+              "probability": 5.688058987987037
+            },
+            {
+              "score": "1:0",
+              "probability": 5.44227866134562
+            },
+            {
+              "score": "1:3",
+              "probability": 5.2898948588279495
+            },
+            {
+              "score": "2:0",
+              "probability": 4.217765962542855
+            },
+            {
+              "score": "2:3",
+              "probability": 4.099668515591662
+            },
+            {
+              "score": "3:1",
+              "probability": 3.922522345164861
+            },
+            {
+              "score": "3:2",
+              "probability": 3.5302701106483756
+            },
+            {
+              "score": "0:0",
+              "probability": 3.511147523448785
+            },
+            {
+              "score": "0:3",
+              "probability": 3.412835392792224
+            },
+            {
+              "score": "1:4",
+              "probability": 2.380452686472579
+            },
+            {
+              "score": "3:0",
+              "probability": 2.1791790806471436
+            },
+            {
+              "score": "3:3",
+              "probability": 2.118162066389027
+            },
+            {
+              "score": "2:4",
+              "probability": 1.8448508320162493
+            },
+            {
+              "score": "0:4",
+              "probability": 1.5357759267565017
+            },
+            {
+              "score": "4:1",
+              "probability": 1.519977408751384
+            },
+            {
+              "score": "4:2",
+              "probability": 1.3679796678762461
+            },
+            {
+              "score": "3:4",
+              "probability": 0.9531729298750627
+            },
+            {
+              "score": "1:5",
+              "probability": 0.8569629671301288
+            },
+            {
+              "score": "4:0",
+              "probability": 0.8444318937507683
+            },
+            {
+              "score": "4:3",
+              "probability": 0.8207878007257483
+            },
+            {
+              "score": "2:5",
+              "probability": 0.66414629952585
+            },
+            {
+              "score": "0:5",
+              "probability": 0.5528793336323409
+            },
+            {
+              "score": "5:1",
+              "probability": 0.47119299671292936
+            },
+            {
+              "score": "5:2",
+              "probability": 0.42407369704163655
+            },
+            {
+              "score": "4:4",
+              "probability": 0.36935451032658695
+            },
+            {
+              "score": "3:5",
+              "probability": 0.34314225475502275
+            },
+            {
+              "score": "5:0",
+              "probability": 0.2617738870627384
+            },
+            {
+              "score": "1:6",
+              "probability": 0.25708889013903874
+            },
+            {
+              "score": "5:3",
+              "probability": 0.2544442182249821
+            },
+            {
+              "score": "2:6",
+              "probability": 0.1992438898577551
+            },
+            {
+              "score": "0:6",
+              "probability": 0.1658638000897023
+            },
+            {
+              "score": "4:5",
+              "probability": 0.13296762371757137
+            },
+            {
+              "score": "6:1",
+              "probability": 0.12172485748417347
+            },
+            {
+              "score": "5:4",
+              "probability": 0.11449989820124201
+            },
+            {
+              "score": "6:2",
+              "probability": 0.10955237173575616
+            },
+            {
+              "score": "3:6",
+              "probability": 0.10294267642650687
+            },
+            {
+              "score": "6:0",
+              "probability": 0.06762492082454079
+            },
+            {
+              "score": "1:7",
+              "probability": 0.06610857175003856
+            },
+            {
+              "score": "6:3",
+              "probability": 0.06573142304145374
+            },
+            {
+              "score": "2:7",
+              "probability": 0.05123414310627991
+            },
+            {
+              "score": "0:7",
+              "probability": 0.042650691451637766
+            },
+            {
+              "score": "5:5",
+              "probability": 0.04121996335244714
+            },
+            {
+              "score": "4:6",
+              "probability": 0.03989028711527142
+            },
+            {
+              "score": "6:4",
+              "probability": 0.029579140368654198
+            },
+            {
+              "score": "7:1",
+              "probability": 0.026953361300066987
+            },
+            {
+              "score": "3:7",
+              "probability": 0.026470973938244633
+            },
+            {
+              "score": "7:2",
+              "probability": 0.024258025170060298
+            },
+            {
+              "score": "7:0",
+              "probability": 0.01497408961114832
+            },
+            {
+              "score": "7:3",
+              "probability": 0.014554815102036189
+            },
+            {
+              "score": "5:6",
+              "probability": 0.012365989005734147
+            },
+            {
+              "score": "6:5",
+              "probability": 0.010648490532715518
+            },
+            {
+              "score": "4:7",
+              "probability": 0.0102575024010698
+            },
+            {
+              "score": "7:4",
+              "probability": 0.006549666795916289
+            },
+            {
+              "score": "6:6",
+              "probability": 0.003194547159814656
+            },
+            {
+              "score": "5:7",
+              "probability": 0.0031798257443316396
+            },
+            {
+              "score": "7:5",
+              "probability": 0.0023578800465298647
+            },
+            {
+              "score": "6:7",
+              "probability": 0.0008214549839523407
+            },
+            {
+              "score": "7:6",
+              "probability": 0.0007073640139589599
+            },
+            {
+              "score": "7:7",
+              "probability": 0.00018189360358944693
+            }
+          ],
+          "probabilities": {
+            "home": 32.58352116549495,
+            "draw": 26.632605863514,
+            "away": 40.78387297099104
+          }
+        },
+        "intelligenceOutput": {
+          "scores": [],
+          "coverage": 0,
+          "summary": "",
+          "risk": "",
+          "evidence": []
+        },
+        "fusionOutput": {
+          "fullScoreDistribution": [
+            {
+              "score": "1:1",
+              "probability": 9.79610159042212
+            },
+            {
+              "score": "1:2",
+              "probability": 8.81649143137991
+            },
+            {
+              "score": "2:1",
+              "probability": 7.591978732577146
+            },
+            {
+              "score": "2:2",
+              "probability": 6.832780859319433
+            },
+            {
+              "score": "0:1",
+              "probability": 6.320065542207817
+            },
+            {
+              "score": "0:2",
+              "probability": 5.688058987987037
+            },
+            {
+              "score": "1:0",
+              "probability": 5.44227866134562
+            },
+            {
+              "score": "1:3",
+              "probability": 5.2898948588279495
+            },
+            {
+              "score": "2:0",
+              "probability": 4.217765962542855
+            },
+            {
+              "score": "2:3",
+              "probability": 4.099668515591662
+            },
+            {
+              "score": "3:1",
+              "probability": 3.922522345164861
+            },
+            {
+              "score": "3:2",
+              "probability": 3.5302701106483756
+            },
+            {
+              "score": "0:0",
+              "probability": 3.511147523448785
+            },
+            {
+              "score": "0:3",
+              "probability": 3.412835392792224
+            },
+            {
+              "score": "1:4",
+              "probability": 2.380452686472579
+            },
+            {
+              "score": "3:0",
+              "probability": 2.1791790806471436
+            },
+            {
+              "score": "3:3",
+              "probability": 2.118162066389027
+            },
+            {
+              "score": "2:4",
+              "probability": 1.8448508320162493
+            },
+            {
+              "score": "0:4",
+              "probability": 1.5357759267565017
+            },
+            {
+              "score": "4:1",
+              "probability": 1.519977408751384
+            },
+            {
+              "score": "4:2",
+              "probability": 1.3679796678762461
+            },
+            {
+              "score": "3:4",
+              "probability": 0.9531729298750627
+            },
+            {
+              "score": "1:5",
+              "probability": 0.8569629671301288
+            },
+            {
+              "score": "4:0",
+              "probability": 0.8444318937507683
+            },
+            {
+              "score": "4:3",
+              "probability": 0.8207878007257483
+            },
+            {
+              "score": "2:5",
+              "probability": 0.66414629952585
+            },
+            {
+              "score": "0:5",
+              "probability": 0.5528793336323409
+            },
+            {
+              "score": "5:1",
+              "probability": 0.47119299671292936
+            },
+            {
+              "score": "5:2",
+              "probability": 0.42407369704163655
+            },
+            {
+              "score": "4:4",
+              "probability": 0.36935451032658695
+            },
+            {
+              "score": "3:5",
+              "probability": 0.34314225475502275
+            },
+            {
+              "score": "5:0",
+              "probability": 0.2617738870627384
+            },
+            {
+              "score": "1:6",
+              "probability": 0.25708889013903874
+            },
+            {
+              "score": "5:3",
+              "probability": 0.2544442182249821
+            },
+            {
+              "score": "2:6",
+              "probability": 0.1992438898577551
+            },
+            {
+              "score": "0:6",
+              "probability": 0.1658638000897023
+            },
+            {
+              "score": "4:5",
+              "probability": 0.13296762371757137
+            },
+            {
+              "score": "6:1",
+              "probability": 0.12172485748417347
+            },
+            {
+              "score": "5:4",
+              "probability": 0.11449989820124201
+            },
+            {
+              "score": "6:2",
+              "probability": 0.10955237173575616
+            },
+            {
+              "score": "3:6",
+              "probability": 0.10294267642650687
+            },
+            {
+              "score": "6:0",
+              "probability": 0.06762492082454079
+            },
+            {
+              "score": "1:7",
+              "probability": 0.06610857175003856
+            },
+            {
+              "score": "6:3",
+              "probability": 0.06573142304145374
+            },
+            {
+              "score": "2:7",
+              "probability": 0.05123414310627991
+            },
+            {
+              "score": "0:7",
+              "probability": 0.042650691451637766
+            },
+            {
+              "score": "5:5",
+              "probability": 0.04121996335244714
+            },
+            {
+              "score": "4:6",
+              "probability": 0.03989028711527142
+            },
+            {
+              "score": "6:4",
+              "probability": 0.029579140368654198
+            },
+            {
+              "score": "7:1",
+              "probability": 0.026953361300066987
+            },
+            {
+              "score": "3:7",
+              "probability": 0.026470973938244633
+            },
+            {
+              "score": "7:2",
+              "probability": 0.024258025170060298
+            },
+            {
+              "score": "7:0",
+              "probability": 0.01497408961114832
+            },
+            {
+              "score": "7:3",
+              "probability": 0.014554815102036189
+            },
+            {
+              "score": "5:6",
+              "probability": 0.012365989005734147
+            },
+            {
+              "score": "6:5",
+              "probability": 0.010648490532715518
+            },
+            {
+              "score": "4:7",
+              "probability": 0.0102575024010698
+            },
+            {
+              "score": "7:4",
+              "probability": 0.006549666795916289
+            },
+            {
+              "score": "6:6",
+              "probability": 0.003194547159814656
+            },
+            {
+              "score": "5:7",
+              "probability": 0.0031798257443316396
+            },
+            {
+              "score": "7:5",
+              "probability": 0.0023578800465298647
+            },
+            {
+              "score": "6:7",
+              "probability": 0.0008214549839523407
+            },
+            {
+              "score": "7:6",
+              "probability": 0.0007073640139589599
+            },
+            {
+              "score": "7:7",
+              "probability": 0.00018189360358944693
+            }
+          ],
+          "probabilities": {
+            "home": 33.45837276730072,
+            "draw": 22.672142954021812,
+            "away": 43.869484278677476
+          },
+          "hhad": [
+            15.947201709255882,
+            17.511171058044813,
+            66.5416272326993
+          ],
+          "totalGoals": [
+            3.5111475234487863,
+            11.76234420355344,
+            19.701926540952016,
+            22.000484637396433,
+            18.425405883819522,
+            12.34502194215908,
+            6.892637251038826,
+            5.361032017631887
+          ],
+          "halfFull": [
+            19.851554828210254,
+            5.423823185245789,
+            3.1638859358450593,
+            11.007691844008269,
+            11.807349688018508,
+            13.725668044195999,
+            2.5945016288356415,
+            5.423823185245789,
+            27.001701660394694
+          ]
+        }
+      },
+      "inputHash": "input-k31cqx",
+      "parameters": {
+        "baseModelVersion": "multi-market-poisson-v5-dc-shadow",
+        "calibrationVersion": "cal-none",
+        "predictionId": "pred-q0rkqn"
+      }
+    }
+  ]
+}
