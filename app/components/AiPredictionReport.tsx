@@ -54,7 +54,7 @@ export default function AiPredictionReport({rows,coverage,unavailableMatches,loa
     </div>
     {error&&<div className="data-fallback">{error}</div>}
     {aiError&&<div className="data-fallback">AI 复核未完成：{aiError}；当前仍展示可用的赔率模型基线。</div>}
-    <div className="prediction-disclaimer"><b>{aiProvider?`已由 ${aiProvider} 复核`:"赔率模型基线（尚未调用 AI 复核）"}</b><span>{methodology}</span>{fetchedAt&&<small>数据读取 {new Date(fetchedAt).toLocaleString("zh-CN")}</small>}</div>
+    <div className="prediction-disclaimer"><b>{aiProvider?`已由 ${aiProvider} 复核`:"赔率模型基线（尚未调用 AI 复核）"}</b><span className="prediction-methodology-desktop">{methodology}</span><details className="prediction-methodology-mobile"><summary>查看模型口径与数据限制</summary><span>{methodology}</span></details>{fetchedAt&&<small>数据读取 {new Date(fetchedAt).toLocaleString("zh-CN")}</small>}</div>
     <ModelHealthPanel/>
     {!loading&&<PredictionCoverage coverage={coverage} unavailableMatches={unavailableMatches} predictedCount={rows.length} onRetry={onRetryUnavailable} retrying={retryingUnavailable} retryMessage={retryMessage}/>}
     {loading?<div className="results-empty">正在同步三家公司赔率并计算全部场次…</div>:<div className="daily-prediction-list">

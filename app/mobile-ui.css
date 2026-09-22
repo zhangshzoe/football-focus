@@ -11,6 +11,7 @@ button,input,select,textarea{font:inherit}
 button,a,select,input{touch-action:manipulation}
 :where(button,a,input,select,textarea):focus-visible{outline:3px solid rgba(22,135,248,.28);outline-offset:2px}
 .mobile-preview-link{display:inline-flex;min-height:34px;align-items:center;padding:0 11px;border:1px solid #bddaea;border-radius:999px;background:rgba(255,255,255,.75);color:#126fa9;font-size:12px;font-weight:800;text-decoration:none}
+.prediction-methodology-mobile{display:none}
 
 /* Desktop mobile-preview workspace. */
 .mobile-preview-page{min-height:100vh;padding:32px;background:linear-gradient(145deg,#eaf8ff,#f3faf7);color:#18364f}
@@ -74,6 +75,91 @@ button,a,select,input{touch-action:manipulation}
 
 @media(max-width:390px){
   :root{--mobile-gutter:8px}.brand-copy small{max-width:155px}.topbar.compact-nav nav a{font-size:9px!important}.purchase-kanban,.recommended-metrics,.recommendation-return-grid,.archive-stats{grid-template-columns:1fr 1fr!important}.choice-grid,.choice-grid.passes{grid-template-columns:1fr!important}.archive-review-table tr{grid-template-columns:1fr!important}.archive-review-table td{grid-column:1!important}.archive-review-table td:nth-child(1),.archive-review-table td:nth-child(2),.archive-review-table td:nth-child(8){grid-column:1!important}
+}
+
+/* Mobile reading pass: keep the primary result in view and move secondary detail behind
+   short, swipeable groups. These rules intentionally leave the desktop layout untouched. */
+@media(max-width:767px){
+  body{color:#173a51;font-size:16px;line-height:1.55}
+  .site-intro{min-height:60px!important;padding:8px 6px!important}
+  .brand-copy b{letter-spacing:-.02em}.brand-copy small{line-height:1.35}
+  .topbar.compact-nav{height:72px!important;min-height:72px!important}
+  .topbar.compact-nav nav a{min-height:72px!important;font-size:10.5px!important;letter-spacing:-.01em}
+  .topbar.compact-nav nav a.active{font-weight:900!important;box-shadow:inset 0 1px 0 rgba(22,135,248,.12)}
+
+  .section-head>div>p:last-child,.prediction-report-head>div>p:last-child,.market-prediction-head>div>p:last-child,.archive-page-head>div>p:last-child{font-size:13px!important;line-height:1.6!important}
+  .section-head h2,.archive-page-head h2{font-size:23px!important;letter-spacing:-.025em}
+  .prediction-disclaimer,.market-prediction-meta,.data-fallback,.archive-source-note{font-size:13px!important;line-height:1.65!important}
+  .prediction-methodology-desktop{display:none!important}.prediction-methodology-mobile{display:block}.prediction-methodology-mobile summary{display:flex;min-height:40px;align-items:center;color:#1479b8;font-weight:850;cursor:pointer}.prediction-methodology-mobile span{display:block;padding:2px 0 7px;color:#5e7483;line-height:1.7}
+  .prediction-footnote,.purchase-plan-source,.purchase-risk{font-size:12px!important;line-height:1.7!important}
+  .section,.market-center,.dark-section,.journal,.fund-tool,.predictions-page,.recommendations-page,.market-prediction-page,.archive-page{border-color:rgba(202,225,237,.96)!important;background:rgba(252,254,255,.97)!important}
+
+  /* Health metrics become a compact swipe rail so the forecast itself appears sooner. */
+  .model-health-panel{padding:11px!important}
+  .model-health-panel>header{gap:8px!important;margin-bottom:9px!important}
+  .model-health-panel h3{font-size:18px!important}.model-health-panel header p{font-size:12px!important;line-height:1.55!important}
+  .model-status{padding:5px 9px!important;font-size:10px!important}
+  .model-health-grid{display:flex!important;gap:8px!important;margin:0 -3px!important;overflow-x:auto!important;padding:0 3px 7px!important;scroll-padding-inline:3px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch}
+  .model-health-grid article{min-height:96px!important;flex:0 0 min(76vw,278px)!important;scroll-snap-align:start}
+  .model-health-grid article small,.model-health-grid article span{font-size:12px!important}.model-health-grid article b{font-size:18px!important}
+  .model-health-panel summary{display:flex;min-height:44px;align-items:center;padding-top:6px!important}
+
+  /* Each prediction keeps all five markets visible without five full-width rows. */
+  .prediction-overview-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:7px!important}
+  .compact-score-summary{grid-column:1/-1!important}
+  .compact-score-summary,.compact-market-summary{min-height:96px;padding:9px!important}
+  .compact-score-summary>header small,.compact-market-summary>header small{font-size:13px!important}
+  .compact-score-summary>div>span,.compact-market-summary>div>span{min-height:31px!important;font-size:12px!important}
+  .compact-score-summary b,.compact-market-summary b{font-size:14px!important}
+  .compact-evidence{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:7px!important}
+  .compact-evidence>div{min-height:54px!important;padding:9px!important}.compact-evidence>div:last-child{grid-column:1/-1}
+  .compact-evidence b{overflow:visible!important;font-size:12px!important;line-height:1.4!important;text-overflow:clip!important;white-space:normal!important}
+  .compact-ai-review{font-size:13px!important;line-height:1.65!important}
+  .prediction-full-details>summary{padding-inline:10px!important;font-size:13px!important}
+
+  /* Filters stay above the data, but use one short row instead of two tall rows. */
+  .market-prediction-filters{grid-template-columns:repeat(2,minmax(0,1fr))!important;align-items:end!important;gap:8px!important;padding:10px!important}
+  .market-prediction-filters>small{grid-column:1/-1;margin:0!important;text-align:left!important}
+  .market-prediction-filters label,.market-prediction-filters select,.market-prediction-filters input{min-width:0!important}
+  .forecast-view-tabs,.archive-analysis-tabs,.archive-view-tabs{gap:6px!important;padding-bottom:5px!important;scrollbar-width:none}
+  .forecast-view-tabs::-webkit-scrollbar,.archive-analysis-tabs::-webkit-scrollbar,.archive-view-tabs::-webkit-scrollbar,.model-health-grid::-webkit-scrollbar,.purchase-plan-grid::-webkit-scrollbar{display:none}
+  .forecast-view-tabs button,.archive-analysis-tabs button,.archive-view-tabs button{min-width:104px!important;padding-inline:13px!important}
+  .market-forecast-wrap{overflow:hidden auto!important;border:1px solid #d4e6ef!important;border-radius:11px!important;background:#fff!important;box-shadow:0 5px 16px rgba(26,83,115,.06)!important}
+  .market-forecast-table th,.market-forecast-table td{font-size:12px!important;line-height:1.45!important}
+  .market-forecast-wrap:after{bottom:10px!important;font-size:10px!important}
+
+  /* Tickets are read one at a time with a visible preview of the next ticket. */
+  .purchase-plan-grid{display:flex!important;gap:10px!important;margin-inline:-2px!important;overflow-x:auto!important;padding:2px 2px 8px!important;scroll-padding-inline:2px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch}
+  .purchase-plan-card{flex:0 0 min(88vw,340px)!important;scroll-snap-align:start}
+  .purchase-plan-title{padding:11px 12px!important}.purchase-plan-title span{font-size:15px!important}.purchase-plan-title b{font-size:11px!important}
+  .purchase-plan-card li{padding:10px 11px!important}.purchase-plan-card li>div:first-child b,.purchase-plan-card li>div:first-child span{font-size:12px!important}.purchase-plan-card li strong{font-size:13px!important}.purchase-plan-card li small,.purchase-plan-card li em{font-size:11px!important}
+  .purchase-plan-card footer{font-size:11px!important}.purchase-plan-card footer strong{font-size:13px!important}
+  .purchase-kanban>div{min-height:74px;padding:10px!important}.purchase-kanban span{font-size:11px!important}.purchase-kanban b{font-size:18px!important}
+  .recommendation-builder fieldset{padding:12px!important;border-radius:12px!important}.recommendation-builder legend{font-size:14px!important}
+  .choice-grid label,.choice-grid.passes label{min-height:44px!important}
+
+  /* Archive summaries prioritise readable prose; evidence opens as a bottom sheet. */
+  .archive-review-summary>p{font-size:14px!important;line-height:1.75!important}
+  .archive-review-table td:before{font-size:11px!important}.archive-review-table td{font-size:13px!important}
+  .archive-evidence-popover{inset:auto 8px calc(82px + env(safe-area-inset-bottom)) 8px!important;width:auto!important;max-height:min(72vh,620px)!important;border-radius:16px!important;box-shadow:0 -16px 48px rgba(18,63,89,.28)!important}
+  .archive-evidence-popover>header{position:sticky;z-index:1;top:0;min-height:50px!important}.archive-evidence-popover>div{font-size:14px!important;line-height:1.65!important}
+  .archive-data-audit>div{min-height:76px!important}.archive-data-audit small{font-size:11px!important}.archive-data-audit b{font-size:17px!important}
+
+  /* Keep common dense tables readable while retaining intentional horizontal scroll. */
+  .table-wrap,.results-table-wrap,.league-accuracy-wrap,.archive-table-wrap{scrollbar-width:thin;scrollbar-color:#9bc5dc transparent}
+  .results-table,.records-table{font-size:13px!important}.results-table th,.results-table td,.records-table th,.records-table td{padding:10px 9px!important}
+  .detail-sheet p,.detail-sheet li{font-size:14px;line-height:1.65}.detail-sheet small{line-height:1.5}
+
+  /* Date and league fit comfortably side by side on current phones. */
+  .match-filters{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .match-filters .match-search{grid-column:1/-1!important}.match-filters .hide-closed{grid-column:1!important}.match-filters>small{grid-column:2!important;align-self:center;justify-self:end!important;text-align:right}
+  .data-status button{width:auto!important}.data-status>span{align-self:center}
+}
+
+@media(max-width:359px){
+  .prediction-overview-grid,.compact-evidence,.market-prediction-filters{grid-template-columns:1fr!important}
+  .compact-score-summary,.compact-evidence>div:last-child,.market-prediction-filters>small{grid-column:1!important}
+  .topbar.compact-nav nav a{font-size:9px!important}
 }
 
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
