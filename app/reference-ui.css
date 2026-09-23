@@ -439,6 +439,7 @@ main{max-width:1320px!important;padding-bottom:88px!important}
 .prediction-coverage li>div{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.prediction-coverage li>div span,.prediction-coverage time{color:#667f91;font-size:13px}
 .prediction-coverage li>strong{overflow-wrap:anywhere}.prediction-coverage li i{margin:0 5px;font-size:12px;font-style:normal;color:#879cab}
 .prediction-coverage li>p{margin:0;color:#95601c;font-size:14px}
+.prediction-mapping-reason{display:grid;gap:3px}.prediction-mapping-reason p{margin:0;color:#95601c;font-size:14px}.prediction-mapping-reason small{color:#6f8290;line-height:1.35}
 @media(max-width:767px){.prediction-coverage{padding:10px}.prediction-coverage li{grid-template-columns:minmax(0,1fr)}.prediction-coverage li>p{line-height:1.5}}
 .view-predictions .predictions-page:not(.compact-predictions-page){display:none}
 .compact-predictions-page{padding:18px!important}.compact-predictions-page .prediction-report-head{margin-bottom:10px}.compact-predictions-page .prediction-disclaimer{margin-bottom:10px;padding:9px 12px}.compact-predictions-page .daily-prediction-list{gap:9px}

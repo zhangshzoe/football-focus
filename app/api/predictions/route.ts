@@ -368,7 +368,8 @@ export async function POST(request: Request) {
       const officialMatchId=String(match.officialMatchId||match.matchId||"");
       const related=pendingVerification.filter(record=>record.candidateOfficialMatchIds?.includes(officialMatchId));
       const reasons=Array.from(new Set(related.map(record=>record.reason)));
-      return{id:match.id,officialMatchId,salesDate:match.salesDate,kickoffAt:match.kickoffAt,matchDate:match.matchDate,time:match.time,league:match.league,home:match.home,away:match.away,reason:reasons.join("；")||"外围盘口尚未提供可核验的本场数据"};
+      const externalCandidates=related.map(record=>({displayId:record.displayId,home:record.home,away:record.away,matchDate:record.matchDate,time:record.time}));
+      return{id:match.id,officialMatchId,salesDate:match.salesDate,kickoffAt:match.kickoffAt,matchDate:match.matchDate,time:match.time,league:match.league,home:match.home,away:match.away,reason:reasons.join("；")||"外围盘口尚未提供可核验的本场数据",externalCandidates};
     });
     const coverage={officialMatches:sportteryMatches.length,predictedMatches:versionedReports.length,unavailableMatches:unavailableOfficialMatches.length,pendingExternalMappings:pendingVerification.length};
     return Response.json({predictionId:version.predictionId,version,reports:versionedReports,pendingVerification,unavailableOfficialMatches,coverage, fetchedAt: generatedAt, sourceUrl: SOURCE_URL, methodology: `覆盖 ${coverage.predictedMatches}/${coverage.officialMatches} 场官方赛事；${coverage.unavailableMatches} 场因外围盘口缺失或身份未通过校验而不生成概率，另有 ${coverage.pendingExternalMappings} 条外围记录待核验。多盘口交叉校准：三家公司欧赔初盘/即盘、亚洲让球水位、大小球与体彩胜平负/固定让球盘共同约束预期进球；${globalCalibration ? `使用服务端校准版本 ${calibrationProfile?.profileId}，其参数只由训练/校准区间确定，并已保留未来测试区间；低比分相关参数 ${globalCalibration.lowScoreRho||0}` : "尚无通过未来测试门槛的服务端校准版本，保持盘口模型基线，Dixon–Coles 低比分修正处于影子验证"}；外围赛事仅在日期、主客队与开赛时间全部通过官方校验后进入可执行预测，盘口冲突会降低一致度。`});

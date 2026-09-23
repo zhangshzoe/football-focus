@@ -99,9 +99,16 @@ const aliasGroups={
  "japanU23":["日本亚","日本U23"],
  "wolverhampton":["伍尔弗","狼队"],
  "westBromwichAlbion":["西布罗姆","西布罗姆维奇"],
+ "miltonKeynesDons":["米尔顿","米尔顿凯恩斯"],
+ "grimsbyTown":["格里姆","格林斯比"],
+ "wiganAthletic":["维冈","维冈竞技"],
+ "unitedArabEmiratesU23":["阿联酋亚","阿联酋U23"],
+ "thailandU23":["泰国亚","泰国U23"],
+ "seattleSounders":["西雅图","西雅图海湾人"],
+ "realSaltLake":["盐湖城","皇家盐湖城"],
 };
 
-export const TEAM_ALIAS_VERSION="verified-zh-aliases-2026-09-20.1";
+export const TEAM_ALIAS_VERSION="verified-zh-aliases-2026-09-23.1";
 export const TEAM_ALIAS_INDEX=new Map(Object.entries(aliasGroups).flatMap(([identity,names])=>names.map(name=>[normalize(name),identity])));
 export const teamIdentity=(value,league="")=>{
  const name=normalize(value);
@@ -117,5 +124,8 @@ export const teamNamesCompatible=(left,right,leftLeague="",rightLeague="")=>{
  if(!leftIdentity||!rightIdentity)return false;
  if(leftIdentity===rightIdentity)return true;
  const leftName=normalize(left),rightName=normalize(right),shorter=leftName.length<=rightName.length?leftName:rightName,longer=leftName.length<=rightName.length?rightName:leftName;
- return shorter.length>=4&&longer.startsWith(shorter)&&longer.length-shorter.length<=2;
+ // 该兼容判断只会在同一竞彩编号、同一比赛日期和相近开赛时间已经成立后使用。
+ // 允许“西雅图 / 西雅图海湾人”“盐湖城 / 皇家盐湖城”这类中文简称，
+ // 但要求至少三个连续汉字且全名最多只多三个字符，避免把相近队名误合并。
+ return shorter.length>=3&&longer.includes(shorter)&&longer.length-shorter.length<=3;
 };
