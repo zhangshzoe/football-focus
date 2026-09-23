@@ -19,8 +19,12 @@ import {
 import {
   generatePurchasePlans,
   PURCHASE_PLAN_DEFINITIONS,
+  PURCHASE_PLAN_MODULES,
   PURCHASE_PLAN_STORAGE_KEY,
+  purchasePlanModuleId,
   settlePurchasePlan,
+  summarizePurchasePlanModules,
+  summarizePurchasePlans,
 } from "../purchase-plan-engine";
 
 type Model = "odds" | "intelligence" | "consensus";
@@ -432,12 +436,12 @@ function DailyPurchasePlans({
               : plan.status === "awaiting_result"
                 ? "已完赛待官方结果"
                 : "待赛";
-  const planStats=useMemo(()=>{
-    const settled=planSets.flatMap(item=>item.plans).filter(plan=>["won","lost","corrected_won","corrected_lost","void_won","void_lost"].includes(plan.status));
-    const won=settled.filter(plan=>["won","corrected_won","void_won"].includes(plan.status)).length;
-    const stake=settled.reduce((sum,plan)=>sum+plan.stake,0),returned=settled.reduce((sum,plan)=>sum+(plan.simulatedReturn||0),0);
-    return{settled: settled.length,won,rate:settled.length?won/settled.length*100:0,stake,returned};
-  },[planSets]);
+  const planStats=useMemo(()=>summarizePurchasePlans(planSets.flatMap(item=>item.plans)),[planSets]);
+  const moduleStats=useMemo(()=>summarizePurchasePlanModules(planSets),[planSets]);
+  const visiblePlanModules=useMemo(()=>PURCHASE_PLAN_MODULES.map(module=>({
+    ...module,
+    definitions:PURCHASE_PLAN_DEFINITIONS.filter(definition=>purchasePlanModuleId(definition.id)===module.id&&planSet?.plans.some(plan=>plan.id===definition.id&&plan.status!=="unavailable"&&plan.items.length>0)),
+  })).filter(module=>module.definitions.length>0),[planSet]);
   return (
     <section className="daily-purchase-panel">
       <header>
@@ -493,8 +497,20 @@ function DailyPurchasePlans({
         <div><span>模拟投入</span><b>¥{planStats.stake.toFixed(2)}</b></div>
         <div><span>模拟返还</span><b>¥{planStats.returned.toFixed(2)}</b></div>
       </div>
-      {planSet?.plans.some(plan=>currentPurchasePlanIds.has(plan.id)&&plan.status!=="unavailable"&&plan.items.length>0) && <div className="purchase-plan-grid">
-        {PURCHASE_PLAN_DEFINITIONS.filter(definition=>planSet?.plans.some(plan=>plan.id===definition.id&&plan.status!=="unavailable"&&plan.items.length>0)).map((definition) => {
+      {visiblePlanModules.map(module=>{
+        const stats=moduleStats[module.id]||{settled:0,won:0,rate:0,stake:0,returned:0,net:0};
+        return <section className={`purchase-plan-module purchase-plan-module-${module.id}`} key={module.id} aria-labelledby={`purchase-module-${module.id}`}>
+          <header className="purchase-module-head">
+            <div><h4 id={`purchase-module-${module.id}`}>{module.title}</h4><p>{module.description} · 当前批次 {module.definitions.length} 组</p></div>
+            <div className="purchase-module-stats" aria-label={`${module.title}历史统计`}>
+              <span>中奖 / 已结算<b>{stats.won} / {stats.settled}</b></span>
+              <span>中奖率<b>{stats.settled?`${stats.rate.toFixed(1)}%`:"待积累"}</b></span>
+              <span>投入 / 返还<b>¥{stats.stake.toFixed(2)} / ¥{stats.returned.toFixed(2)}</b></span>
+              <span>净收益<b className={stats.net>0?"positive":stats.net<0?"negative":""}>{stats.net>0?"+":""}¥{stats.net.toFixed(2)}</b></span>
+            </div>
+          </header>
+          <div className="purchase-plan-grid">
+        {module.definitions.map((definition) => {
           const plan = planSet!.plans.find((item) => item.id === definition.id)!;
           return (
             <article
@@ -555,7 +571,9 @@ function DailyPurchasePlans({
             </article>
           );
         })}
-      </div>}
+          </div>
+        </section>;
+      })}
       {planSet && (
         <p className="purchase-plan-source">
           生成：{new Date(planSet.generatedAt).toLocaleString("zh-CN")} ·{" "}

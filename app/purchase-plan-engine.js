@@ -22,6 +22,35 @@ export const PURCHASE_PLAN_DEFINITIONS=[
 ];
 export const PURCHASE_PLAN_DAILY_TIME="17:00";
 
+export const PURCHASE_PLAN_MODULES=[
+ {id:"score",title:"比分方案",description:"比分单选、双选与不同串关"},
+ {id:"total",title:"进球数方案",description:"总进球单选、双选与相邻覆盖"},
+ {id:"result",title:"赛果方案",description:"胜平负与让球胜平负组合"},
+ {id:"draw",title:"平局 / 让平",description:"专门跟踪平与让平组合"},
+ {id:"halfFull",title:"半全场方案",description:"半全场走势覆盖组合"},
+ {id:"tenfold",title:"10倍目标",description:"2～4场、目标净盈利约20元"},
+];
+export const purchasePlanModuleId=planId=>{
+ const id=String(planId||"");
+ if(id.startsWith("score-"))return"score";
+ if(id.startsWith("total-"))return"total";
+ if(id.startsWith("draw-or-handicap-draw-"))return"draw";
+ if(id.startsWith("half-full-"))return"halfFull";
+ if(id.startsWith("tenfold-"))return"tenfold";
+ return"result";
+};
+const settledPlanStatuses=new Set(["won","lost","corrected_won","corrected_lost","void_won","void_lost"]);
+const wonPlanStatuses=new Set(["won","corrected_won","void_won"]);
+export const summarizePurchasePlans=plans=>{
+ const settled=(plans||[]).filter(plan=>settledPlanStatuses.has(plan.status)),won=settled.filter(plan=>wonPlanStatuses.has(plan.status)).length;
+ const stake=settled.reduce((sum,plan)=>sum+safeNumber(plan.stake),0),returned=settled.reduce((sum,plan)=>sum+safeNumber(plan.simulatedReturn),0);
+ return{settled:settled.length,won,rate:settled.length?won/settled.length*100:0,stake,returned,net:returned-stake};
+};
+export const summarizePurchasePlanModules=planSets=>{
+ const plans=(planSets||[]).flatMap(item=>Array.isArray(item?.plans)?item.plans:[]);
+ return Object.fromEntries(PURCHASE_PLAN_MODULES.map(module=>[module.id,summarizePurchasePlans(plans.filter(plan=>purchasePlanModuleId(plan.id)===module.id))]));
+};
+
 export const MARKET_META={
  had:{name:"胜平负",code:"HAD",labels:["胜","平","负"],maxPass:8},
  hhad:{name:"让球胜平负",code:"HHAD",labels:["让胜","让平","让负"],maxPass:8},

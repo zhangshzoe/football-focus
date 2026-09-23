@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
 import test from "node:test";
 import ts from "typescript";
-import {generatePurchasePlans,settlePurchasePlan} from "../app/purchase-plan-engine.js";
+import {generatePurchasePlans,PURCHASE_PLAN_MODULES,settlePurchasePlan,summarizePurchasePlanModules} from "../app/purchase-plan-engine.js";
 import {teamIdentity} from "../app/team-identity.js";
 import {decisionTargetAt,selectOfficialDecisionRows} from "../app/snapshot-decision-policy.js";
 import {snapshotIdFromFileName} from "../app/snapshot-file-policy.js";
@@ -328,6 +328,25 @@ test("official identity and market qualification gate purchasable recommendation
  assert.ok(set.plans.every(plan=>plan.status==="unavailable"),"不支持单关的玩法不能生成单场方案，且相同场次编号不能跨日串场");
 });
 
+test("daily purchase history is split into modules with independent hit-rate and return summaries",()=>{
+ assert.deepEqual(PURCHASE_PLAN_MODULES.map(module=>module.id),["score","total","result","draw","halfFull","tenfold"]);
+ const summary=summarizePurchasePlanModules([{plans:[
+  {id:"score-double-3",status:"won",stake:16,simulatedReturn:90},
+  {id:"score-single-2",status:"lost",stake:2,simulatedReturn:0},
+  {id:"total-double-2",status:"pending",stake:8,simulatedReturn:0},
+  {id:"result-mixed-3",status:"void_lost",stake:2,simulatedReturn:0},
+  {id:"draw-or-handicap-draw-2",status:"corrected_won",stake:2,simulatedReturn:12},
+  {id:"half-full-double-3",status:"field_pending",stake:16,simulatedReturn:0},
+  {id:"tenfold-safe-2",status:"corrected_won",stake:2,simulatedReturn:22},
+ ]}]);
+ assert.deepEqual(summary.score,{settled:2,won:1,rate:50,stake:18,returned:90,net:72});
+ assert.deepEqual(summary.total,{settled:0,won:0,rate:0,stake:0,returned:0,net:0});
+ assert.deepEqual(summary.result,{settled:1,won:0,rate:0,stake:2,returned:0,net:-2});
+ assert.deepEqual(summary.draw,{settled:1,won:1,rate:100,stake:2,returned:12,net:10});
+ assert.deepEqual(summary.halfFull,{settled:0,won:0,rate:0,stake:0,returned:0,net:0});
+ assert.deepEqual(summary.tenfold,{settled:1,won:1,rate:100,stake:2,returned:22,net:20});
+});
+
 test("settlement keeps missing fields pending and isolates official ids by date",()=>{
  const plan={id:"p",status:"pending",stake:2,theoreticalReturn:6,items:[{matchId:"周一001",officialMatchId:"same-id",matchDate:"2026-09-08",kickoffAt:"2026-09-08T20:00:00+08:00",matchStatus:"Finished",market:"halfFull",pick:"胜胜",odd:3}]};
  const wrongDate={id:"周一001",matchId:"same-id",date:"2026-09-07",fullScore:"2:0",halfScore:"1:0",status:"settled"};
@@ -361,10 +380,14 @@ test("17:00 snapshot persists purchase drafts and the recommendation page expose
  assert.match(component,/settlePurchasePlan/);
  assert.match(component,/每注2元/);
  assert.match(component,/prediction-snapshots\?view=recommendations/);
+ assert.match(component,/purchase-plan-module/);
+ assert.match(component,/中奖 \/ 已结算/);
+ assert.match(component,/投入 \/ 返还/);
  assert.match(api,/generated-prediction-snapshot-index\.json/);
  assert.doesNotMatch(api,/prediction-snapshots\/\*\.json/);
  assert.match(sync,/bundlePath/);
  assert.match(styles,/purchase-plan-grid/);
+ assert.match(styles,/purchase-module-stats/);
 });
 
 test("bundled Site history includes the verified localhost migration without changing formal evaluation grain",async()=>{
