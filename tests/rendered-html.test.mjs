@@ -381,6 +381,9 @@ test("17:00 snapshot persists purchase drafts and the recommendation page expose
  assert.match(component,/每注2元/);
  assert.match(component,/prediction-snapshots\?view=recommendations/);
  assert.match(component,/purchase-plan-module/);
+ assert.match(component,/collapsedModules/);
+ assert.match(component,/aria-expanded/);
+ assert.match(component,/aria-controls/);
  assert.match(component,/中奖 \/ 已结算/);
  assert.match(component,/投入 \/ 返还/);
  assert.match(api,/generated-prediction-snapshot-index\.json/);
@@ -388,6 +391,8 @@ test("17:00 snapshot persists purchase drafts and the recommendation page expose
  assert.match(sync,/bundlePath/);
  assert.match(styles,/purchase-plan-grid/);
  assert.match(styles,/purchase-module-stats/);
+ assert.match(styles,/purchase-module-toggle/);
+ assert.match(styles,/purchase-plan-grid\[hidden\]/);
 });
 
 test("bundled Site history includes the verified localhost migration without changing formal evaluation grain",async()=>{

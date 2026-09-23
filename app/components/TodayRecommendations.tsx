@@ -287,7 +287,8 @@ function DailyPurchasePlans({
   const [planSet, setPlanSet] = useState<PurchasePlanSet | null>(null),
     [planSets, setPlanSets] = useState<PurchasePlanSet[]>([]),
     [status, setStatus] = useState("正在读取方案快照…"),
-    [busy, setBusy] = useState(false);
+    [busy, setBusy] = useState(false),
+    [collapsedModules, setCollapsedModules] = useState<Record<string, boolean>>({});
   async function selectPlanSet(selected: PurchasePlanSet) {
     setBusy(true);
     const resultDates = Array.from(
@@ -499,7 +500,9 @@ function DailyPurchasePlans({
       </div>
       {visiblePlanModules.map(module=>{
         const stats=moduleStats[module.id]||{settled:0,won:0,rate:0,stake:0,returned:0,net:0};
-        return <section className={`purchase-plan-module purchase-plan-module-${module.id}`} key={module.id} aria-labelledby={`purchase-module-${module.id}`}>
+        const collapsed=Boolean(collapsedModules[module.id]);
+        const contentId=`purchase-module-content-${module.id}`;
+        return <section className={`purchase-plan-module purchase-plan-module-${module.id}${collapsed?" collapsed":""}`} key={module.id} aria-labelledby={`purchase-module-${module.id}`}>
           <header className="purchase-module-head">
             <div><h4 id={`purchase-module-${module.id}`}>{module.title}</h4><p>{module.description} · 当前批次 {module.definitions.length} 组</p></div>
             <div className="purchase-module-stats" aria-label={`${module.title}历史统计`}>
@@ -508,8 +511,17 @@ function DailyPurchasePlans({
               <span>投入 / 返还<b>¥{stats.stake.toFixed(2)} / ¥{stats.returned.toFixed(2)}</b></span>
               <span>净收益<b className={stats.net>0?"positive":stats.net<0?"negative":""}>{stats.net>0?"+":""}¥{stats.net.toFixed(2)}</b></span>
             </div>
+            <button
+              type="button"
+              className="purchase-module-toggle"
+              aria-expanded={!collapsed}
+              aria-controls={contentId}
+              onClick={()=>setCollapsedModules(current=>({...current,[module.id]:!current[module.id]}))}
+            >
+              {collapsed?"展开":"收起"}<span aria-hidden="true">{collapsed?"＋":"−"}</span>
+            </button>
           </header>
-          <div className="purchase-plan-grid">
+          <div className="purchase-plan-grid" id={contentId} hidden={collapsed}>
         {module.definitions.map((definition) => {
           const plan = planSet!.plans.find((item) => item.id === definition.id)!;
           return (
