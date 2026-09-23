@@ -10,7 +10,7 @@ import ModelExperimentCenter from "./ModelExperimentCenter";
 
 type Result={id:string;matchId?:string;date:string;home:string;away:string;fullScore:string;halfScore?:string;handicap:string;hhadResult?:string;scoreResult?:string;totalGoalsResult?:string};
 type ResultCache=Record<string,Result>;
-type Snapshot=SavedPredictionSet & {scheduleLabel:string;capturedAt?:string;storageOrigin?:"server"|"local"};
+type Snapshot=SavedPredictionSet & {scheduleLabel:string;capturedAt?:string;storageOrigin?:"server"|"local"|"migrated-browser"};
 type SavedMatch=Snapshot["matches"][number];
 type AiReview={key:string;primary:string;summary:string;causeTags:string[];improvements:string[];evidenceLevel:string;predictability:string;provider:string;generatedAt:string};
 type AiReviewCache=Record<string,AiReview>;
@@ -182,13 +182,13 @@ export default function PredictionArchive(){
 
  useEffect(()=>{
   let active=true;
-  const remoteSnapshots=fetch("/api/prediction-snapshots",{cache:"no-store"}).then(async response=>{
+  const remoteArchive=fetch("/api/prediction-snapshots",{cache:"no-store"}).then(async response=>{
    const data=await response.json();
-   return response.ok&&Array.isArray(data.snapshots)?data.snapshots as Snapshot[]:[];
-  }).catch(()=>[] as Snapshot[]);
-  void Promise.all([readSnapshots(),readResultCache(),readBrowserData<AiReviewCache>(PREDICTION_REVIEW_CACHE_STORAGE_KEY,{}),remoteSnapshots]).then(([localSnapshots,localResults,localReviews,remote])=>{
+   return response.ok?{snapshots:Array.isArray(data.snapshots)?data.snapshots as Snapshot[]:[],resultCache:data.resultCache&&typeof data.resultCache==="object"&&!Array.isArray(data.resultCache)?data.resultCache as ResultCache:{}}:{snapshots:[] as Snapshot[],resultCache:{} as ResultCache};
+  }).catch(()=>({snapshots:[] as Snapshot[],resultCache:{} as ResultCache}));
+  void Promise.all([readSnapshots(),readResultCache(),readBrowserData<AiReviewCache>(PREDICTION_REVIEW_CACHE_STORAGE_KEY,{}),remoteArchive]).then(([localSnapshots,localResults,localReviews,remote])=>{
    if(!active)return;
-   setSnapshots(mergeSnapshots(localSnapshots,remote));setResultCache(localResults);setAiReviewCache(localReviews&&typeof localReviews==="object"&&!Array.isArray(localReviews)?localReviews:{});
+   setSnapshots(mergeSnapshots(localSnapshots,remote.snapshots));setResultCache({...remote.resultCache,...localResults});setAiReviewCache(localReviews&&typeof localReviews==="object"&&!Array.isArray(localReviews)?localReviews:{});
   });
   return()=>{active=false};
  },[]);
@@ -242,11 +242,11 @@ export default function PredictionArchive(){
  },[selected,resultFor]);
 
  const snapshotAudit=useMemo(()=>{
-  const today=shanghaiToday(),scheduled=snapshots.filter(snapshot=>snapshot.storageOrigin==="server").length,local=snapshots.length-scheduled;
+  const today=shanghaiToday(),scheduled=snapshots.filter(snapshot=>snapshot.storageOrigin==="server").length,migrated=snapshots.filter(snapshot=>snapshot.storageOrigin==="migrated-browser").length,local=snapshots.length-scheduled-migrated;
   const eligible=snapshots.flatMap(snapshot=>snapshot.matches.filter(match=>Boolean(resultCache[cacheKey(match,snapshot.date)])||matchDate(match,snapshot.date)<today).map(match=>({snapshot,match})));
   const settled=eligible.filter(({snapshot,match})=>Boolean(resultCache[cacheKey(match,snapshot.date)])).length;
   const completeForecasts=eligible.filter(({match})=>Boolean(match.hadProbabilities?.length&&match.hhadProbabilities?.length&&predictionScores(match).length&&match.totalGoalProbabilities?.length&&match.halfFullProbabilities?.length)).length;
-  return {total:snapshots.length,scheduled,local,eligible:eligible.length,settled,completeForecasts};
+  return {total:snapshots.length,scheduled,migrated,local,eligible:eligible.length,settled,completeForecasts};
  },[snapshots,resultCache]);
 
  const allReviewedRows=useMemo(()=>snapshots.flatMap(snapshot=>snapshot.matches.flatMap(match=>{const result=resultCache[cacheKey(match,snapshot.date)];return result?[{snapshot,match,result,review:buildPostMatchReview(match,result)}]:[]})),[snapshots,resultCache]);
@@ -302,7 +302,7 @@ export default function PredictionArchive(){
  return <section className="archive-page">
  <div className="section-head archive-page-head"><div><p className="eyebrow">PREDICTION ARCHIVE</p><h2>盘后预测回溯</h2><p>每个彩票日合并为一页；每场采用最接近且不晚于规定决策时点的赛前快照。</p></div><div className="archive-head-filters"><label className="archive-date-select"><span>选择彩票日期</span><select aria-label="盘后回溯彩票日期" value={effectiveSelectedDate} onChange={event=>{setSelectedDate(event.target.value);setSelectedKey("")}} disabled={!snapshotDates.length}>{snapshotDates.map(date=><option key={date} value={date}>{dateOptionLabel(date)}</option>)}</select></label></div></div>
  {selected?.predictionId&&<div className="prediction-disclaimer"><b>预测版本 {selected.predictionId}</b><span>复盘统计使用该快照保存的原始概率，不重新计算。</span></div>}
- <div className="archive-data-audit" aria-label="快照数据检查"><div><small>已读取快照</small><b>{snapshotAudit.total} 个</b></div><div className={snapshotAudit.scheduled?"verified":"audit-warning"}><small>定时文件快照</small><b>{snapshotAudit.scheduled} 个</b></div><div className={snapshotAudit.local?"audit-warning":"verified"}><small>页面缓存</small><b>{snapshotAudit.local} 个</b></div><div className={snapshotAudit.settled===snapshotAudit.eligible&&snapshotAudit.eligible?"verified":"audit-warning"}><small>历史赛果覆盖</small><b>{snapshotAudit.settled}/{snapshotAudit.eligible}</b></div><div className={snapshotAudit.completeForecasts===snapshotAudit.eligible&&snapshotAudit.eligible?"verified":"audit-warning"}><small>完整预测字段</small><b>{snapshotAudit.completeForecasts}/{snapshotAudit.eligible}</b></div></div>
+ <div className="archive-data-audit" aria-label="快照数据检查"><div><small>已读取快照</small><b>{snapshotAudit.total} 个</b></div><div className={snapshotAudit.scheduled?"verified":"audit-warning"}><small>定时文件快照</small><b>{snapshotAudit.scheduled} 个</b></div><div className={snapshotAudit.local?"audit-warning":"verified"}><small>已迁移 / 仅本机</small><b>{snapshotAudit.migrated} / {snapshotAudit.local} 个</b></div><div className={snapshotAudit.settled===snapshotAudit.eligible&&snapshotAudit.eligible?"verified":"audit-warning"}><small>历史赛果覆盖</small><b>{snapshotAudit.settled}/{snapshotAudit.eligible}</b></div><div className={snapshotAudit.completeForecasts===snapshotAudit.eligible&&snapshotAudit.eligible?"verified":"audit-warning"}><small>完整预测字段</small><b>{snapshotAudit.completeForecasts}/{snapshotAudit.eligible}</b></div></div>
  {improvementSummary.length>0&&<section className="model-improvement-panel"><header><div><small>全部已结算快照</small><h3>模型改进方向汇总</h3></div>{calibrationProfile&&<div className="calibration-badges"><span>固定决策样本 {calibrationProfile.forecastSampleSize}/{calibrationProfile.uniqueMatchCount}</span><span>覆盖率 {((calibrationProfile.coverage||0)*100).toFixed(1)}%</span><span>训练/校准/测试 {calibrationProfile.trainingSampleSize||0}/{calibrationProfile.calibrationSampleSize||0}/{calibrationProfile.testSampleSize||0}</span><span>滚动验证 {calibrationProfile.rollingValidation?.folds||0} 折/{calibrationProfile.rollingValidation?.sampleSize||0} 场</span><span>概率温度 {calibrationProfile.probabilityTemperature.toFixed(2)}</span><span>{calibrationProfile.status==="validated"?`正式版本 ${calibrationProfile.profileId}`:"样本不足·未发布"}</span></div>}</header>{calibrationProfile&&<div className="calibration-validation-grid"><article><small>校准拟合成绩</small><b>Brier {calibrationProfile.fitting?.raw.brier.toFixed(3)??"—"} → {calibrationProfile.fitting?.calibrated.brier.toFixed(3)??"—"}</b><span>Log Loss {calibrationProfile.fitting?.raw.logLoss.toFixed(3)??"—"} → {calibrationProfile.fitting?.calibrated.logLoss.toFixed(3)??"—"}</span><em>仅说明参数对校准区间的拟合，不作为未来改进证据。</em></article><article><small>未参与调参的未来测试成绩</small><b>模型 Brier {calibrationProfile.futureTest?.calibrated.brier.toFixed(3)??"—"}</b><span>市场基线 {calibrationProfile.futureTest?.marketBaseline.brier.toFixed(3)??"—"} · 样本 {calibrationProfile.futureTest?.calibrated.sampleSize||0}</span><em>测试赛果不参与温度和模型参数选择。</em></article><article><small>滚动时间验证</small><b>模型 Brier {calibrationProfile.rollingValidation?.calibrated.brier.toFixed(3)??"—"}</b><span>市场基线 {calibrationProfile.rollingValidation?.marketBaseline.brier.toFixed(3)??"—"}</span><em>每折只用此前校准窗选参数，再评估随后比赛。</em></article><article><small>模拟收益</small><b>暂不计算</b><span>缺少逐方案完整成本或决策时固定赔率</span><em>不会用赛后价格或挑选赢家补算收益。</em></article></div>}{calibrationProfile?.futureTest&&<details className="calibration-buckets"><summary>查看未来测试概率分桶校准</summary><table><thead><tr><th>概率区间</th><th>样本点</th><th>模型均值</th><th>实际频率</th></tr></thead><tbody>{calibrationProfile.futureTest.calibrated.buckets.map(bucket=><tr key={bucket.range}><td>{bucket.range}</td><td>{bucket.count}</td><td>{(bucket.meanProbability*100).toFixed(1)}%</td><td>{(bucket.observedRate*100).toFixed(1)}%</td></tr>)}</tbody></table></details>}<div className="model-improvement-grid">{improvementSummary.map(item=><article key={item.area}><div><b>{item.area}</b><strong>{item.count}/{item.denominator} · {item.rate.toFixed(1)}%</strong></div><p>{item.action}</p></article>)}</div><p className="model-improvement-note">同一比赛按正式决策时点取最近且不晚于该时点的快照；随后按比赛时间执行60%训练、20%校准、20%未来测试，并开展多折滚动时间验证。正式预测只读取服务端已发布版本，浏览器统计不会直接改变模型参数。</p></section>}
  {modelEvaluation.sampleSize>0&&<ModelExperimentCenter report={modelEvaluation}/>}
  {resultSyncError&&<div className="data-fallback">赛果补抓未完成：{resultSyncError}。未取得赛果的场次会在下次打开页面时继续查询。</div>}

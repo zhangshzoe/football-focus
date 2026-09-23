@@ -19,7 +19,7 @@ const directory=join(process.cwd(),"data","prediction-snapshots");
 const purchaseDirectory=join(process.cwd(),"data","purchase-plan-snapshots");
 // 线上 Worker 只加载预先生成的紧凑索引。原始快照和 AI 补充文件仍完整保留在
 // data/prediction-snapshots 供本地审计，但不得逐个 eager import 到 128MB Worker。
-const bundledIndexFiles=import.meta.glob<{snapshots?:unknown[];purchasePlanSnapshots?:unknown[]}>("../../../data/generated-prediction-snapshot-index.json",{eager:true,import:"default"});
+const bundledIndexFiles=import.meta.glob<{snapshots?:unknown[];resultCache?:Record<string,unknown>;purchasePlanSnapshots?:unknown[]}>("../../../data/generated-prediction-snapshot-index.json",{eager:true,import:"default"});
 const toPurchaseSnapshot=(record:RawPurchaseSnapshot)=>record.recordType==="purchase-plan-snapshot"&&record.immutable===true&&record.snapshotId&&record.planSet?.plans?.length?{snapshotId:record.snapshotId,capturedAt:record.capturedAt,sourceFetchedAt:record.sourceFetchedAt,predictionId:record.predictionId,contentHash:record.contentHash,previousSnapshotId:record.previousSnapshotId,planSet:{...record.planSet,snapshotId:record.snapshotId,contentHash:record.contentHash}}:null;
 const labelFor=(slot:string)=>`${slot.slice(0,2)}:${slot.slice(2)}批次`;
 const number=(value:unknown)=>Number.isFinite(Number(value))?Number(value):0;
@@ -53,8 +53,10 @@ function toSnapshot(raw:RawSnapshot,fileName:string,supplements:Supplement[]=[])
 export async function GET(request:Request){
  try{
   const view=new URL(request.url).searchParams.get("view");
-  const bundledIndex=(Object.values(bundledIndexFiles)[0]||{}) as {snapshots?:Array<Record<string,unknown>>;purchasePlanSnapshots?:Array<Record<string,unknown>>};
+  const bundledIndex=(Object.values(bundledIndexFiles)[0]||{}) as {snapshots?:Array<Record<string,unknown>>;resultCache?:Record<string,unknown>;purchasePlanSnapshots?:Array<Record<string,unknown>>};
   const bundledSnapshots=Array.isArray(bundledIndex.snapshots)?bundledIndex.snapshots:[];
+  const bundledMigratedSnapshots=bundledSnapshots.filter(snapshot=>snapshot.storageOrigin==="migrated-browser");
+  const bundledResultCache=bundledIndex.resultCache&&typeof bundledIndex.resultCache==="object"&&!Array.isArray(bundledIndex.resultCache)?bundledIndex.resultCache:{};
   const bundledPurchaseSnapshots=Array.isArray(bundledIndex.purchasePlanSnapshots)?bundledIndex.purchasePlanSnapshots:[];
   if(view==="recommendations")return NextResponse.json({snapshots:[],purchasePlanSnapshots:bundledPurchaseSnapshots,storage:"bundle-index"},{headers:{"Cache-Control":"no-store, max-age=0"}});
   let disk:Array<ReturnType<typeof toSnapshot>>=[];
@@ -80,7 +82,9 @@ export async function GET(request:Request){
    diskPurchaseSnapshots=await Promise.all(names.map(async name=>{try{return toPurchaseSnapshot(JSON.parse(await readFile(join(purchaseDirectory,name),"utf8")))}catch{return null}}));
   }catch{/* Worker 使用打包的独立方案快照，不能依赖本机磁盘。 */}
   const purchasePlanSnapshots=diskPurchaseSnapshots.some(Boolean)?Array.from(new Map(diskPurchaseSnapshots.filter(record=>record!==null).map(record=>[record!.snapshotId,record])).values()).sort((a,b)=>String(b!.capturedAt||"").localeCompare(String(a!.capturedAt||""))):bundledPurchaseSnapshots;
-  return NextResponse.json({snapshots:diskSnapshots.length?snapshots:bundledSnapshots,purchasePlanSnapshots,storage:diskSnapshots.length||diskPurchaseSnapshots.some(Boolean)?"disk":"bundle-index"},{headers:{"Cache-Control":"no-store, max-age=0"}});
+  const snapshotKey=(snapshot:Record<string,unknown>)=>`${snapshot.date}|${snapshot.sourceFetchedAt}|${snapshot.predictionId||"legacy"}`;
+  const responseSnapshots=diskSnapshots.length?Array.from(new Map([...(snapshots as unknown as Array<Record<string,unknown>>),...bundledMigratedSnapshots].map(snapshot=>[snapshotKey(snapshot),snapshot])).values()).sort((a,b)=>String(b.capturedAt||b.sourceFetchedAt).localeCompare(String(a.capturedAt||a.sourceFetchedAt))):bundledSnapshots;
+  return NextResponse.json({snapshots:responseSnapshots,resultCache:bundledResultCache,purchasePlanSnapshots,storage:diskSnapshots.length||diskPurchaseSnapshots.some(Boolean)?"disk+bundle-migration":"bundle-index"},{headers:{"Cache-Control":"no-store, max-age=0"}});
  }catch(error){
   return NextResponse.json({snapshots:[],error:error instanceof Error?error.message:"快照读取失败"},{status:500,headers:{"Cache-Control":"no-store, max-age=0"}});
  }

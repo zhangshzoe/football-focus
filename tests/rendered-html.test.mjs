@@ -367,6 +367,31 @@ test("17:00 snapshot persists purchase drafts and the recommendation page expose
  assert.match(styles,/purchase-plan-grid/);
 });
 
+test("bundled Site history includes the verified localhost migration without changing formal evaluation grain",async()=>{
+ const [migration,bundle,api,archive,sync,audit]=await Promise.all([
+  readFile(new URL("../data/migrated-browser-prediction-snapshots.json",import.meta.url),"utf8").then(JSON.parse),
+  readFile(new URL("../data/generated-prediction-snapshot-index.json",import.meta.url),"utf8").then(JSON.parse),
+  readFile(new URL("../app/api/prediction-snapshots/route.ts",import.meta.url),"utf8"),
+  readFile(new URL("../app/components/PredictionArchive.tsx",import.meta.url),"utf8"),
+  readFile(new URL("../scripts/sync-prediction-decision-index.mjs",import.meta.url),"utf8"),
+  readFile(new URL("../data/analysis/prediction-history-audit.json",import.meta.url),"utf8").then(JSON.parse),
+ ]);
+ assert.equal(migration.snapshotCount,13);
+ assert.equal(migration.matchCount,150);
+ assert.ok(migration.snapshots.every(snapshot=>snapshot.storageOrigin==="migrated-browser"&&snapshot.matches.every(match=>match.isMock!==true)));
+ assert.equal(bundle.migratedSnapshotCount,migration.snapshotCount);
+ assert.equal(bundle.snapshots.filter(snapshot=>snapshot.storageOrigin==="migrated-browser").reduce((sum,snapshot)=>sum+snapshot.matches.length,0),migration.matchCount);
+ assert.equal(bundle.snapshots.reduce((sum,snapshot)=>sum+snapshot.matches.length,0),bundle.snapshots.filter(snapshot=>snapshot.storageOrigin==="server").reduce((sum,snapshot)=>sum+snapshot.matches.length,0)+migration.matchCount);
+ assert.ok(Object.keys(bundle.resultCache||{}).length>=migration.resultCount);
+ assert.ok(bundle.purchasePlanSnapshots.length>=50);
+ assert.equal(audit.inventory.uniqueSettledMatches,55);
+ assert.match(api,/bundledMigratedSnapshots/);
+ assert.match(api,/resultCache:bundledResultCache/);
+ assert.match(archive,/setResultCache\(\{\.\.\.remote\.resultCache,\.\.\.localResults\}\)/);
+ assert.match(sync,/formalSourceSnapshots/);
+ assert.match(sync,/storageOrigin!=="migrated-browser"/);
+});
+
 test("one immutable prediction version supplies prediction, recommendation and archive probabilities",async()=>{
  const [versionService,predictions,ai,page,recommendations,archive,capture]=await Promise.all([
   readFile(new URL("../app/prediction-version.ts",import.meta.url),"utf8"),
