@@ -571,3 +571,35 @@ main{max-width:1320px!important;padding-bottom:88px!important}
 @media(max-width:767px){.purchase-plan-grid,.purchase-kanban{grid-template-columns:1fr}.purchase-plan-module{padding:10px}.purchase-module-stats b{font-size:11px}.purchase-module-toggle{align-self:stretch}}
 /* 体彩让球符号与颜色：主队让球(-)为绿色，主队受让(+)为红色。 */
 .handicap-tag.negative,.handicap-note.negative,.handicap-value.negative{border-color:#b9dfc2!important;background:#eaf7ed!important;color:#238247!important}.handicap-tag.positive,.handicap-note.positive,.handicap-value.positive{border-color:#f1bcbc!important;background:#fff0f0!important;color:#cf3f3f!important}.handicap-tag.neutral,.handicap-note.neutral,.handicap-value.neutral{border-color:#c8dfed!important;background:#e8f4fc!important;color:#126fa9!important}.handicap-value{display:inline-block;padding:1px 5px;border:1px solid;border-radius:5px;font-weight:900}.market-forecast-table .sporttery-line.sporttery-giving{background:#eaf7ed!important;color:#238247!important}.market-forecast-table .sporttery-line.sporttery-receiving{background:#fff0f0!important;color:#cf3f3f!important}
+
+/* Mobile prediction browsing: equal-width cards and dependable horizontal panning. */
+.prediction-overview-scroll-hint,.market-forecast-scroll-hint{display:none}
+@media(max-width:767px){
+  .prediction-overview-scroll-hint,.market-forecast-scroll-hint{display:flex;align-items:center;justify-content:flex-end;gap:5px;margin:8px 1px 5px;color:#6c8291;font-size:11px;line-height:1.3}
+  .prediction-overview-scroll-hint:before,.market-forecast-scroll-hint:before{content:"↔";color:var(--ui-blue);font-size:14px;font-weight:900}
+  .prediction-overview-grid{display:flex!important;gap:8px!important;margin:0 -2px 8px!important;padding:2px 2px 9px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scroll-padding-inline:2px;overscroll-behavior-inline:contain;touch-action:pan-x pan-y;-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:#9dc9e6 transparent}
+  .prediction-overview-grid>.compact-score-summary,.prediction-overview-grid>.compact-market-summary{box-sizing:border-box;flex:0 0 min(78vw,270px);width:min(78vw,270px);min-width:min(78vw,270px);min-height:118px;scroll-snap-align:start;scroll-snap-stop:always}
+  .prediction-overview-grid>.compact-score-summary{grid-column:auto!important}
+  .prediction-overview-grid:focus-visible,.market-forecast-wrap:focus-visible{outline:2px solid var(--ui-blue);outline-offset:2px}
+  .compact-score-summary>div,.compact-market-summary>div{align-content:flex-start}
+  .market-forecast-wrap,.odds-movement-wrap,.company-odds-table{max-width:100%;overflow-x:auto!important;overflow-y:hidden;overscroll-behavior-inline:contain;touch-action:pan-x pan-y;-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:#9dc9e6 transparent}
+  .market-forecast-wrap{border-radius:10px!important}
+  .market-forecast-table{width:max-content!important;table-layout:fixed!important}
+  .market-forecast-table.forecast-view-had{min-width:1180px!important}
+  .market-forecast-table.forecast-view-score{min-width:1050px!important}
+  .market-forecast-table.forecast-view-total{min-width:860px!important}
+  .market-forecast-table th,.market-forecast-table td{box-sizing:border-box;overflow-wrap:normal;word-break:normal}
+  .market-forecast-table th:nth-child(1),.market-forecast-table td:nth-child(1){width:78px!important;min-width:78px!important}
+  .market-forecast-table th:nth-child(2),.market-forecast-table td:nth-child(2){width:66px!important;min-width:66px!important}
+  .market-forecast-table th:nth-child(3),.market-forecast-table td:nth-child(3){width:108px!important;min-width:108px!important}
+  .market-forecast-table th:nth-child(4),.market-forecast-table td:nth-child(4){width:92px!important;min-width:92px!important}
+  .market-forecast-table th:nth-child(5),.market-forecast-table td:nth-child(5),.market-forecast-table th:nth-child(6),.market-forecast-table td:nth-child(6),.market-forecast-table th:nth-child(7),.market-forecast-table td:nth-child(7),.market-forecast-table th:nth-child(8),.market-forecast-table td:nth-child(8){width:86px!important;min-width:86px!important}
+  .market-forecast-table th:nth-child(9),.market-forecast-table td:nth-child(9){width:230px!important;min-width:230px!important}
+  .market-forecast-table th:nth-child(n+10),.market-forecast-table td:nth-child(n+10){width:66px!important;min-width:66px!important}
+  .movement-title,.odds-movement-table{width:760px;min-width:760px}
+  .company-odds-row{grid-template-columns:120px repeat(5,74px);width:490px;min-width:490px}
+}
+@media(max-width:430px){
+  .prediction-overview-grid{display:flex!important}
+  .prediction-overview-grid>.compact-score-summary,.prediction-overview-grid>.compact-market-summary{flex-basis:min(82vw,260px);width:min(82vw,260px);min-width:min(82vw,260px)}
+}

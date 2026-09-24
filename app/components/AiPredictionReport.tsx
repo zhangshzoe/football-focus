@@ -69,7 +69,8 @@ export default function AiPredictionReport({rows,coverage,unavailableMatches,loa
             <h3><strong>{row.home}</strong><i>VS</i><strong>{row.away}</strong></h3>
             <span className={row.consensus.agreement==="较一致"?"agreement good":"agreement"}>{row.consensus.agreement}</span>
           </header>
-          <div className="prediction-overview-grid">
+          <p className="prediction-overview-scroll-hint" aria-hidden="true">左右滑动查看 5 类预测</p>
+          <div className="prediction-overview-grid" role="region" aria-label={`${row.id} 五类预测，可左右滑动查看`} tabIndex={0}>
             <section className="compact-score-summary">
               <header><small>比分预测</small><span>原始概率</span></header>
               <div>{row.scores.map((score,scoreIndex)=><span className={scoreIndex===0?"top":""} key={score.score}><small>{scoreIndex===0?"首选":"候选"}</small><b>{score.score}</b><em>{fixed(score.probability)}%</em></span>)}</div>

@@ -123,6 +123,21 @@ test("official markets never fall back to demo odds and tolerate independent poo
  }finally{globalThis.fetch=originalFetch}
 });
 
+test("mobile prediction summaries and wide forecast tables support consistent horizontal swiping",async()=>{
+ const [report,table,styles]=await Promise.all([
+  readFile(new URL("../app/components/AiPredictionReport.tsx",import.meta.url),"utf8"),
+  readFile(new URL("../app/components/MarketPredictionTable.tsx",import.meta.url),"utf8"),
+  readFile(new URL("../app/reference-ui.css",import.meta.url),"utf8"),
+ ]);
+ assert.match(report,/左右滑动查看 5 类预测/);
+ assert.match(report,/role="region"/);
+ assert.match(table,/左右滑动查看完整预测数据/);
+ assert.match(styles,/\.prediction-overview-grid\{display:flex!important/);
+ assert.match(styles,/scroll-snap-type:x mandatory/);
+ assert.match(styles,/touch-action:pan-x pan-y/);
+ assert.match(styles,/\.market-forecast-table th:nth-child\(9\).*width:230px!important/);
+});
+
 test("mobile prediction fallback derives a traceable baseline only from official markets",async()=>{
  const source=await readFile(new URL("../app/official-prediction-fallback.ts",import.meta.url),"utf8"),javascript=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText,{buildOfficialPredictionFallback}=await import(`data:text/javascript;base64,${Buffer.from(javascript).toString("base64")}#${Date.now()}-${Math.random()}`);
  const match={id:"周六001",matchId:"m1",officialMatchId:"m1",salesDate:"2026-09-19",matchDate:"2026-09-19",time:"20:00:00",home:"主队",away:"客队",league:"测试联赛",handicap:"-1",marketEligibility:{"让球胜平负":{qualification:"qualified"}},marketOdds:{"胜平负":[2.1,3.2,3.4],"让球胜平负":[3.1,3.4,1.9],"比分":[7.2],"总进球数":[20,8,3.3,3.2,5,10,18,25],"半全场":[3,12,30,5,6,10,20,11,8]}};
