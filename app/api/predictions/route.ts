@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {createBasePredictionVersion,deriveMarkets,predictionHash} from "../../prediction-version";
-import {getPublishedCalibration} from "../../calibration-service";
+import {getPublishedCalibration,MIN_TEMPERATURE_CALIBRATION_MATCHES} from "../../calibration-service";
 import {TEAM_ALIAS_VERSION,teamIdentity,teamNamesCompatible} from "../../team-identity.js";
 type CompanyOdds = {
   companyId: number;
@@ -291,7 +291,7 @@ export async function POST(request: Request) {
   const globalCalibration = calibrationProfile?.status==="validated"&&calibrationProfile?.trainingSampleSize&&calibrationProfile.trainingSampleSize>=20
     ? validCalibrationBucket(calibrationProfile.global)
     : null;
-  const probabilityTemperature = calibrationProfile?.status==="validated"&&calibrationProfile?.calibrationSampleSize&&calibrationProfile.calibrationSampleSize>=6
+  const probabilityTemperature = calibrationProfile?.status==="validated"&&calibrationProfile?.calibrationSampleSize&&calibrationProfile.calibrationSampleSize>=MIN_TEMPERATURE_CALIBRATION_MATCHES
     ? Math.max(.7, Math.min(2.5, numeric(calibrationProfile.probabilityTemperature) || 1))
     : 1;
   if (!sportteryMatches.length) return Response.json({reports:[],fetchedAt:new Date().toISOString(),sourceUrl:SOURCE_URL,methodology:"没有可确认的官方比赛，未执行赔率模型。"});

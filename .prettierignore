@@ -1,0 +1,11 @@
+node_modules
+data
+dist
+.next
+.vinext
+.wrangler
+work
+backups
+outputs
+coverage
+package-lock.json

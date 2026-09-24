@@ -120,6 +120,11 @@ test("official markets never fall back to demo odds and tolerate independent poo
   globalThis.fetch=async url=>{const pool=new URL(String(url)).searchParams.get("poolCode");if(pool==="CRS")throw new Error("比分玩法超时");return new Response(JSON.stringify(poolPayload([officialRow(pool)])),{status:200})};
   response=await get();data=await response.json();
   assert.equal(response.status,200);assert.equal(data.matches.length,1);assert.equal(data.poolStatus.CRS.status,"failed");assert.equal(data.matches[0].marketOdds["比分"],null);assert.equal(data.matches[0].marketStatus["比分"],"failed");
+
+  globalThis.fetch=async url=>{const pool=new URL(String(url)).searchParams.get("poolCode");const row=officialRow(pool);if(pool==="HAD")delete row.matchId;return new Response(JSON.stringify(poolPayload([row])),{status:200})};
+  response=await get();data=await response.json();
+  assert.equal(response.status,200);assert.equal(data.poolStatus.HAD.status,"failed");
+  assert.equal(data.matches[0].marketOdds["胜平负"],null);
  }finally{globalThis.fetch=originalFetch}
 });
 
@@ -222,15 +227,34 @@ test("historical calibration is wired into predictions without treating missing 
  assert.match(predictions,/getPublishedCalibration/);
  assert.match(calibration,/decisionTargetAt/);
  assert.match(calibration,/latest_not_after_official_target_v1/);
- assert.match(calibration,/selected\.slice\(0,trainEnd\)/);
- assert.match(calibration,/selected\.slice\(trainEnd,calibrationEnd\)/);
+ assert.match(calibration,/selected\.slice\(0,\s*trainEnd\)/);
+ assert.match(calibration,/selected\.slice\(trainEnd,\s*calibrationEnd\)/);
  assert.match(calibration,/selected\.slice\(calibrationEnd\)/);
- assert.match(calibration,/futureTest:\{raw:testRaw,calibrated:testCalibrated,marketBaseline:testMarket\}/);
-  assert.match(calibration,/promotionCandidate:evaluation\.status==="validated"/);
+ assert.match(calibration,/futureTest:\s*\{\s*raw:\s*testRaw,\s*calibrated:\s*testCalibrated,\s*marketBaseline:\s*testMarket/s);
+  assert.match(calibration,/promotionCandidate:\s*evaluation\.status\s*===\s*"validated"/);
   assert.match(calibration,/未来独立样本 ≥ 100/);
   assert.doesNotMatch(calibration,/flag:"wx"/);
  assert.match(ai,/intelligenceCoverage/);
  assert.match(ai,/只有盘口、没有独立赛前情报时必须返回0/);
+});
+
+test("small independent calibration samples keep temperature at one",async()=>{
+ const policyUrl=new URL("../app/snapshot-decision-policy.js",import.meta.url).href;
+ const source=(await readFile(new URL("../app/calibration-service.ts",import.meta.url),"utf8"))
+  .replace('from "./snapshot-decision-policy.js"',`from "${policyUrl}"`)
+  .replace(/import\.meta\.glob<ModelCalibrationProfile>\([^;]+\);/,"{};");
+ const javascript=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText;
+ const {buildCalibrationEvaluation,MIN_TEMPERATURE_CALIBRATION_MATCHES}=await import(`data:text/javascript;base64,${Buffer.from(javascript).toString("base64")}`);
+ assert.equal(MIN_TEMPERATURE_CALIBRATION_MATCHES,30);
+ const probabilities=[{score:"胜",probability:70},{score:"平",probability:20},{score:"负",probability:10}];
+ const rows=Array.from({length:25},(_,index)=>{
+  const date=new Date(Date.UTC(2026,8,1+index)).toISOString().slice(0,10);
+  return{matchKey:`${date}|official-${index}`,league:"测试",kickoffAt:`${date}T20:00:00+08:00`,capturedAt:`${date}T19:30:00+08:00`,modelProbabilities:probabilities,marketProbabilities:probabilities,actual:"负",totalGoals:1};
+ });
+ const evaluation=buildCalibrationEvaluation(rows);
+ assert.equal(evaluation.calibrationSampleSize,5);
+ assert.equal(evaluation.probabilityTemperature,1);
+ assert.equal(evaluation.status,"insufficient_data");
 });
 
 test("post-match workspace separates analysis views and deduplicates league accuracy",async()=>{

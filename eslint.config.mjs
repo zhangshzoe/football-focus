@@ -6,6 +6,7 @@ import react from "eslint-plugin-react";
 import reactHooks from "eslint-plugin-react-hooks";
 import globals from "globals";
 import tseslint from "typescript-eslint";
+import eslintConfigPrettier from "eslint-config-prettier";
 
 const eslintConfig = defineConfig([
   globalIgnores([
@@ -36,6 +37,7 @@ const eslintConfig = defineConfig([
       },
     },
   },
+  eslintConfigPrettier,
 ]);
 
 export default eslintConfig;

@@ -1,110 +1,38 @@
-# vinext-starter
+# Football Focus
 
-A clean full-stack starter running on
-[vinext](https://github.com/cloudflare/vinext), with optional Cloudflare D1 and
-Drizzle support.
+竞彩赛事、赛前预测、推荐组合及盘后复盘站点。需要 Node.js 22.13+。
 
-## Prerequisites
-
-- Node.js `>=22.13.0`
-
-## Quick Start
+## 本地运行
 
 ```bash
-npm install
+npm ci
 npm run dev
-npm run build
+npm test
 ```
 
-This starter does not use `wrangler.jsonc`.
+本地默认地址为 `http://localhost:3000`。移动设备同一局域网访问可运行
+`npm run dev:mobile`，再用 `npm run mobile:url` 查询地址。
 
-## Included Shape
+## 数据权威来源
 
-- edit site code under `app/`
-- `.openai/hosting.json` declares optional Sites D1 and R2 bindings
-- `vite.config.ts` simulates declared bindings for local development
-- `db/schema.ts` starts intentionally empty
-- `examples/d1/` contains an optional D1 example surface
-- `drizzle.config.ts` supports local migration generation when needed
+- **官方赛事与赔率**：来自竞彩网接口；每个玩法独立记录成功或失败。接口失败、赔率缺失、未开售时不能用演示赔率代替。
+- **赛前原始快照**：`data/prediction-snapshots/` 中的只追加 JSON。已生成的快照不覆写；它们是盘后评估可审计的历史输入。
+- **每日组合票快照**：`data/purchase-plan-snapshots/` 中的只追加 JSON。结算与订正另行关联，不能改写当时的推荐。
+- **线上读取索引**：`data/generated-prediction-snapshot-index.json` 是从已跟踪的原始快照生成的紧凑副本，供 Site 读取；它不是新的权威来源。更新快照后运行 `npm run sync:decision-index`，并与原始快照一起提交、发布。
+- **浏览器数据**：`app/browser-storage.ts` 的 IndexedDB 保存设备本地交互、缓存与旧记录迁移。它不是跨设备共享的正式复盘数据库。
+- **D1/R2**：当前 Site 的绑定为空，`db/schema.ts` 只是预留入口；正式生产数据并未写入 D1/R2。迁移前不得把它们当成数据源。
 
-## Workspace Auth Headers
+定时采集及发布流程见 [release-and-scheduled-publishing.md](docs/release-and-scheduled-publishing.md)。
 
-Signed-in visitors receive both `oai-authenticated-user-id` and `oai-authenticated-user-email`. Private Sites require every visitor to sign in; public Sites may also have anonymous visitors, for whom neither header is present.
+## 开发约束
 
-The user ID is stable for the same user on the same Site and different across Sites. Email and name are intended for display or contact purposes.
-
-SIWC-authenticated workspace sites may also receive
-`oai-authenticated-user-full-name` when the user's SIWC profile has a non-empty
-`name` claim. The full-name value is percent-encoded UTF-8 and is accompanied by
-`oai-authenticated-user-full-name-encoding: percent-encoded-utf-8`.
-
-Treat the full name as optional and fall back to email when it is absent:
-
-```tsx
-import { headers } from "next/headers";
-
-export default async function Home() {
-  const requestHeaders = await headers();
-  const userId = requestHeaders.get("oai-authenticated-user-id");
-  const email = requestHeaders.get("oai-authenticated-user-email");
-  const encodedFullName = requestHeaders.get("oai-authenticated-user-full-name");
-  const fullName =
-    encodedFullName &&
-    requestHeaders.get("oai-authenticated-user-full-name-encoding") ===
-      "percent-encoded-utf-8"
-      ? decodeURIComponent(encodedFullName)
-      : null;
-
-  const displayName = fullName ?? email;
-  // ...
-}
+```bash
+npm run format
+npm run format:check
+npm run audit:data-footprint
+npm run lint
 ```
 
-## Optional Dispatch-Owned ChatGPT Sign-In
+Prettier 当前先约束三个高密度核心文件，后续可按模块逐步扩大覆盖，避免一次全库格式化掩盖逻辑变更。校准温度至少需要 30 场独立校准比赛，小样本时保持温度 1；未来测试成绩不得参与自身参数选择。
 
-Import the ready-to-use helpers from `app/chatgpt-auth.ts` when the site needs
-optional or required ChatGPT sign-in:
-
-- Use `getChatGPTUser()` for optional signed-in UI.
-- Use `requireChatGPTUser(returnTo)` for server-rendered pages that should send
-  anonymous visitors through Sign in with ChatGPT.
-- Use `chatGPTSignInPath(returnTo)` and `chatGPTSignOutPath(returnTo)` for
-  browser links or actions.
-- Pass a same-origin relative `returnTo` path for the destination after sign-in
-  or sign-out. The helper validates and safely encodes it.
-- Mark protected pages with `export const dynamic = "force-dynamic"` because
-  they depend on per-request identity headers.
-
-Dispatch owns `/signin-with-chatgpt`, `/signout-with-chatgpt`, `/callback`, the
-OAuth cookies, and identity header injection. Do not implement app routes for
-those reserved paths. Routes that do not import and call the helper remain
-anonymous-compatible.
-
-SIWC establishes identity only; it does not prove workspace membership. Use the
-Sites hosting platform's access policy controls for workspace-wide restrictions,
-or enforce explicit server-side membership or allowlist checks.
-
-Use SIWC for account pages, user-specific dashboards, saved records, and write
-actions tied to the current ChatGPT user. Leave public content anonymous.
-
-## Useful Commands
-
-- `npm run dev`: start local development
-- `npm run build`: verify the vinext build output
-- `npm test`: build the starter and verify its rendered loading skeleton
-- `npm run db:generate`: generate Drizzle migrations after schema changes
-
-## Release and scheduled publishing
-
-Every production change uses a one-to-one release pair: one immutable Git commit
-for the local/source version and one separately numbered Sites version built from
-that exact commit. Scheduled snapshots follow the same rule and do not publish
-empty versions when the source data has not changed.
-
-See [docs/release-and-scheduled-publishing.md](docs/release-and-scheduled-publishing.md)
-for the release contract and the active recurring jobs.
-
-## Learn More
-
-- [vinext Documentation](https://github.com/cloudflare/vinext)
-- [Drizzle D1 Guide](https://orm.drizzle.team/docs/get-started/d1-new)
+历史 JSON 仍需跟随 Git 与 Site 版本同步。现阶段直接 `gitignore` 或删除旧快照会导致线上复盘缺失；体积超过 100 MiB 或紧凑索引超过 8 MiB 时，应先设计 R2 原始文件迁移、索引分片及完整性校验，再切换权威来源。可用 `npm run audit:data-footprint` 监控，不会修改数据。

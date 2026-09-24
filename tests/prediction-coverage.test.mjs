@@ -63,7 +63,7 @@ async function loadRoute(){
  const aliases=new URL("../app/team-identity.js",import.meta.url).href;
  const source=(await readFile(new URL("../app/api/predictions/route.ts",import.meta.url),"utf8"))
   .replace('from "../../prediction-version"',`from ${JSON.stringify(version)}`)
-  .replace('import {getPublishedCalibration} from "../../calibration-service";','const getPublishedCalibration=async()=>null;')
+  .replace('import {getPublishedCalibration,MIN_TEMPERATURE_CALIBRATION_MATCHES} from "../../calibration-service";','const getPublishedCalibration=async()=>null; const MIN_TEMPERATURE_CALIBRATION_MATCHES=30;')
   .replace('from "../../team-identity.js"',`from ${JSON.stringify(aliases)}`);
  return import(compile(source));
 }
