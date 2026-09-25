@@ -447,6 +447,13 @@ test("17:00 snapshot persists purchase drafts and the recommendation page expose
  assert.match(component,/aria-controls/);
  assert.match(component,/中奖 \/ 已结算/);
  assert.match(component,/投入 \/ 返还/);
+ assert.match(component,/<details className="purchase-history-panel"/);
+ assert.match(component,/allModulesCollapsed\?"全部展开":"全部收起"/);
+ assert.match(component,/purchase-money-negative/);
+ assert.match(component,/purchase-money-positive/);
+ assert.match(styles,/purchase-history-panel>summary/);
+ assert.match(styles,/\.daily-purchase-panel \.purchase-money-negative\{color:#168052/);
+ assert.match(styles,/\.daily-purchase-panel \.purchase-money-positive\{color:#c34242/);
  assert.match(api,/generated-prediction-snapshot-index\.json/);
  assert.doesNotMatch(api,/prediction-snapshots\/\*\.json/);
  assert.match(sync,/bundlePath/);

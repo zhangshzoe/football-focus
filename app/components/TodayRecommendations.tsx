@@ -164,6 +164,11 @@ type PurchasePlanSet = {
   contentHash?: string;
   scheduledTime?: string;
 };
+function SignedPurchaseMoney({value,flow="net"}:{value:number;flow?:"net"|"stake"|"return"}){
+  const amount=Number.isFinite(value)?value:0;
+  const signed=flow==="stake"?-Math.abs(amount):flow==="return"?Math.abs(amount):amount;
+  return <b className={`purchase-money ${signed<0?"purchase-money-negative":signed>0?"purchase-money-positive":""}`}>{signed<0?"-":signed>0?"+":""}¥{Math.abs(signed).toFixed(2)}</b>;
+}
 type PurchaseResult = {id?:string;matchId?:string;officialMatchId?:string;date?:string;matchDate?:string};
 const currentPurchasePlanIds=new Set(PURCHASE_PLAN_DEFINITIONS.map(definition=>definition.id));
 const hasPurchasePlanData=(item:PurchasePlanSet|undefined|null)=>Boolean(item?.plans?.some(plan=>currentPurchasePlanIds.has(plan.id)&&plan.status!=="unavailable"&&Array.isArray(plan.items)&&plan.items.length>0));
@@ -465,7 +470,7 @@ function DailyPurchasePlans({
   }
   const planResult = (plan: PurchasePlan) =>
     ["won", "corrected_won", "void_won"].includes(plan.status)
-      ? `模拟返还 ¥${(plan.simulatedReturn || 0).toFixed(2)}`
+      ? <>模拟返还 <SignedPurchaseMoney value={plan.simulatedReturn||0} flow="return"/></>
       : ["lost", "corrected_lost", "void_lost"].includes(plan.status)
         ? "模拟未中"
         : plan.status === "void"
@@ -485,6 +490,7 @@ function DailyPurchasePlans({
     ...module,
     definitions:PURCHASE_PLAN_DEFINITIONS.filter(definition=>purchasePlanModuleId(definition.id)===module.id&&planSet?.plans.some(plan=>plan.id===definition.id&&plan.status!=="unavailable"&&plan.items.length>0)),
   })).filter(module=>module.definitions.length>0),[planSet]);
+  const allModulesCollapsed=visiblePlanModules.length>0&&visiblePlanModules.every(module=>collapsedModules[module.id]);
   return (
     <section className="daily-purchase-panel">
       <header>
@@ -544,25 +550,29 @@ function DailyPurchasePlans({
         <div><span>已结算组合</span><b>{planStats.settled}</b></div>
         <div><span>中奖组合</span><b>{planStats.won}</b></div>
         <div><span>历史中奖率</span><b>{planStats.settled?`${planStats.rate.toFixed(1)}%`:"待积累"}</b></div>
-        <div><span>模拟投入</span><b>¥{planStats.stake.toFixed(2)}</b></div>
-        <div><span>模拟返还</span><b>¥{planStats.returned.toFixed(2)}</b></div>
-        <div><span>模拟净收益</span><b>¥{planStats.net.toFixed(2)}</b></div>
+        <div><span>模拟投入</span><SignedPurchaseMoney value={planStats.stake} flow="stake"/></div>
+        <div><span>模拟返还</span><SignedPurchaseMoney value={planStats.returned} flow="return"/></div>
+        <div><span>模拟净收益</span><SignedPurchaseMoney value={planStats.net}/></div>
       </div>
       <p className="purchase-risk">以上仅统计每天固定时间生成的正式快照；手动试算单独保存，不计入正式中奖率。待赛和缺少官方赛果的票不计入已结算、投入或返还。</p>
-      <div className="purchase-history" aria-label="各投注方式历史明细">
+      <details className="purchase-history-panel" aria-label="各投注方式历史汇总">
+        <summary><strong>各投注方式历史汇总</strong><span>展开查看中奖率、投入与历史明细</span></summary>
+      <div className="purchase-history">
         {PURCHASE_PLAN_DEFINITIONS.map(definition=>{
           const history=definitionHistory[definition.id]||{settled:0,won:0,rate:0,stake:0,returned:0,net:0,rows:[]};
           return <details key={definition.id} className="purchase-history-group">
-            <summary><strong>{definition.title}</strong><span>中奖 / 已结算 {history.won} / {history.settled}</span><span>中奖率 {history.settled?`${history.rate.toFixed(1)}%`:"待积累"}</span><span>投入 / 返还 ¥{history.stake.toFixed(2)} / ¥{history.returned.toFixed(2)}</span><span>净收益 ¥{history.net.toFixed(2)}</span></summary>
+            <summary><strong>{definition.title}</strong><span>中奖 / 已结算 {history.won} / {history.settled}</span><span>中奖率 {history.settled?`${history.rate.toFixed(1)}%`:"待积累"}</span><span>投入 / 返还 <SignedPurchaseMoney value={history.stake} flow="stake"/> / <SignedPurchaseMoney value={history.returned} flow="return"/></span><span>净收益 <SignedPurchaseMoney value={history.net}/></span></summary>
             <div className="purchase-history-scroll"><table><thead><tr><th>日期 / 批次</th><th>投注内容</th><th>结算</th><th>投入</th><th>模拟返还</th><th>净收益</th></tr></thead><tbody>
               {history.rows.length?history.rows.map((row:{snapshotId:string;date:string;generatedAt:string;plan:PurchasePlan})=>{
                 const settled=["won","lost","corrected_won","corrected_lost","void_won","void_lost"].includes(row.plan.status);
-                return <tr key={`${row.snapshotId}-${row.plan.id}`}><td>{row.date}<small>{new Date(row.generatedAt).toLocaleTimeString("zh-CN",{hour:"2-digit",minute:"2-digit"})}</small></td><td>{row.plan.items.map(item=><div key={`${item.officialMatchId||item.matchId}-${item.market}`}><b>{item.matchId}</b> {item.home} vs {item.away} · {item.marketName} {(item.picks?.length?item.picks.map(pick=>pick.pick):[item.pick]).join(" / ")}</div>)}</td><td>{planResult(row.plan)}</td><td>{settled?`¥${row.plan.stake.toFixed(2)}`:"—"}</td><td>{settled?`¥${(row.plan.simulatedReturn||0).toFixed(2)}`:"—"}</td><td>{settled?`¥${((row.plan.simulatedReturn||0)-row.plan.stake).toFixed(2)}`:"—"}</td></tr>;
+                return <tr key={`${row.snapshotId}-${row.plan.id}`}><td>{row.date}<small>{new Date(row.generatedAt).toLocaleTimeString("zh-CN",{hour:"2-digit",minute:"2-digit"})}</small></td><td>{row.plan.items.map(item=><div key={`${item.officialMatchId||item.matchId}-${item.market}`}><b>{item.matchId}</b> {item.home} vs {item.away} · {item.marketName} {(item.picks?.length?item.picks.map(pick=>pick.pick):[item.pick]).join(" / ")}</div>)}</td><td>{planResult(row.plan)}</td><td>{settled?<SignedPurchaseMoney value={row.plan.stake} flow="stake"/>:"—"}</td><td>{settled?<SignedPurchaseMoney value={row.plan.simulatedReturn||0} flow="return"/>:"—"}</td><td>{settled?<SignedPurchaseMoney value={(row.plan.simulatedReturn||0)-row.plan.stake}/>:"—"}</td></tr>;
               }):<tr><td colSpan={6}>暂无该玩法的正式历史票</td></tr>}
             </tbody></table></div>
           </details>;
         })}
       </div>
+      </details>
+      {visiblePlanModules.length>0&&<div className="purchase-modules-toolbar"><span>当前组合票 · {visiblePlanModules.length} 类玩法</span><button type="button" onClick={()=>setCollapsedModules(Object.fromEntries(visiblePlanModules.map(module=>[module.id,!allModulesCollapsed])))}>{allModulesCollapsed?"全部展开":"全部收起"}</button></div>}
       {visiblePlanModules.map(module=>{
         const stats=moduleStats[module.id]||{settled:0,won:0,rate:0,stake:0,returned:0,net:0};
         const collapsed=Boolean(collapsedModules[module.id]);
@@ -573,8 +583,8 @@ function DailyPurchasePlans({
             <div className="purchase-module-stats" aria-label={`${module.title}历史统计`}>
               <span>中奖 / 已结算<b>{stats.won} / {stats.settled}</b></span>
               <span>中奖率<b>{stats.settled?`${stats.rate.toFixed(1)}%`:"待积累"}</b></span>
-              <span>投入 / 返还<b>¥{stats.stake.toFixed(2)} / ¥{stats.returned.toFixed(2)}</b></span>
-              <span>净收益<b className={stats.net>0?"positive":stats.net<0?"negative":""}>{stats.net>0?"+":""}¥{stats.net.toFixed(2)}</b></span>
+              <span>投入 / 返还<span className="purchase-money-pair"><SignedPurchaseMoney value={stats.stake} flow="stake"/> / <SignedPurchaseMoney value={stats.returned} flow="return"/></span></span>
+              <span>净收益<SignedPurchaseMoney value={stats.net}/></span>
             </div>
             <button
               type="button"
@@ -639,9 +649,9 @@ function DailyPurchasePlans({
                     ))}
                   </ol>
                   <footer>
-                    <span>投入 ¥{plan.stake.toFixed(2)}</span>
-                    <span>最低净收益 ¥{(plan.minWinningProfit ?? ((plan.minWinningReturn ?? plan.theoreticalReturn)-plan.stake)).toFixed(2)}</span>
-                    <span>最高净收益 ¥{(plan.maxWinningProfit ?? ((plan.maxWinningReturn ?? plan.theoreticalReturn)-plan.stake)).toFixed(2)}</span>
+                    <span>投入 <SignedPurchaseMoney value={plan.stake} flow="stake"/></span>
+                    <span>最低净收益 <SignedPurchaseMoney value={plan.minWinningProfit ?? ((plan.minWinningReturn ?? plan.theoreticalReturn)-plan.stake)}/></span>
+                    <span>最高净收益 <SignedPurchaseMoney value={plan.maxWinningProfit ?? ((plan.maxWinningReturn ?? plan.theoreticalReturn)-plan.stake)}/></span>
                     <strong>{planResult(plan)}</strong>
                   </footer>
               </>

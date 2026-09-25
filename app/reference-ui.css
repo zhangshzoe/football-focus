@@ -605,6 +605,16 @@ main{max-width:1320px!important;padding-bottom:88px!important}
 }
 .purchase-notice{margin:8px 0;padding:9px 11px;border:1px solid #f0d49b;border-radius:8px;background:#fffaf0;color:#8a5b15;font-size:12px;line-height:1.5}
 .purchase-history{display:grid;gap:8px;margin:12px 0}
+.purchase-history-panel{margin:12px 0;border:1px solid #d7e6ee;border-radius:10px;background:#fff;overflow:hidden}
+.purchase-history-panel>summary{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:46px;padding:9px 12px;color:#174e72;cursor:pointer;list-style:none}
+.purchase-history-panel>summary::-webkit-details-marker{display:none}
+.purchase-history-panel>summary strong{font-size:13px}.purchase-history-panel>summary span{margin-left:auto;color:#71838f;font-size:11px;font-weight:500}
+.purchase-history-panel>summary:after{content:"展开";color:#0874ba;font-size:12px;font-weight:800}.purchase-history-panel[open]>summary:after{content:"收起"}
+.purchase-history-panel .purchase-history{margin:0;padding:9px;border-top:1px solid #e4edf2}
+.purchase-modules-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:12px 0 0;color:#174e72;font-size:12px;font-weight:800}
+.daily-purchase-panel .purchase-money{font-variant-numeric:tabular-nums;white-space:nowrap}
+.daily-purchase-panel .purchase-money-negative{color:#168052!important}.daily-purchase-panel .purchase-money-positive{color:#c34242!important}
+.purchase-module-stats .purchase-money-pair{display:block;padding:0;border:0;color:#164d70;font-size:12px;white-space:nowrap}
 .purchase-history-group{overflow:hidden;border:1px solid #d7e6ee;border-radius:9px;background:#fff}
 .purchase-history-group summary{display:grid;grid-template-columns:minmax(145px,1.3fr) repeat(4,minmax(110px,1fr));gap:10px;align-items:center;padding:10px 12px;cursor:pointer;color:#31556d;font-size:12px}
 .purchase-history-group summary strong{color:#14547d;font-size:13px}
@@ -616,3 +626,4 @@ main{max-width:1320px!important;padding-bottom:88px!important}
 .purchase-history td small{display:block;color:#71838f}
 .purchase-history td b{color:#1678b6}
 @media(max-width:767px){.purchase-history-group summary{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px 10px}.purchase-history-group summary strong{grid-column:1/-1}.purchase-history-group summary span{font-size:11px}}
+@media(max-width:767px){.purchase-history-panel>summary span{max-width:45%;text-align:right}.purchase-modules-toolbar button{min-width:84px}}
