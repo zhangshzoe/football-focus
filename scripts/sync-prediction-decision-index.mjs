@@ -40,13 +40,18 @@ const output={...analysisBody,generatedAt:analysisUnchanged?previousAnalysis.gen
 if(!analysisUnchanged)await writeFile(path,`${JSON.stringify(output,null,2)}\n`,"utf8");
 const snapshotKey=snapshot=>`${snapshot.date}|${snapshot.sourceFetchedAt}|${snapshot.predictionId||"legacy"}`;
 const snapshots=Array.from(new Map([...formalSnapshots,...migratedSnapshots].map(snapshot=>[snapshotKey(snapshot),snapshot])).values()).sort((left,right)=>String(right.capturedAt||right.sourceFetchedAt).localeCompare(String(left.capturedAt||left.sourceFetchedAt)));
-const allowedPurchaseIds=new Set(),purchaseDirectory=join(process.cwd(),"data","purchase-plan-snapshots");
+const diskPurchaseSnapshots=[],purchaseDirectory=join(process.cwd(),"data","purchase-plan-snapshots");
 for(const name of await readdir(purchaseDirectory).catch(()=>[])){
  const relative=`data/purchase-plan-snapshots/${name}`;
  if(!tracked.has(relative)&&!name.startsWith(`${today}_`))continue;
- try{const record=JSON.parse(await readFile(join(purchaseDirectory,name),"utf8"));if(record.snapshotId)allowedPurchaseIds.add(String(record.snapshotId))}catch{/* 损坏文件不会进入线上索引。 */}
+ try{
+  const record=JSON.parse(await readFile(join(purchaseDirectory,name),"utf8"));
+  if(record.recordType!=="purchase-plan-snapshot"||record.immutable!==true||!record.snapshotId||!Array.isArray(record.planSet?.plans)||!record.planSet.plans.length)continue;
+  diskPurchaseSnapshots.push({snapshotId:record.snapshotId,capturedAt:record.capturedAt,sourceFetchedAt:record.sourceFetchedAt,predictionId:record.predictionId,contentHash:record.contentHash,previousSnapshotId:record.previousSnapshotId,planSet:{...record.planSet,snapshotId:record.snapshotId,contentHash:record.contentHash}});
+ }catch{/* 损坏文件不会进入线上索引。 */}
 }
-const purchasePlanSnapshots=(Array.isArray(data.purchasePlanSnapshots)?data.purchasePlanSnapshots:[]).filter(snapshot=>allowedPurchaseIds.has(String(snapshot.snapshotId||"")));
+// 本地服务可能只读到上一次打包的索引；正式票以已落盘的不可变文件为准。
+const purchasePlanSnapshots=Array.from(new Map(diskPurchaseSnapshots.map(snapshot=>[String(snapshot.snapshotId),snapshot])).values()).sort((left,right)=>String(right.capturedAt||"").localeCompare(String(left.capturedAt||"")));
 const previousBundle=JSON.parse(await readFile(bundlePath,"utf8").catch(()=>"null"));
 const bundleBody={schemaVersion:2,formalSnapshotCount:formalSnapshots.length,migratedSnapshotCount:migratedSnapshots.length,snapshots,resultCache,purchasePlanSnapshots};
 const bundleUnchanged=previousBundle&&JSON.stringify({...previousBundle,generatedAt:undefined})===JSON.stringify({...bundleBody,generatedAt:undefined});

@@ -164,6 +164,7 @@ type PurchasePlanSet = {
   contentHash?: string;
   scheduledTime?: string;
 };
+type PurchaseResult = {id?:string;matchId?:string;officialMatchId?:string;date?:string;matchDate?:string};
 const currentPurchasePlanIds=new Set(PURCHASE_PLAN_DEFINITIONS.map(definition=>definition.id));
 const hasPurchasePlanData=(item:PurchasePlanSet|undefined|null)=>Boolean(item?.plans?.some(plan=>currentPurchasePlanIds.has(plan.id)&&plan.status!=="unavailable"&&Array.isArray(plan.items)&&plan.items.length>0));
 type OfficialMatch = OfficialRecommendationMatch;
@@ -176,6 +177,34 @@ const shanghaiDate = () =>
   }).format(new Date());
 const dateOnly = (value?: string) =>
   String(value || "").match(/\d{4}-\d{2}-\d{2}/)?.[0] || "";
+const purchaseResultKey=(result:PurchaseResult)=>`${result.officialMatchId||result.matchId||result.id||""}|${dateOnly(result.date||result.matchDate)}`;
+async function fetchHistoricalPurchaseResults(sets:PurchasePlanSet[],cached:PurchaseResult[]){
+  const known=new Set(cached.flatMap(result=>[purchaseResultKey(result),`${result.id||""}|${dateOnly(result.date||result.matchDate)}`]));
+  const dates=new Set<string>(),now=Date.now();
+  const earliest=new Date(now-29*86400000).toLocaleDateString("en-CA",{timeZone:"Asia/Shanghai"});
+  const today=shanghaiDate();
+  for(const set of sets)for(const plan of set.plans)for(const item of plan.items){
+    const date=dateOnly(item.matchDate||item.salesDate||item.kickoffAt);
+    if(!date||date<earliest||date>today)continue;
+    const kickoff=Date.parse(item.kickoffAt||"");
+    if(Number.isFinite(kickoff)&&kickoff+3*3600000>now)continue;
+    if(!known.has(`${item.officialMatchId||""}|${date}`)&&!known.has(`${item.matchId}|${date}`))dates.add(date);
+  }
+  const fresh:PurchaseResult[]=[],ordered=[...dates].sort();
+  let failed=0;
+  for(let index=0;index<ordered.length;index+=4){
+    await Promise.all(ordered.slice(index,index+4).map(async date=>{
+      try{
+        const response=await fetch(`/api/sporttery/results?date=${date}`,{cache:"no-store"});
+        if(!response.ok)throw new Error(`赛果请求失败（${response.status}）`);
+        const payload=await response.json();
+        if(!Array.isArray(payload.results))throw new Error("赛果格式无效");
+        fresh.push(...payload.results);
+      }catch{failed++}
+    }));
+  }
+  return {results:[...new Map([...cached,...fresh].map(result=>[purchaseResultKey(result),result])).values()],failed};
+}
 const officialKey = (match: OfficialMatch | SavedPrediction) =>
   `${String(match.officialMatchId || ("matchId" in match ? match.matchId : "") || "")}|${dateOnly(match.salesDate || match.matchDate || match.kickoffAt)}`;
 const matchDateKey = (match: SavedPrediction, current?: OfficialMatch) =>
@@ -287,7 +316,8 @@ function DailyPurchasePlans({
   const [planSet, setPlanSet] = useState<PurchasePlanSet | null>(null),
     [planSets, setPlanSets] = useState<PurchasePlanSet[]>([]),
     [savedTrials, setSavedTrials] = useState<PurchasePlanSet[]>([]),
-    [historyResultCache, setHistoryResultCache] = useState<Array<{matchId?:string;date?:string}>>([]),
+    [historyResultCache, setHistoryResultCache] = useState<PurchaseResult[]>([]),
+    [resultSyncError,setResultSyncError]=useState(""),
     [status, setStatus] = useState("正在读取方案快照…"),
     [busy, setBusy] = useState(false),
     [previewError, setPreviewError] = useState(""),
@@ -377,15 +407,15 @@ function DailyPurchasePlans({
           ).values(),
         ).filter(hasPurchasePlanData);
         const storedTrials=(Array.isArray(saved.trials)?saved.trials:[]).filter(hasPurchasePlanData) as PurchasePlanSet[];
-        const cachedResults=Object.values(archive.resultCache&&typeof archive.resultCache==="object"?archive.resultCache:{}) as Array<{matchId?:string;date?:string}>;
-        const resultMap=new Map(cachedResults.map(result=>[`${result.matchId}|${result.date}`,result]));
-        const historyResults=[...resultMap.values()];
+        const cachedResults=Object.values(archive.resultCache&&typeof archive.resultCache==="object"?archive.resultCache:{}) as PurchaseResult[];
+        const {results:historyResults,failed}=await fetchHistoricalPurchaseResults(allSets,cachedResults);
         const settledSets=allSets.map(item=>({...item,plans:item.plans.map(plan=>settlePurchasePlan(plan,historyResults))}));
         const settledTrials=storedTrials.map(item=>({...item,plans:item.plans.map(plan=>settlePurchasePlan(plan,historyResults))}));
         if (active) {
           setPlanSets(settledSets);
           setSavedTrials(settledTrials);
           setHistoryResultCache(historyResults);
+          setResultSyncError(failed?`${failed} 个比赛日期的赛果查询失败，相关组合暂不计入已结算；刷新页面可重试。`:"");
           setPlanSet(null);
         }
         const selected=[...settledSets,...settledTrials]
@@ -509,6 +539,7 @@ function DailyPurchasePlans({
       {liveOfficial.error && <p className="purchase-notice">官方盘口获取失败：{liveOfficial.error}。可点击“按当前盘口试算”重试；过期赔率不会参与试算。</p>}
       {previewError && <p role="alert" className="purchase-notice">{previewError}</p>}
       {saveState && <p role="status" className="purchase-notice">{saveState}</p>}
+      {resultSyncError && <p role="alert" className="purchase-notice">{resultSyncError}</p>}
       <div className="purchase-kanban" aria-label="组合票历史统计">
         <div><span>已结算组合</span><b>{planStats.settled}</b></div>
         <div><span>中奖组合</span><b>{planStats.won}</b></div>

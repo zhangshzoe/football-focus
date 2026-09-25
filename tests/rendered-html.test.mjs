@@ -439,6 +439,8 @@ test("17:00 snapshot persists purchase drafts and the recommendation page expose
  assert.match(component,/settlePurchasePlan/);
  assert.match(component,/每注2元/);
  assert.match(component,/prediction-snapshots\?view=recommendations/);
+ assert.match(component,/fetchHistoricalPurchaseResults\(allSets,cachedResults\)/);
+ assert.match(component,/赛果查询失败，相关组合暂不计入已结算/);
  assert.match(component,/purchase-plan-module/);
  assert.match(component,/collapsedModules/);
  assert.match(component,/aria-expanded/);
@@ -471,6 +473,8 @@ test("bundled Site history includes the verified localhost migration without cha
  assert.equal(bundle.snapshots.reduce((sum,snapshot)=>sum+snapshot.matches.length,0),bundle.snapshots.filter(snapshot=>snapshot.storageOrigin==="server").reduce((sum,snapshot)=>sum+snapshot.matches.length,0)+migration.matchCount);
  assert.ok(Object.keys(bundle.resultCache||{}).length>=migration.resultCount);
  assert.ok(bundle.purchasePlanSnapshots.length>=50);
+ assert.ok(bundle.purchasePlanSnapshots.some(snapshot=>snapshot.planSet?.date==="2026-09-25"),"17:00 正式组合票必须进入线上索引");
+ assert.match(sync,/diskPurchaseSnapshots\.push/);
  assert.equal(audit.inventory.uniqueSettledMatches,55);
  assert.match(api,/bundledMigratedSnapshots/);
  assert.match(api,/verifiedResultCache/);
