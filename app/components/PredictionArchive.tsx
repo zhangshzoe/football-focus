@@ -10,7 +10,8 @@ import ModelExperimentCenter from "./ModelExperimentCenter";
 
 type Result={id:string;matchId?:string;date:string;home:string;away:string;fullScore:string;halfScore?:string;handicap:string;hhadResult?:string;scoreResult?:string;totalGoalsResult?:string};
 type ResultCache=Record<string,Result>;
-type Snapshot=SavedPredictionSet & {scheduleLabel:string;capturedAt?:string;storageOrigin?:"server"|"local"|"migrated-browser"};
+type ArchiveMatch=SavedPredictionSet["matches"][number] & {archiveEvidence?:"formal"|"browser_cache"|"purchase_plan_partial";archiveCapturedAt?:string;purchasePicks?:Array<{market:string;pick:string;probability:number}>};
+type Snapshot=Omit<SavedPredictionSet,"matches"> & {matches:ArchiveMatch[];scheduleLabel:string;capturedAt?:string;storageOrigin?:"server"|"local"|"migrated-browser"|"recovered"};
 type SavedMatch=Snapshot["matches"][number];
 type AiReview={key:string;primary:string;summary:string;causeTags:string[];improvements:string[];evidenceLevel:string;predictability:string;provider:string;generatedAt:string};
 type AiReviewCache=Record<string,AiReview>;
@@ -58,6 +59,10 @@ function PredictionTableCell({market,points,actual,actualValue,pending=false,can
  const status=pending?"待公布":!safeActual?"暂无数据":!picks.length?"暂无预测":strongReverse?"爆冷":actualIndex===0?"主选命中":secondaryEligible?"次选命中":backupEligible?"备选命中":totalDeviation||actualIndex>=0?totalDeviation||"候选未覆盖":"未命中";
  const tone=pending?"pending":!safeActual||!picks.length?"missing":actualIndex===0?"primary-hit":secondaryEligible?"secondary-hit":backupEligible?"backup-hit":"miss",rankLabels=market==="score"?["主选","次选","备选"]:market==="total"||market==="half-full"?["主选","次选"]:["主选"];
  return <div className={`prediction-table-result ${tone}`}><div className={`prediction-table-picks ${picks.length>1?"multiple":""}`}>{picks.length?picks.map((point,index)=><span className={`pick-rank pick-rank-${index+1}${actualIndex===index?" matched":""}`} key={`${point.score}-${index}`}><small>{rankLabels[index]||`第${index+1}顺位`}</small><strong>{point.score}</strong><em>{point.probability.toFixed(1)}%</em></span>):<strong className="prediction-empty">暂无预测</strong>}</div><div className="prediction-table-outcome"><strong>{pending?"待公布":safeActual||"暂无数据"}</strong><i className={`prediction-status ${tone}`}>{status}</i></div></div>;
+}
+function TicketEvidenceCell({match,market,actual}:{match:SavedMatch;market:string;actual?:string}){
+ const picks=(match.purchasePicks||[]).filter(item=>item.market===market);
+ return <div className="prediction-table-result missing"><div className="prediction-table-picks">{picks.length?<><small>17:00 票据选号</small><strong>{picks.map(item=>item.pick).join("；")}</strong></>:<strong className="prediction-empty">无该玩法留存</strong>}</div><div className="prediction-table-outcome"><strong>{actual||"待公布"}</strong><i className="prediction-status missing">非完整预测</i></div></div>;
 }
 function ReviewEvidencePopover({popoverId,evidenceLevel,predictability,improvements}:{popoverId:string;evidenceLevel:string;predictability:string;improvements:string[]}){
  const [open,setOpen]=useState(false),[position,setPosition]=useState({left:12,top:12,width:420});
@@ -176,19 +181,19 @@ export default function PredictionArchive(){
  const snapshotDates=useMemo(()=>Array.from(new Set(snapshots.map(snapshot=>snapshot.date))).sort((left,right)=>right.localeCompare(left)),[snapshots]);
  const effectiveSelectedDate=snapshotDates.includes(selectedDate)?selectedDate:snapshotDates[0]||"";
  const dateSnapshots=useMemo(()=>snapshots.filter(snapshot=>snapshot.date===effectiveSelectedDate),[snapshots,effectiveSelectedDate]);
- const selected=dateSnapshots.find(snapshot=>snapshotKey(snapshot)===selectedKey)||dateSnapshots[0];
+ const selected=dateSnapshots.find(snapshot=>snapshotKey(snapshot)===selectedKey)||dateSnapshots.find(snapshot=>snapshot.storageOrigin==="recovered")||dateSnapshots[0];
  const resultFor=useCallback((match:SavedMatch)=>selected?resultCache[cacheKey(match,selected.date)]:undefined,[resultCache,selected]);
- const pendingEntries=useMemo(()=>snapshots.flatMap(snapshot=>snapshot.matches.filter(match=>candidateDates(match,snapshot.date).some(day=>day<=shanghaiToday())&&!resultCache[cacheKey(match,snapshot.date)]).map(match=>({snapshot,match}))),[snapshots,resultCache]);
+ const pendingEntries=useMemo(()=>snapshots.filter(snapshot=>snapshot.storageOrigin!=="recovered").flatMap(snapshot=>snapshot.matches.filter(match=>candidateDates(match,snapshot.date).some(day=>day<=shanghaiToday())&&!resultCache[cacheKey(match,snapshot.date)]).map(match=>({snapshot,match}))),[snapshots,resultCache]);
 
  useEffect(()=>{
   let active=true;
   const remoteArchive=fetch("/api/prediction-snapshots",{cache:"no-store"}).then(async response=>{
    const data=await response.json();
-   return response.ok?{snapshots:Array.isArray(data.snapshots)?data.snapshots as Snapshot[]:[],resultCache:data.resultCache&&typeof data.resultCache==="object"&&!Array.isArray(data.resultCache)?data.resultCache as ResultCache:{}}:{snapshots:[] as Snapshot[],resultCache:{} as ResultCache};
-  }).catch(()=>({snapshots:[] as Snapshot[],resultCache:{} as ResultCache}));
+   return response.ok?{snapshots:Array.isArray(data.snapshots)?data.snapshots as Snapshot[]:[],resultCache:data.resultCache&&typeof data.resultCache==="object"&&!Array.isArray(data.resultCache)?data.resultCache as ResultCache:{},resultCorrections:data.resultCorrections&&typeof data.resultCorrections==="object"&&!Array.isArray(data.resultCorrections)?data.resultCorrections as ResultCache:{}}:{snapshots:[] as Snapshot[],resultCache:{} as ResultCache,resultCorrections:{} as ResultCache};
+  }).catch(()=>({snapshots:[] as Snapshot[],resultCache:{} as ResultCache,resultCorrections:{} as ResultCache}));
   void Promise.all([readSnapshots(),readResultCache(),readBrowserData<AiReviewCache>(PREDICTION_REVIEW_CACHE_STORAGE_KEY,{}),remoteArchive]).then(([localSnapshots,localResults,localReviews,remote])=>{
    if(!active)return;
-   setSnapshots(mergeSnapshots(localSnapshots,remote.snapshots));setResultCache({...remote.resultCache,...localResults});setAiReviewCache(localReviews&&typeof localReviews==="object"&&!Array.isArray(localReviews)?localReviews:{});
+   setSnapshots(mergeSnapshots(localSnapshots,remote.snapshots));setResultCache({...remote.resultCache,...localResults,...remote.resultCorrections});setAiReviewCache(localReviews&&typeof localReviews==="object"&&!Array.isArray(localReviews)?localReviews:{});
   });
   return()=>{active=false};
  },[]);
@@ -223,7 +228,7 @@ export default function PredictionArchive(){
  const stats=useMemo(()=>{
   if(!selected)return null;
   let total=0,score=0,backup=0,upset=0,had=0,hhad=0,goalPrimary=0,goalCovered=0,halfFull=0,halfFullCovered=0,goalTotal=0,halfFullTotal=0;
-  selected.matches.forEach(match=>{
+  selected.matches.filter(match=>selected.storageOrigin!=="recovered"||match.archiveEvidence==="formal").forEach(match=>{
    const result=resultFor(match); if(!result)return;
    total++;
    const [homeGoals,awayGoals]=result.fullScore.split(":").map(Number),actual=outcome(homeGoals,awayGoals);
@@ -242,14 +247,14 @@ export default function PredictionArchive(){
  },[selected,resultFor]);
 
  const snapshotAudit=useMemo(()=>{
-  const today=shanghaiToday(),scheduled=snapshots.filter(snapshot=>snapshot.storageOrigin==="server").length,migrated=snapshots.filter(snapshot=>snapshot.storageOrigin==="migrated-browser").length,local=snapshots.length-scheduled-migrated;
-  const eligible=snapshots.flatMap(snapshot=>snapshot.matches.filter(match=>Boolean(resultCache[cacheKey(match,snapshot.date)])||matchDate(match,snapshot.date)<today).map(match=>({snapshot,match})));
+  const today=shanghaiToday(),sourceSnapshots=snapshots.filter(snapshot=>snapshot.storageOrigin!=="recovered"),scheduled=sourceSnapshots.filter(snapshot=>snapshot.storageOrigin==="server").length,migrated=sourceSnapshots.filter(snapshot=>snapshot.storageOrigin==="migrated-browser").length,local=sourceSnapshots.length-scheduled-migrated;
+  const eligible=sourceSnapshots.flatMap(snapshot=>snapshot.matches.filter(match=>Boolean(resultCache[cacheKey(match,snapshot.date)])||matchDate(match,snapshot.date)<today).map(match=>({snapshot,match})));
   const settled=eligible.filter(({snapshot,match})=>Boolean(resultCache[cacheKey(match,snapshot.date)])).length;
   const completeForecasts=eligible.filter(({match})=>Boolean(match.hadProbabilities?.length&&match.hhadProbabilities?.length&&predictionScores(match).length&&match.totalGoalProbabilities?.length&&match.halfFullProbabilities?.length)).length;
-  return {total:snapshots.length,scheduled,migrated,local,eligible:eligible.length,settled,completeForecasts};
+  return {total:sourceSnapshots.length,scheduled,migrated,local,eligible:eligible.length,settled,completeForecasts};
  },[snapshots,resultCache]);
 
- const allReviewedRows=useMemo(()=>snapshots.flatMap(snapshot=>snapshot.matches.flatMap(match=>{const result=resultCache[cacheKey(match,snapshot.date)];return result?[{snapshot,match,result,review:buildPostMatchReview(match,result)}]:[]})),[snapshots,resultCache]);
+ const allReviewedRows=useMemo(()=>snapshots.filter(snapshot=>snapshot.storageOrigin!=="recovered").flatMap(snapshot=>snapshot.matches.flatMap(match=>{const result=resultCache[cacheKey(match,snapshot.date)];return result?[{snapshot,match,result,review:buildPostMatchReview(match,result)}]:[]})),[snapshots,resultCache]);
  const modelEvaluation=useMemo(()=>buildModelEvaluation(allReviewedRows.map(({snapshot,match,result})=>({
   key:`${match.salesDate||snapshot.date}|${match.officialMatchId||`${result.date}|${result.id}|${normalizeName(match.home)}|${normalizeName(match.away)}`}`,
   salesDate:match.salesDate||snapshot.date,kickoffAt:match.kickoffAt||"",capturedAt:snapshot.capturedAt||snapshot.sourceFetchedAt,
@@ -274,7 +279,7 @@ export default function PredictionArchive(){
   }).sort((left,right)=>right.rate-left.rate||right.count-left.count);
  },[allReviewedRows]);
 
- const reviewedRows=useMemo(()=>!selected?[]:selected.matches.map(match=>{const result=resultFor(match);return{match,result,review:result?buildPostMatchReview(match,result):undefined}}),[selected,resultFor]);
+ const reviewedRows=useMemo(()=>!selected?[]:selected.matches.map(match=>{const result=resultFor(match);return{match,result,review:result&&match.archiveEvidence!=="purchase_plan_partial"?buildPostMatchReview(match,result):undefined}}),[selected,resultFor]);
  const reviewMetrics=useMemo(()=>{
   const completed=reviewedRows.filter(row=>row.review),count=(label:ReviewPrimary)=>completed.filter(row=>row.review?.primary===label).length;
   return{total:completed.length,normal:count("正常兑现"),deviation:count("合理偏差"),upset:count("爆冷"),insufficient:count("数据不足"),averageProbability:completed.length?completed.reduce((sum,row)=>sum+(row.review?.actualOutcomeProbability||0),0)/completed.length:0,brier:completed.length?completed.reduce((sum,row)=>sum+(row.review?.brierScore||0),0)/completed.length:0};
@@ -301,7 +306,7 @@ export default function PredictionArchive(){
 
  return <section className="archive-page">
  <div className="section-head archive-page-head"><div><p className="eyebrow">PREDICTION ARCHIVE</p><h2>盘后预测回溯</h2><p>每个彩票日合并为一页；每场采用最接近且不晚于规定决策时点的赛前快照。</p></div><div className="archive-head-filters"><label className="archive-date-select"><span>选择彩票日期</span><select aria-label="盘后回溯彩票日期" value={effectiveSelectedDate} onChange={event=>{setSelectedDate(event.target.value);setSelectedKey("")}} disabled={!snapshotDates.length}>{snapshotDates.map(date=><option key={date} value={date}>{dateOptionLabel(date)}</option>)}</select></label></div></div>
- {selected?.predictionId&&<div className="prediction-disclaimer"><b>预测版本 {selected.predictionId}</b><span>复盘统计使用该快照保存的原始概率，不重新计算。</span></div>}
+ {selected?.storageOrigin==="recovered"?<div className="prediction-disclaimer"><b>赛前留存补齐视图</b><span>{selected.scheduleLabel}。页面缓存不是规定时点快照；9 月 24 日仅有组合票选号，缺少完整预测概率，不计入本页命中率。</span></div>:selected?.predictionId&&<div className="prediction-disclaimer"><b>预测版本 {selected.predictionId}</b><span>复盘统计使用该快照保存的原始概率，不重新计算。</span></div>}
  <div className="archive-data-audit" aria-label="快照数据检查"><div><small>已读取快照</small><b>{snapshotAudit.total} 个</b></div><div className={snapshotAudit.scheduled?"verified":"audit-warning"}><small>定时文件快照</small><b>{snapshotAudit.scheduled} 个</b></div><div className={snapshotAudit.local?"audit-warning":"verified"}><small>已迁移 / 仅本机</small><b>{snapshotAudit.migrated} / {snapshotAudit.local} 个</b></div><div className={snapshotAudit.settled===snapshotAudit.eligible&&snapshotAudit.eligible?"verified":"audit-warning"}><small>历史赛果覆盖</small><b>{snapshotAudit.settled}/{snapshotAudit.eligible}</b></div><div className={snapshotAudit.completeForecasts===snapshotAudit.eligible&&snapshotAudit.eligible?"verified":"audit-warning"}><small>完整预测字段</small><b>{snapshotAudit.completeForecasts}/{snapshotAudit.eligible}</b></div></div>
  {improvementSummary.length>0&&<section className="model-improvement-panel"><header><div><small>全部已结算快照</small><h3>模型改进方向汇总</h3></div>{calibrationProfile&&<div className="calibration-badges"><span>固定决策样本 {calibrationProfile.forecastSampleSize}/{calibrationProfile.uniqueMatchCount}</span><span>覆盖率 {((calibrationProfile.coverage||0)*100).toFixed(1)}%</span><span>训练/校准/测试 {calibrationProfile.trainingSampleSize||0}/{calibrationProfile.calibrationSampleSize||0}/{calibrationProfile.testSampleSize||0}</span><span>滚动验证 {calibrationProfile.rollingValidation?.folds||0} 折/{calibrationProfile.rollingValidation?.sampleSize||0} 场</span><span>概率温度 {calibrationProfile.probabilityTemperature.toFixed(2)}</span><span>{calibrationProfile.status==="validated"?`正式版本 ${calibrationProfile.profileId}`:"样本不足·未发布"}</span></div>}</header>{calibrationProfile&&<div className="calibration-validation-grid"><article><small>校准拟合成绩</small><b>Brier {calibrationProfile.fitting?.raw.brier.toFixed(3)??"—"} → {calibrationProfile.fitting?.calibrated.brier.toFixed(3)??"—"}</b><span>Log Loss {calibrationProfile.fitting?.raw.logLoss.toFixed(3)??"—"} → {calibrationProfile.fitting?.calibrated.logLoss.toFixed(3)??"—"}</span><em>仅说明参数对校准区间的拟合，不作为未来改进证据。</em></article><article><small>未参与调参的未来测试成绩</small><b>模型 Brier {calibrationProfile.futureTest?.calibrated.brier.toFixed(3)??"—"}</b><span>市场基线 {calibrationProfile.futureTest?.marketBaseline.brier.toFixed(3)??"—"} · 样本 {calibrationProfile.futureTest?.calibrated.sampleSize||0}</span><em>测试赛果不参与温度和模型参数选择。</em></article><article><small>滚动时间验证</small><b>模型 Brier {calibrationProfile.rollingValidation?.calibrated.brier.toFixed(3)??"—"}</b><span>市场基线 {calibrationProfile.rollingValidation?.marketBaseline.brier.toFixed(3)??"—"}</span><em>每折只用此前校准窗选参数，再评估随后比赛。</em></article><article><small>模拟收益</small><b>暂不计算</b><span>缺少逐方案完整成本或决策时固定赔率</span><em>不会用赛后价格或挑选赢家补算收益。</em></article></div>}{calibrationProfile?.futureTest&&<details className="calibration-buckets"><summary>查看未来测试概率分桶校准</summary><table><thead><tr><th>概率区间</th><th>样本点</th><th>模型均值</th><th>实际频率</th></tr></thead><tbody>{calibrationProfile.futureTest.calibrated.buckets.map(bucket=><tr key={bucket.range}><td>{bucket.range}</td><td>{bucket.count}</td><td>{(bucket.meanProbability*100).toFixed(1)}%</td><td>{(bucket.observedRate*100).toFixed(1)}%</td></tr>)}</tbody></table></details>}<div className="model-improvement-grid">{improvementSummary.map(item=><article key={item.area}><div><b>{item.area}</b><strong>{item.count}/{item.denominator} · {item.rate.toFixed(1)}%</strong></div><p>{item.action}</p></article>)}</div><p className="model-improvement-note">同一比赛按正式决策时点取最近且不晚于该时点的快照；随后按比赛时间执行60%训练、20%校准、20%未来测试，并开展多折滚动时间验证。正式预测只读取服务端已发布版本，浏览器统计不会直接改变模型参数。</p></section>}
  {modelEvaluation.sampleSize>0&&<ModelExperimentCenter report={modelEvaluation}/>}
@@ -317,14 +322,14 @@ export default function PredictionArchive(){
    <details className="archive-match-review" open><summary><div><small>当前快照</small><b>场次复盘摘要</b></div><span>{visibleRows.length} 场 <b className="collapse-copy"/></span></summary><div className="archive-table-wrap"><table className="archive-table archive-review-table"><thead><tr><th>场次<br/>比赛时间</th><th>对阵</th><th>比分</th><th>胜平负</th><th>让球胜平负</th><th>总进球</th><th>半全场</th><th>复盘摘要</th></tr></thead><tbody>{visibleRows.map(({match,result,review})=>{
     const scores=predictionScores(match),aiReview=aiReviewCache[reviewCacheKey(selected,match)],summary=aiReview?.summary||review?.summary,improvements=aiReview?.improvements?.length?aiReview.improvements:review?.improvements||[],fullGoals=validFullScore(result),actualHad=fullGoals?outcome(fullGoals[0],fullGoals[1]):undefined,actualHhad=fullGoals?(normalizeHhadOutcome(result?.hhadResult||"")||hhadOutcome(fullGoals[0],fullGoals[1],match.handicap||result?.handicap||"")):undefined,actualHhadLabel=actualHhad?.replace(/^让/,""),actualGoals=fullGoals?String(fullGoals[0]+fullGoals[1]):undefined,actualHalfFull=halfFullActual(result)?.label;
     return <tr key={`${match.id}-${match.time}`}>
-     <td className="archive-match-meta" data-label="场次 / 时间"><b>{match.id}</b><em className="archive-match-league" data-tone={leagueTone(match.league)}>{match.league||"其他联赛"}</em><span>{result?.date||matchDate(match,selected.date)||"—"}</span><strong>{kickoffTime(match)}</strong></td>
+     <td className="archive-match-meta" data-label="场次 / 时间"><b>{match.id}</b><em className="archive-match-league" data-tone={leagueTone(match.league)}>{match.league||"其他联赛"}</em><span>{result?.date||matchDate(match,selected.date)||"—"}</span><strong>{kickoffTime(match)}</strong>{selected.storageOrigin==="recovered"&&<small>{match.archiveEvidence==="formal"?"正式快照":match.archiveEvidence==="browser_cache"?"赛前页面缓存":"17:00 组合票留存"}</small>}</td>
      <td className="archive-versus" data-label="对阵"><strong>{match.home}</strong><i>VS</i><strong>{match.away}</strong></td>
-     <td data-label="比分"><PredictionTableCell market="score" points={scores} actual={result?.fullScore} pending={!result} candidates={3}/></td>
-     <td data-label="胜平负"><PredictionTableCell market="had" points={match.hadProbabilities} actual={actualHad} pending={!result}/></td>
-     <td data-label="让球胜平负"><PredictionTableCell market="hhad" points={match.hhadProbabilities} actual={actualHhad?`${match.handicap||result?.handicap?`(${match.handicap||result?.handicap}) `:""}${actualHhadLabel}`:undefined} actualValue={actualHhad} pending={!result}/></td>
-     <td data-label="总进球"><PredictionTableCell market="total" points={match.totalGoalProbabilities} actual={actualGoals?`${actualGoals}球`:undefined} actualValue={actualGoals} pending={!result} candidates={2}/></td>
-     <td data-label="半全场"><PredictionTableCell market="half-full" points={match.halfFullProbabilities} actual={actualHalfFull} pending={!result} candidates={2}/></td>
-     <td className="archive-review-summary" data-label="复盘摘要">{review?<><p>{summary}</p>{aiReview&&<small className="archive-ai-review-meta">{aiReview.provider} 深度复盘 · {new Date(aiReview.generatedAt).toLocaleString("zh-CN")}</small>}<ReviewEvidencePopover popoverId={`review-evidence-${selected.date}-${match.id}`.replace(/[^a-zA-Z0-9_-]/g,"-")} evidenceLevel={aiReview?.evidenceLevel||review.evidenceLevel} predictability={aiReview?.predictability||review.predictability} improvements={improvements}/></>:"赛果公布后自动生成结构化复盘"}</td>
+     <td data-label="比分">{match.archiveEvidence==="purchase_plan_partial"?<TicketEvidenceCell match={match} market="score" actual={result?.fullScore}/>:<PredictionTableCell market="score" points={scores} actual={result?.fullScore} pending={!result} candidates={3}/>}</td>
+     <td data-label="胜平负">{match.archiveEvidence==="purchase_plan_partial"?<TicketEvidenceCell match={match} market="had" actual={actualHad}/>:<PredictionTableCell market="had" points={match.hadProbabilities} actual={actualHad} pending={!result}/>}</td>
+     <td data-label="让球胜平负">{match.archiveEvidence==="purchase_plan_partial"?<TicketEvidenceCell match={match} market="hhad" actual={actualHhad}/>:<PredictionTableCell market="hhad" points={match.hhadProbabilities} actual={actualHhad?`${match.handicap||result?.handicap?`(${match.handicap||result?.handicap}) `:""}${actualHhadLabel}`:undefined} actualValue={actualHhad} pending={!result}/>}</td>
+     <td data-label="总进球">{match.archiveEvidence==="purchase_plan_partial"?<TicketEvidenceCell match={match} market="total" actual={actualGoals?`${actualGoals}球`:undefined}/>:<PredictionTableCell market="total" points={match.totalGoalProbabilities} actual={actualGoals?`${actualGoals}球`:undefined} actualValue={actualGoals} pending={!result} candidates={2}/>}</td>
+     <td data-label="半全场">{match.archiveEvidence==="purchase_plan_partial"?<TicketEvidenceCell match={match} market="halfFull" actual={actualHalfFull}/>:<PredictionTableCell market="half-full" points={match.halfFullProbabilities} actual={actualHalfFull} pending={!result} candidates={2}/>}</td>
+     <td className="archive-review-summary" data-label="复盘摘要">{match.archiveEvidence==="purchase_plan_partial"?<p>仅存有 17:00 组合票中的选号与对应赛前赔率；完整比分分布及五种玩法概率未保存，不能计算模型命中率。{result?`实际比分 ${result.fullScore}。`:"赛果待补。"}</p>:review?<><p>{match.archiveEvidence==="browser_cache"?"赛前页面缓存，非规定时点的正式快照。":""}{summary}</p>{aiReview&&<small className="archive-ai-review-meta">{aiReview.provider} 深度复盘 · {new Date(aiReview.generatedAt).toLocaleString("zh-CN")}</small>}<ReviewEvidencePopover popoverId={`review-evidence-${selected.date}-${match.id}`.replace(/[^a-zA-Z0-9_-]/g,"-")} evidenceLevel={aiReview?.evidenceLevel||review.evidenceLevel} predictability={aiReview?.predictability||review.predictability} improvements={improvements}/></>:"赛果公布后自动生成结构化复盘"}</td>
     </tr>;
    })}</tbody></table></div></details></>:archiveView==="half-full"?<HalfFullPredictionView rows={baseVisibleRows} loading={loading} snapshotDate={selected.date}/>:<FocusedPredictionView rows={baseVisibleRows} view={archiveView} loading={loading} snapshotDate={selected.date}/>}</section>
   </>}

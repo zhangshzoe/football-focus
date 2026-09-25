@@ -6,6 +6,7 @@ import {generatePurchasePlans,PURCHASE_PLAN_MODULES,settlePurchasePlan,summarize
 import {teamIdentity} from "../app/team-identity.js";
 import {decisionTargetAt,selectOfficialDecisionRows} from "../app/snapshot-decision-policy.js";
 import {snapshotIdFromFileName} from "../app/snapshot-file-policy.js";
+import {buildArchiveRecoverySnapshots} from "../app/archive-recovery.js";
 
 test("official snapshot timing follows weekday and weekend decision rules",()=>{
  assert.equal(decisionTargetAt("2026-09-14","2026-09-14T21:00:00+08:00"),"2026-09-14T12:30:00.000Z");
@@ -453,10 +454,33 @@ test("bundled Site history includes the verified localhost migration without cha
  assert.ok(bundle.purchasePlanSnapshots.length>=50);
  assert.equal(audit.inventory.uniqueSettledMatches,55);
  assert.match(api,/bundledMigratedSnapshots/);
- assert.match(api,/resultCache:bundledResultCache/);
- assert.match(archive,/setResultCache\(\{\.\.\.remote\.resultCache,\.\.\.localResults\}\)/);
+ assert.match(api,/verifiedResultCache/);
+ assert.match(archive,/setResultCache\(\{\.\.\.remote\.resultCache,\.\.\.localResults,\.\.\.remote\.resultCorrections\}\)/);
  assert.match(sync,/formalSourceSnapshots/);
  assert.match(sync,/storageOrigin!=="migrated-browser"/);
+});
+
+test("September 23 and 24 recovery keeps provenance and never invents full forecasts",async()=>{
+ const [bundle,results]=await Promise.all([
+  readFile(new URL("../data/generated-prediction-snapshot-index.json",import.meta.url),"utf8").then(JSON.parse),
+  readFile(new URL("../data/result-supplements/2026-09-23-24.json",import.meta.url),"utf8").then(JSON.parse),
+ ]);
+ const recovered=buildArchiveRecoverySnapshots(bundle.snapshots,bundle.purchasePlanSnapshots);
+ const day23=recovered.find(snapshot=>snapshot.date==="2026-09-23");
+ const day24=recovered.find(snapshot=>snapshot.date==="2026-09-24");
+ assert.deepEqual(day23.matches.map(match=>match.id),["周三001","周三002","周三003"]);
+ assert.deepEqual(day23.matches.map(match=>match.archiveEvidence),["browser_cache","browser_cache","formal"]);
+ assert.deepEqual(day24.matches.map(match=>match.id),Array.from({length:8},(_,index)=>`周四${String(index+1).padStart(3,"0")}`));
+ assert.ok(day24.matches.every(match=>match.archiveEvidence==="purchase_plan_partial"&&match.purchasePicks.length&&!match.hadProbabilities&&!match.combinedScores));
+ assert.equal(results.results.length,11);
+ assert.equal(new Set(results.results.map(result=>result.matchId)).size,11);
+ assert.ok(results.results.every(result=>/^\d+:\d+$/.test(result.fullScore)&&/^\d+:\d+$/.test(result.halfScore)));
+ const response=await render("/api/prediction-snapshots");
+ assert.equal(response.status,200);
+ const payload=await response.json();
+ assert.equal(payload.snapshots.find(snapshot=>snapshot.snapshotId==="2026-09-23-recovered-review-v1")?.matches.length,3);
+ assert.equal(payload.snapshots.find(snapshot=>snapshot.snapshotId==="2026-09-24-recovered-review-v1")?.matches.length,8);
+ assert.equal(Object.keys(payload.resultCorrections).length,11);
 });
 
 test("one immutable prediction version supplies prediction, recommendation and archive probabilities",async()=>{

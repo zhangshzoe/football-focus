@@ -1,0 +1,22 @@
+{
+  "recordType": "post-match-result-supplement",
+  "immutable": true,
+  "source": "足彩网·竞彩足球开奖结果",
+  "sourcePage": "https://cp.zgzcw.com/dc/getKaijiangFootBall.action",
+  "queriedDates": ["2026-09-23", "2026-09-24", "2026-09-25"],
+  "fetchedAt": "2026-09-25T04:55:07.000Z",
+  "note": "仅补充已公布赛果；原始赛前预测与采集时间不变。后续订正须追加新记录。",
+  "results": [
+    {"id":"周三001","matchId":"2041645","officialMatchId":"2041645","date":"2026-09-23","league":"亚运男足","home":"中国U23","away":"阿联酋U23","halfScore":"0:0","fullScore":"0:0","handicap":"-1","hadResult":"平","hhadResult":"负","status":"settled"},
+    {"id":"周三002","matchId":"2041646","officialMatchId":"2041646","date":"2026-09-23","league":"亚运男足","home":"日本U23","away":"泰国U23","halfScore":"1:0","fullScore":"3:0","handicap":"-2","hadResult":"","hhadResult":"胜","status":"settled"},
+    {"id":"周三003","matchId":"2041647","officialMatchId":"2041647","date":"2026-09-24","league":"美职联","home":"西雅图","away":"盐湖城","halfScore":"0:0","fullScore":"2:0","handicap":"-1","hadResult":"胜","hhadResult":"胜","status":"settled"},
+    {"id":"周四001","matchId":"2041648","officialMatchId":"2041648","date":"2026-09-24","league":"国际友谊","home":"日本","away":"乌拉圭","halfScore":"1:1","fullScore":"3:1","handicap":"-1","hadResult":"胜","hhadResult":"胜","status":"settled"},
+    {"id":"周四002","matchId":"2041649","officialMatchId":"2041649","date":"2026-09-24","league":"国际友谊","home":"韩国","away":"厄瓜多尔","halfScore":"0:0","fullScore":"3:0","handicap":"-1","hadResult":"胜","hhadResult":"胜","status":"settled"},
+    {"id":"周四003","matchId":"2041656","officialMatchId":"2041656","date":"2026-09-24","league":"中国之队锦标赛","home":"中国","away":"马尔代夫","halfScore":"0:0","fullScore":"3:0","handicap":"-4","hadResult":"","hhadResult":"负","status":"settled"},
+    {"id":"周四004","matchId":"2041650","officialMatchId":"2041650","date":"2026-09-25","league":"欧国联","home":"科索沃","away":"爱尔兰","halfScore":"0:0","fullScore":"1:0","handicap":"-1","hadResult":"胜","hhadResult":"平","status":"settled"},
+    {"id":"周四005","matchId":"2041651","officialMatchId":"2041651","date":"2026-09-25","league":"欧国联","home":"葡萄牙","away":"威尔士","halfScore":"1:0","fullScore":"1:0","handicap":"-2","hadResult":"胜","hhadResult":"负","status":"settled"},
+    {"id":"周四006","matchId":"2041652","officialMatchId":"2041652","date":"2026-09-25","league":"欧国联","home":"荷兰","away":"德国","halfScore":"0:1","fullScore":"1:1","handicap":"-1","hadResult":"平","hhadResult":"负","status":"settled"},
+    {"id":"周四007","matchId":"2041653","officialMatchId":"2041653","date":"2026-09-25","league":"欧国联","home":"塞尔维亚","away":"希腊","halfScore":"1:0","fullScore":"1:2","handicap":"-1","hadResult":"负","hhadResult":"负","status":"settled"},
+    {"id":"周四008","matchId":"2041654","officialMatchId":"2041654","date":"2026-09-25","league":"欧国联","home":"挪威","away":"丹麦","halfScore":"2:1","fullScore":"3:2","handicap":"-1","hadResult":"胜","hhadResult":"平","status":"settled"}
+  ]
+}
