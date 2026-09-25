@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
 import test from "node:test";
 import ts from "typescript";
-import {generatePurchasePlans,PURCHASE_PLAN_MODULES,settlePurchasePlan,summarizePurchasePlanModules,summarizePurchasePlanDefinitions} from "../app/purchase-plan-engine.js";
+import {calculatePurchaseLegReturns,generatePurchasePlans,PURCHASE_PLAN_MODULES,settlePurchasePlan,summarizePurchasePlanModules,summarizePurchasePlanDefinitions} from "../app/purchase-plan-engine.js";
 import {teamIdentity} from "../app/team-identity.js";
 import {decisionTargetAt,selectOfficialDecisionRows} from "../app/snapshot-decision-policy.js";
 import {snapshotIdFromFileName} from "../app/snapshot-file-policy.js";
@@ -376,6 +376,17 @@ test("daily purchase drafts generate all fixed traceable ticket types and settle
  assert.equal(settlePurchasePlan(first,results).status,"won");
 });
 
+test("new fixed tickets exclude negative minimum profit and show per-match expected returns",()=>{
+ const leg=calculatePurchaseLegReturns({picks:[{pick:"0球",probability:55,odd:1.2},{pick:"1球",probability:45,odd:1.3}]});
+ assert.equal(Number(leg.expectedReturn.toFixed(2)),2.49);
+ assert.deepEqual({stake:leg.stake,minWinningReturn:leg.minWinningReturn,maxWinningReturn:leg.maxWinningReturn,minWinningProfit:leg.minWinningProfit,maxWinningProfit:leg.maxWinningProfit},{stake:4,minWinningReturn:2.4,maxWinningReturn:2.6,minWinningProfit:-1.6,maxWinningProfit:-1.4});
+ const reports=[1,2].map(index=>({id:`周一00${index}`,officialMatchId:`official-${index}`,officialMappingStatus:"verified",salesDate:"2026-09-08",matchDate:"2026-09-08",kickoffAt:"2026-09-08T20:00:00+08:00",sourceFetchedAt:"2026-09-08T16:55:00+08:00",home:`主队${index}`,away:`客队${index}`,matchStatus:"Selling",totalGoalProbabilities:[{score:"0球",probability:55},{score:"1球",probability:45}]}));
+ const officialMatches=reports.map(report=>({officialMatchId:report.officialMatchId,salesDate:report.salesDate,kickoffAt:report.kickoffAt,matchStatus:"Selling",marketOdds:{"总进球数":[1.2,1.3,0,0,0,0,0,0]},marketEligibility:{"总进球数":{marketCode:"TTG",salesStatus:"Selling",qualification:"qualified",allowedPassCounts:[2],cutoffAt:"2026-09-08T19:50:00+08:00"}}}));
+ const set=generatePurchasePlans({date:"2026-09-08",reports,officialMatches,generatedAt:"2026-09-08T17:00:00+08:00"});
+ assert.equal(set.plans.find(plan=>plan.id==="total-double-2").status,"unavailable");
+ assert.ok(set.plans.filter(plan=>plan.status!=="unavailable").every(plan=>plan.minWinningProfit>=0));
+});
+
 test("official identity and market qualification gate purchasable recommendations",()=>{
  const eligibility=single=>({"胜平负":{marketCode:"HAD",salesStatus:"Selling",qualification:"qualified",supportsSingle:single,allowedPassCounts:single?[1,2,3,4,5,6,7,8]:[2,3,4,5,6,7,8],cutoffAt:null,ruleVersion:"test"}});
  const report={id:"周三001",officialMatchId:"new-id",officialMappingStatus:"verified",salesDate:"2026-09-09",matchDate:"2026-09-09",kickoffAt:"2026-09-09T20:00:00+08:00",sourceFetchedAt:"2026-09-09T16:55:00+08:00",home:"甲",away:"乙",matchStatus:"Selling",hadProbabilities:[{score:"胜",probability:70}]};
@@ -432,8 +443,9 @@ test("invalid or expired kickoff data cannot enter purchase plans",()=>{
 });
 
 test("17:00 snapshot persists purchase drafts and the recommendation page exposes settlement",async()=>{
- const [capture,api,component,styles,sync]=await Promise.all([
+ const [capture,purchaseCapture,api,component,styles,sync]=await Promise.all([
   readFile(new URL("../scripts/capture-prediction-snapshot.mjs",import.meta.url),"utf8"),
+  readFile(new URL("../scripts/capture-purchase-plan-snapshot.mjs",import.meta.url),"utf8"),
   readFile(new URL("../app/api/prediction-snapshots/route.ts",import.meta.url),"utf8"),
   readFile(new URL("../app/components/TodayRecommendations.tsx",import.meta.url),"utf8"),
   readFile(new URL("../app/reference-ui.css",import.meta.url),"utf8"),
@@ -456,6 +468,12 @@ test("17:00 snapshot persists purchase drafts and the recommendation page expose
  assert.match(component,/aria-controls/);
  assert.match(component,/中奖 \/ 已结算/);
  assert.match(component,/投入 \/ 返还/);
+ assert.match(component,/模型预期返奖/);
+ assert.match(component,/命中时最低 \/ 最高盈利/);
+ assert.match(component,/最近正式快照/);
+ assert.match(component,/刷新快照/);
+ assert.match(component,/visibilitychange/);
+ assert.match(purchaseCapture,/record\.immutable===true&&Array\.isArray\(record\?\.planSet\?\.plans\)/);
  assert.match(component,/最终赛果 \{purchaseHistoryActual\(item\)\} · 购入赔率 \{purchaseHistoryOdds\(item\)\}/);
  assert.match(component,/<details className="purchase-history-panel"/);
  assert.match(component,/allModulesCollapsed\?"全部展开":"全部收起"/);

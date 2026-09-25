@@ -18,6 +18,7 @@ import {
   ScorePoint,
 } from "../prediction-config";
 import {
+  calculatePurchaseLegReturns,
   generatePurchasePlans,
   PURCHASE_PLAN_DEFINITIONS,
   PURCHASE_PLAN_MODULES,
@@ -169,6 +170,15 @@ function SignedPurchaseMoney({value,flow="net"}:{value:number;flow?:"net"|"stake
   const amount=Number.isFinite(value)?value:0;
   const signed=flow==="stake"?-Math.abs(amount):flow==="return"?Math.abs(amount):amount;
   return <b className={`purchase-money ${signed<0?"purchase-money-negative":signed>0?"purchase-money-positive":""}`}>{signed<0?"-":signed>0?"+":""}¥{Math.abs(signed).toFixed(2)}</b>;
+}
+function PurchaseLegReturns({item}:{item:PurchaseItem}){
+  const returns=calculatePurchaseLegReturns(item);
+  if(!returns)return <span className="purchase-leg-returns">单场返奖：赔率待补</span>;
+  return <span className="purchase-leg-returns">
+    <span>模型预期返奖 ¥{returns.expectedReturn.toFixed(2)}</span>
+    <span>命中返奖 ¥{returns.minWinningReturn.toFixed(2)}～¥{returns.maxWinningReturn.toFixed(2)}</span>
+    <span>命中时最低 / 最高盈利 <SignedPurchaseMoney value={returns.minWinningProfit}/> / <SignedPurchaseMoney value={returns.maxWinningProfit}/></span>
+  </span>;
 }
 function purchaseHistoryOdds(item:PurchaseItem){
   const selections=item.picks?.length?item.picks:[{pick:item.pick,odd:item.odd}];
@@ -338,7 +348,22 @@ function DailyPurchasePlans({
     [busy, setBusy] = useState(false),
     [previewError, setPreviewError] = useState(""),
     [saveState, setSaveState] = useState(""),
+    [archiveReload, setArchiveReload] = useState(0),
     [collapsedModules, setCollapsedModules] = useState<Record<string, boolean>>({});
+  useEffect(()=>{
+    let timer:ReturnType<typeof setTimeout>;
+    const schedule=()=>{
+      const now=Date.now(),shanghaiOffset=8*60*60*1000;
+      const salesDayStart=Math.floor((now+shanghaiOffset)/86400000)*86400000-shanghaiOffset;
+      let nextRefresh=salesDayStart+17*3600000+5*60000;
+      if(nextRefresh<=now)nextRefresh+=86400000;
+      timer=setTimeout(()=>{setArchiveReload(value=>value+1);schedule()},nextRefresh-now);
+    };
+    const refreshOnReturn=()=>{if(document.visibilityState==="visible")setArchiveReload(value=>value+1)};
+    document.addEventListener("visibilitychange",refreshOnReturn);
+    schedule();
+    return()=>{clearTimeout(timer);document.removeEventListener("visibilitychange",refreshOnReturn)};
+  },[]);
   async function selectPlanSet(selected: PurchasePlanSet, cachedResults = historyResultCache) {
     setBusy(true);
     const resultDates = Array.from(
@@ -447,9 +472,9 @@ function DailyPurchasePlans({
     return () => {
       active = false;
     };
-  // Select uses the just-loaded archive results, so this effect intentionally tracks only the date.
+  // Select uses the just-loaded archive results, so this effect tracks only the date and archive refresh.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lotteryDate]);
+  }, [lotteryDate,archiveReload]);
   async function preview() {
     if (!data || busy) return;
     setBusy(true);setPreviewError("");setSaveState("");
@@ -497,6 +522,7 @@ function DailyPurchasePlans({
   const moduleStats=useMemo(()=>summarizePurchasePlanModules(planSets),[planSets]);
   const definitionHistory=useMemo(()=>summarizePurchasePlanDefinitions(planSets),[planSets]);
   const selectableSets=[...planSets,...savedTrials].filter(item=>!lotteryDate||item.date===lotteryDate).sort((a,b)=>b.generatedAt.localeCompare(a.generatedAt));
+  const latestFormalSet=planSets[0];
   const visiblePlanModules=useMemo(()=>PURCHASE_PLAN_MODULES.map(module=>({
     ...module,
     definitions:PURCHASE_PLAN_DEFINITIONS.filter(definition=>purchasePlanModuleId(definition.id)===module.id&&planSet?.plans.some(plan=>plan.id===definition.id&&plan.status!=="unavailable"&&plan.items.length>0)),
@@ -511,6 +537,7 @@ function DailyPurchasePlans({
           <p>
             每天北京时间17:00生成并留档；按每注2元计算实际组合投入，次日依据官方赛果自动标记。
           </p>
+          {latestFormalSet&&<p className="purchase-latest">最近正式快照：{latestFormalSet.date} {new Date(latestFormalSet.generatedAt).toLocaleTimeString("zh-CN",{timeZone:"Asia/Shanghai",hour:"2-digit",minute:"2-digit"})} · {latestFormalSet.plans.filter(plan=>plan.status!=="unavailable"&&plan.items?.length).length} 组{lotteryDate&&lotteryDate!==latestFormalSet.date?`；当前筛选 ${lotteryDate}，可切换彩票日期查看最新批次`:""}</p>}
         </div>
         <div>
           <span>{status}</span>
@@ -543,6 +570,7 @@ function DailyPurchasePlans({
               ))}
             </select>
           )}
+          <button type="button" disabled={busy} onClick={()=>setArchiveReload(value=>value+1)}>刷新快照</button>
           <button
             disabled={!data || busy}
             onClick={()=>void preview()}
@@ -576,7 +604,7 @@ function DailyPurchasePlans({
             <div className="purchase-history-scroll"><table><thead><tr><th>日期 / 批次</th><th>投注内容</th><th>结算</th><th>投入</th><th>模拟返还</th><th>净收益</th></tr></thead><tbody>
               {history.rows.length?history.rows.map((row:{snapshotId:string;date:string;generatedAt:string;plan:PurchasePlan})=>{
                 const settled=["won","lost","corrected_won","corrected_lost","void_won","void_lost"].includes(row.plan.status);
-                return <tr key={`${row.snapshotId}-${row.plan.id}`}><td>{row.date}<small>{new Date(row.generatedAt).toLocaleTimeString("zh-CN",{hour:"2-digit",minute:"2-digit"})}</small></td><td>{row.plan.items.map(item=><div className="purchase-history-item" key={`${item.officialMatchId||item.matchId}-${item.market}`}><b>{item.matchId}</b> {item.home} vs {item.away} · {item.marketName} {(item.picks?.length?item.picks.map(pick=>pick.pick):[item.pick]).join(" / ")}<span className="purchase-history-outcome">最终赛果 {purchaseHistoryActual(item)} · 购入赔率 {purchaseHistoryOdds(item)}</span></div>)}</td><td>{planResult(row.plan)}</td><td>{settled?<SignedPurchaseMoney value={row.plan.stake} flow="stake"/>:"—"}</td><td>{settled?<SignedPurchaseMoney value={row.plan.simulatedReturn||0} flow="return"/>:"—"}</td><td>{settled?<SignedPurchaseMoney value={(row.plan.simulatedReturn||0)-row.plan.stake}/>:"—"}</td></tr>;
+                return <tr key={`${row.snapshotId}-${row.plan.id}`}><td>{row.date}<small>{new Date(row.generatedAt).toLocaleTimeString("zh-CN",{hour:"2-digit",minute:"2-digit"})}</small></td><td>{row.plan.items.map(item=><div className="purchase-history-item" key={`${item.officialMatchId||item.matchId}-${item.market}`}><b>{item.matchId}</b> {item.home} vs {item.away} · {item.marketName} {(item.picks?.length?item.picks.map(pick=>pick.pick):[item.pick]).join(" / ")}<span className="purchase-history-outcome">最终赛果 {purchaseHistoryActual(item)} · 购入赔率 {purchaseHistoryOdds(item)}</span><PurchaseLegReturns item={item}/></div>)}</td><td>{planResult(row.plan)}</td><td>{settled?<SignedPurchaseMoney value={row.plan.stake} flow="stake"/>:"—"}</td><td>{settled?<SignedPurchaseMoney value={row.plan.simulatedReturn||0} flow="return"/>:"—"}</td><td>{settled?<SignedPurchaseMoney value={(row.plan.simulatedReturn||0)-row.plan.stake}/>:"—"}</td></tr>;
               }):<tr><td colSpan={6}>暂无该玩法的正式历史票</td></tr>}
             </tbody></table></div>
           </details>;
@@ -656,6 +684,7 @@ function DailyPurchasePlans({
                             </i>
                           )}
                         </div>
+                        <PurchaseLegReturns item={item}/>
                       </li>
                     ))}
                   </ol>
@@ -679,7 +708,7 @@ function DailyPurchasePlans({
         </p>
       )}
       <p className="purchase-risk">
-        页面展示的是基于生成时固定奖金的模拟投入与返还区间，不代表收益或命中保证；最终以实际出票和官方计奖为准。
+        每场模型预期返奖包含未命中的零返奖情形；最低/最高盈利仅指该场命中时，未命中会损失该场投入。以上均为生成时固定奖金的模拟值，不代表收益或命中保证；最终以实际出票和官方计奖为准。
       </p>
     </section>
   );

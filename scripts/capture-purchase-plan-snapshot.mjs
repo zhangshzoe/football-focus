@@ -1,7 +1,7 @@
 import {createHash} from "node:crypto";
 import {mkdir,readFile,readdir,writeFile} from "node:fs/promises";
 import {join} from "node:path";
-import {generatePurchasePlans,PURCHASE_PLAN_VERSION} from "../app/purchase-plan-engine.js";
+import {generatePurchasePlans} from "../app/purchase-plan-engine.js";
 
 const baseUrl=process.env.FOOTBALL_FOCUS_URL||"http://localhost:3000";
 const directory=join(process.cwd(),"data","purchase-plan-snapshots");
@@ -12,8 +12,15 @@ const materialPlans=plans=>plans.map(plan=>({id:plan.id,status:plan.status,reaso
 const requestJson=async(url,options)=>{const response=await fetch(url,options),payload=await response.json().catch(()=>({}));if(!response.ok)throw new Error(payload.error||`${url} 请求失败（${response.status}）`);return payload};
 
 await mkdir(directory,{recursive:true});
-const matchesData=await requestJson(`${baseUrl}/api/sporttery`,{cache:"no-store"});
 const parts=shanghaiParts(),date=`${parts.year}-${parts.month}-${parts.day}`;
+const checkedAt=new Date().toISOString();
+if(process.env.FORCE_PURCHASE_SNAPSHOT!=="1"&&Number(parts.hour)<17){
+ console.log(JSON.stringify({status:"skipped",reason:"before-daily-1700",capturedAt:checkedAt}));
+ process.exit(0);
+}
+const existingNames=(await readdir(directory)).filter(name=>name.startsWith(`${date}_`)&&name.endsWith(".json"));
+for(const name of existingNames){try{const record=JSON.parse(await readFile(join(directory,name),"utf8"));if(record?.recordType==="purchase-plan-snapshot"&&record.immutable===true&&Array.isArray(record?.planSet?.plans)&&record.planSet.plans.length){console.log(JSON.stringify({status:"skipped",reason:"daily-snapshot-exists",snapshotId:record.snapshotId,capturedAt:checkedAt,version:record.planSet.version}));process.exit(0)}}catch{/* 损坏文件不阻断新快照。 */}}
+const matchesData=await requestJson(`${baseUrl}/api/sporttery`,{cache:"no-store"});
 // 固定组合票严格按竞彩销售日生成；提前开售的次日场次不能混入当天方案。
 const matches=(Array.isArray(matchesData.matches)?matchesData.matches:[]).filter(match=>String(match.salesDate||match.matchDate||"").slice(0,10)===date);
 if(!matches.length)throw new Error("当前没有可生成方案的官方比赛数据");
@@ -26,12 +33,6 @@ const reports=(Array.isArray(predictionData.reports)?predictionData.reports:[]).
 if(!reports.length)throw new Error("没有通过官方赛事映射校验的预测，未生成方案快照");
 
 const capturedAt=new Date().toISOString();
-if(process.env.FORCE_PURCHASE_SNAPSHOT!=="1"&&Number(parts.hour)<17){
- console.log(JSON.stringify({status:"skipped",reason:"before-daily-1700",capturedAt}));
- process.exit(0);
-}
-const existingNames=(await readdir(directory)).filter(name=>name.startsWith(`${date}_`)&&name.endsWith(".json"));
-for(const name of existingNames){try{const record=JSON.parse(await readFile(join(directory,name),"utf8"));if(Number(record?.planSet?.version)>=PURCHASE_PLAN_VERSION){console.log(JSON.stringify({status:"skipped",reason:"daily-snapshot-exists",snapshotId:record.snapshotId,capturedAt,version:PURCHASE_PLAN_VERSION}));process.exit(0)}}catch{/* 损坏文件不阻断新快照。 */}}
 const planSet=generatePurchasePlans({date,reports,officialMatches:matches,generatedAt:capturedAt});
 if(!planSet.plans.some(plan=>plan.status!=="unavailable"&&plan.items?.length)){
  console.log(JSON.stringify({status:"skipped",reason:"no-eligible-plans",capturedAt}));

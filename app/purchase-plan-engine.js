@@ -1,5 +1,5 @@
 export const PURCHASE_PLAN_STORAGE_KEY = "ff-daily-purchase-plans-v1";
-export const PURCHASE_PLAN_VERSION = 10;
+export const PURCHASE_PLAN_VERSION = 11;
 export const PURCHASE_PLAN_DEFINITIONS = [
   {
     id: "score-double-3",
@@ -164,6 +164,22 @@ export const PURCHASE_PLAN_DEFINITIONS = [
   },
 ];
 export const PURCHASE_PLAN_DAILY_TIME = "17:00";
+
+// 赔率与概率均来自生成时的快照；预期返奖包含未命中的零返奖情形。
+export function calculatePurchaseLegReturns(item) {
+  const picks = Array.isArray(item?.picks) && item.picks.length ? item.picks : [item];
+  if (!picks.length || picks.some((pick) => !Number.isFinite(Number(pick?.odd)) || Number(pick.odd) <= 1)) return null;
+  const stake = picks.length * 2;
+  const winningReturns = picks.map((pick) => 2 * Number(pick.odd));
+  return {
+    stake,
+    expectedReturn: picks.reduce((sum, pick) => sum + 2 * Number(pick.odd) * Math.max(0, Math.min(100, safeNumber(pick.probability))) / 100, 0),
+    minWinningReturn: Math.min(...winningReturns),
+    maxWinningReturn: Math.max(...winningReturns),
+    minWinningProfit: Number((Math.min(...winningReturns) - stake).toFixed(2)),
+    maxWinningProfit: Number((Math.max(...winningReturns) - stake).toFixed(2)),
+  };
+}
 
 export const PURCHASE_PLAN_MODULES = [
   { id: "score", title: "比分方案", description: "比分单选、双选与不同串关" },
@@ -523,9 +539,10 @@ function choosePlan(groups, definition) {
         stake,
         minWinningReturn,
         maxWinningReturn,
-        minWinningProfit: minWinningReturn - stake,
-        maxWinningProfit: maxWinningReturn - stake,
+        minWinningProfit: Number((minWinningReturn - stake).toFixed(2)),
+        maxWinningProfit: Number((maxWinningReturn - stake).toFixed(2)),
       };
+      if (candidate.minWinningProfit < 0) return;
       if (definition.requirePositiveMinProfit && candidate.minWinningProfit <= 0) return;
       const target = Number(definition.targetNetProfit),
         tolerance = Math.max(0, safeNumber(definition.targetProfitTolerance));
@@ -590,7 +607,7 @@ export function generatePurchasePlans({
         title: definition.title,
         rule: definition.rule,
         status: "unavailable",
-        reason: "当前合规玩法、场次数或官方赔率不足，暂不能生成该组合。",
+        reason: "当前合规玩法、场次数或官方赔率不足，或最低净盈利为负，暂不能生成该组合。",
         items: [],
         combinedOdd: 0,
         estimatedProbability: 0,
