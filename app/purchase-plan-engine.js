@@ -168,12 +168,21 @@ export const PURCHASE_PLAN_DAILY_TIME = "17:00";
 // 赔率与概率均来自生成时的快照；预期返奖包含未命中的零返奖情形。
 export function calculatePurchaseLegReturns(item) {
   const picks = Array.isArray(item?.picks) && item.picks.length ? item.picks : [item];
-  if (!picks.length || picks.some((pick) => !Number.isFinite(Number(pick?.odd)) || Number(pick.odd) <= 1)) return null;
+  if (
+    !picks.length ||
+    picks.some((pick) => !Number.isFinite(Number(pick?.odd)) || Number(pick.odd) <= 1)
+  )
+    return null;
   const stake = picks.length * 2;
   const winningReturns = picks.map((pick) => 2 * Number(pick.odd));
   return {
     stake,
-    expectedReturn: picks.reduce((sum, pick) => sum + 2 * Number(pick.odd) * Math.max(0, Math.min(100, safeNumber(pick.probability))) / 100, 0),
+    expectedReturn: picks.reduce(
+      (sum, pick) =>
+        sum +
+        (2 * Number(pick.odd) * Math.max(0, Math.min(100, safeNumber(pick.probability)))) / 100,
+      0,
+    ),
     minWinningReturn: Math.min(...winningReturns),
     maxWinningReturn: Math.max(...winningReturns),
     minWinningProfit: Number((Math.min(...winningReturns) - stake).toFixed(2)),
@@ -701,9 +710,16 @@ export function settlePurchasePlan(plan, results, { now = Date.now() } = {}) {
         ? `让${String(result.hhadResult).match(/[胜平负](?!.*[胜平负])/)?.[0] || ""}`
         : "",
       totalRaw = String(result.totalGoalsResult || "").replace(/\s/g, "");
-    const finalScore = /^\d{1,2}:\d{1,2}$/.test(String(result.fullScore || "").trim())
-      ? String(result.fullScore).trim()
+    const totalMarketParts = /^(\d{1,2})\+?球?$/.exec(totalRaw);
+    const totalFromMarket = totalMarketParts
+      ? Number(totalMarketParts[1]) >= 7
+        ? "7+球"
+        : `${Number(totalMarketParts[1])}球`
       : "";
+    const scoreParts = /^(\d{1,2}):(\d{1,2})$/.exec(String(result.fullScore || "").trim());
+    const finalScore = scoreParts ? scoreParts[0] : "";
+    const goalCount = scoreParts ? Number(scoreParts[1]) + Number(scoreParts[2]) : null;
+    const totalFromScore = scoreParts ? (goalCount >= 7 ? "7+球" : `${goalCount}球`) : "";
     const actual =
       item.market === "had"
         ? result.hadResult || resultFromScore(result.fullScore)
@@ -712,15 +728,19 @@ export function settlePurchasePlan(plan, results, { now = Date.now() } = {}) {
           : item.market === "score"
             ? result.scoreResult || result.fullScore
             : item.market === "total"
-              ? totalRaw
-                ? `${totalRaw.replace(/球$/, "")}球`
-                : ""
+              ? totalFromMarket || totalFromScore
               : result.halfScore && result.fullScore
                 ? `${resultFromScore(result.halfScore)}${resultFromScore(result.fullScore)}`
                 : "";
     if (!actual) {
       unresolved = true;
-      return { ...item, settlementState: "field_pending", finalScore, actual: "字段待补", result: "字段待补" };
+      return {
+        ...item,
+        settlementState: "field_pending",
+        finalScore,
+        actual: "字段待补",
+        result: "字段待补",
+      };
     }
     const corrected = /correct|revise|订正/.test(status);
     if (corrected) hasCorrection = true;

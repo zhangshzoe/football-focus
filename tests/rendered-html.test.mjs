@@ -436,6 +436,28 @@ test("settlement keeps missing fields pending and isolates official ids by date"
  const voided=settlePurchasePlan(plan,[{...missingHalf,status:"void",voidRule:"odds_one"}]);assert.equal(voided.status,"void_won");assert.equal(voided.simulatedReturn,2);
 });
 
+test("verified full-time scores settle total-goal tickets when the market field is absent",async()=>{
+ const [results,day23,day24]=await Promise.all([
+  readFile(new URL("../data/result-supplements/2026-09-23-24.json",import.meta.url),"utf8").then(JSON.parse),
+  readFile(new URL("../data/purchase-plan-snapshots/2026-09-23_170427_99e3b35fe068.json",import.meta.url),"utf8").then(JSON.parse),
+  readFile(new URL("../data/purchase-plan-snapshots/2026-09-24_170309_68e58cb0dda4.json",import.meta.url),"utf8").then(JSON.parse),
+ ]);
+ const settle=(snapshot,id)=>settlePurchasePlan(snapshot.planSet.plans.find(plan=>plan.id===id),results.results);
+ const day23Double=settle(day23,"total-double-2");
+ assert.equal(day23Double.status,"won");
+ assert.deepEqual(day23Double.items.map(item=>item.actual),["3球","2球"]);
+ assert.equal(settle(day23,"total-single-2").status,"lost");
+ const day24Triple=settle(day24,"total-double-3");
+ assert.equal(day24Triple.status,"lost");
+ assert.deepEqual(day24Triple.items.map(item=>item.actual),["3球","1球","3球"]);
+ assert.ok(day24Triple.items.every(item=>item.settlementState==="settled"));
+ const item={matchId:"周一001",officialMatchId:"high",matchDate:"2026-09-28",market:"total",pick:"7+球",odd:5};
+ const plan={id:"high",status:"pending",items:[item]};
+ assert.equal(settlePurchasePlan(plan,[{matchId:"high",date:"2026-09-28",fullScore:"4:3",status:"settled"}]).status,"won");
+ assert.equal(settlePurchasePlan(plan,[{matchId:"high",date:"2026-09-28",totalGoalsResult:"7",fullScore:"4:3",status:"settled"}]).items[0].actual,"7+球");
+ assert.equal(settlePurchasePlan(plan,[{matchId:"high",date:"2026-09-28",fullScore:"unknown",status:"settled"}]).status,"field_pending");
+});
+
 test("invalid or expired kickoff data cannot enter purchase plans",()=>{
  const report={id:"周一001",officialMatchId:"m1",officialMappingStatus:"verified",salesDate:"2026-09-08",matchDate:"2026-09-08",sourceFetchedAt:"2026-09-08T16:55:00+08:00",league:"测试",home:"甲",away:"乙",hadProbabilities:[{score:"胜",probability:70}]};
  const eligibility={"胜平负":{marketCode:"HAD",salesStatus:"Selling",qualification:"qualified",allowedPassCounts:[1],cutoffAt:"2026-09-08T19:50:00+08:00"}},base={officialMatchId:"m1",salesDate:"2026-09-08",matchStatus:"Selling",marketOdds:{"胜平负":[2.1,3,4]},marketEligibility:eligibility};
