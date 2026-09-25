@@ -137,19 +137,28 @@ test("official markets never fall back to demo odds and tolerate independent poo
  }finally{globalThis.fetch=originalFetch}
 });
 
-test("mobile prediction summaries and wide forecast tables support consistent horizontal swiping",async()=>{
- const [report,table,styles]=await Promise.all([
+test("mobile prediction summaries swipe while forecast rows become readable cards",async()=>{
+ const [report,table,styles,mobileStyles,page,archiveNav]=await Promise.all([
   readFile(new URL("../app/components/AiPredictionReport.tsx",import.meta.url),"utf8"),
   readFile(new URL("../app/components/MarketPredictionTable.tsx",import.meta.url),"utf8"),
   readFile(new URL("../app/reference-ui.css",import.meta.url),"utf8"),
+  readFile(new URL("../app/mobile-ui.css",import.meta.url),"utf8"),
+  readFile(new URL("../app/page.tsx",import.meta.url),"utf8"),
+  readFile(new URL("../app/components/ArchiveNavLink.tsx",import.meta.url),"utf8"),
  ]);
  assert.match(report,/左右滑动查看 5 类预测/);
  assert.match(report,/role="region"/);
  assert.match(table,/左右滑动查看完整预测数据/);
+ assert.match(table,/手机端已按场次整理/);
  assert.match(styles,/\.prediction-overview-grid\{display:flex!important/);
  assert.match(styles,/scroll-snap-type:x mandatory/);
  assert.match(styles,/touch-action:pan-x pan-y/);
  assert.match(styles,/\.market-forecast-table th:nth-child\(9\).*width:230px!important/);
+ assert.match(mobileStyles,/\.market-forecast-table tr\{display:grid!important/);
+ assert.match(mobileStyles,/\.market-forecast-table td:nth-child\(n\+10\)\{display:none!important/);
+ assert.match(mobileStyles,/\.topbar\.compact-nav nav a>span\{font-size:20px!important/);
+ assert.match(page,/<span aria-hidden="true">▣<\/span><b>今日比赛<\/b>/);
+ assert.match(archiveNav,/<span aria-hidden="true">▤<\/span><b>盘后回溯<\/b>/);
 });
 
 test("mobile prediction fallback derives a traceable baseline only from official markets",async()=>{
