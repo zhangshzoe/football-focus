@@ -684,6 +684,9 @@ export function settlePurchasePlan(plan, results, { now = Date.now() } = {}) {
         ? `让${String(result.hhadResult).match(/[胜平负](?!.*[胜平负])/)?.[0] || ""}`
         : "",
       totalRaw = String(result.totalGoalsResult || "").replace(/\s/g, "");
+    const finalScore = /^\d{1,2}:\d{1,2}$/.test(String(result.fullScore || "").trim())
+      ? String(result.fullScore).trim()
+      : "";
     const actual =
       item.market === "had"
         ? result.hadResult || resultFromScore(result.fullScore)
@@ -700,7 +703,7 @@ export function settlePurchasePlan(plan, results, { now = Date.now() } = {}) {
                 : "";
     if (!actual) {
       unresolved = true;
-      return { ...item, settlementState: "field_pending", actual: "字段待补", result: "字段待补" };
+      return { ...item, settlementState: "field_pending", finalScore, actual: "字段待补", result: "字段待补" };
     }
     const corrected = /correct|revise|订正/.test(status);
     if (corrected) hasCorrection = true;
@@ -710,6 +713,7 @@ export function settlePurchasePlan(plan, results, { now = Date.now() } = {}) {
         : [item.pick];
     return {
       ...item,
+      finalScore,
       actual,
       result: picks.includes(actual) ? "命中" : "未中",
       settlementState: corrected ? "corrected" : "settled",

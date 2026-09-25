@@ -420,8 +420,8 @@ test("settlement keeps missing fields pending and isolates official ids by date"
  const wrongDate={id:"周一001",matchId:"same-id",date:"2026-09-07",fullScore:"2:0",halfScore:"1:0",status:"settled"};
  assert.equal(settlePurchasePlan(plan,[wrongDate],{now:Date.parse("2026-09-09T00:00:00+08:00")}).status,"awaiting_result");
  const missingHalf={id:"周一001",matchId:"same-id",date:"2026-09-08",fullScore:"2:0",halfScore:"",status:"settled"},pending=settlePurchasePlan(plan,[missingHalf]);
- assert.equal(pending.status,"field_pending");assert.equal(pending.items[0].result,"字段待补");
- const settled=settlePurchasePlan(plan,[{...missingHalf,halfScore:"1:0"}]);assert.equal(settled.status,"won");assert.equal(settled.simulatedReturn,6);
+ assert.equal(pending.status,"field_pending");assert.equal(pending.items[0].result,"字段待补");assert.equal(pending.items[0].finalScore,"2:0");
+ const settled=settlePurchasePlan(plan,[{...missingHalf,halfScore:"1:0"}]);assert.equal(settled.status,"won");assert.equal(settled.simulatedReturn,6);assert.equal(settled.items[0].finalScore,"2:0");
  const voided=settlePurchasePlan(plan,[{...missingHalf,status:"void",voidRule:"odds_one"}]);assert.equal(voided.status,"void_won");assert.equal(voided.simulatedReturn,2);
 });
 
@@ -456,6 +456,7 @@ test("17:00 snapshot persists purchase drafts and the recommendation page expose
  assert.match(component,/aria-controls/);
  assert.match(component,/中奖 \/ 已结算/);
  assert.match(component,/投入 \/ 返还/);
+ assert.match(component,/最终赛果 \{purchaseHistoryActual\(item\)\} · 购入赔率 \{purchaseHistoryOdds\(item\)\}/);
  assert.match(component,/<details className="purchase-history-panel"/);
  assert.match(component,/allModulesCollapsed\?"全部展开":"全部收起"/);
  assert.match(component,/purchase-money-negative/);

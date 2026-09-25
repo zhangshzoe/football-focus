@@ -133,6 +133,7 @@ type PurchaseItem = {
   picks?: { pick: string; probability: number; odd: number }[];
   result?: string;
   actual?: string;
+  finalScore?: string;
   settlementState?: string;
 };
 type PurchasePlan = {
@@ -168,6 +169,16 @@ function SignedPurchaseMoney({value,flow="net"}:{value:number;flow?:"net"|"stake
   const amount=Number.isFinite(value)?value:0;
   const signed=flow==="stake"?-Math.abs(amount):flow==="return"?Math.abs(amount):amount;
   return <b className={`purchase-money ${signed<0?"purchase-money-negative":signed>0?"purchase-money-positive":""}`}>{signed<0?"-":signed>0?"+":""}¥{Math.abs(signed).toFixed(2)}</b>;
+}
+function purchaseHistoryOdds(item:PurchaseItem){
+  const selections=item.picks?.length?item.picks:[{pick:item.pick,odd:item.odd}];
+  const odds=selections.filter(selection=>Number.isFinite(selection.odd)&&selection.odd>0);
+  return odds.length?odds.map(selection=>`${selection.pick} ${selection.odd.toFixed(2)}`).join(" / "):"暂无赔率";
+}
+function purchaseHistoryActual(item:PurchaseItem){
+  const score=item.finalScore?.trim(),marketResult=item.actual?.trim();
+  if(score)return marketResult&&marketResult!==score?`${score}（${marketResult}）`:score;
+  return marketResult||"待公布";
 }
 type PurchaseResult = {id?:string;matchId?:string;officialMatchId?:string;date?:string;matchDate?:string};
 const currentPurchasePlanIds=new Set(PURCHASE_PLAN_DEFINITIONS.map(definition=>definition.id));
@@ -565,7 +576,7 @@ function DailyPurchasePlans({
             <div className="purchase-history-scroll"><table><thead><tr><th>日期 / 批次</th><th>投注内容</th><th>结算</th><th>投入</th><th>模拟返还</th><th>净收益</th></tr></thead><tbody>
               {history.rows.length?history.rows.map((row:{snapshotId:string;date:string;generatedAt:string;plan:PurchasePlan})=>{
                 const settled=["won","lost","corrected_won","corrected_lost","void_won","void_lost"].includes(row.plan.status);
-                return <tr key={`${row.snapshotId}-${row.plan.id}`}><td>{row.date}<small>{new Date(row.generatedAt).toLocaleTimeString("zh-CN",{hour:"2-digit",minute:"2-digit"})}</small></td><td>{row.plan.items.map(item=><div key={`${item.officialMatchId||item.matchId}-${item.market}`}><b>{item.matchId}</b> {item.home} vs {item.away} · {item.marketName} {(item.picks?.length?item.picks.map(pick=>pick.pick):[item.pick]).join(" / ")}</div>)}</td><td>{planResult(row.plan)}</td><td>{settled?<SignedPurchaseMoney value={row.plan.stake} flow="stake"/>:"—"}</td><td>{settled?<SignedPurchaseMoney value={row.plan.simulatedReturn||0} flow="return"/>:"—"}</td><td>{settled?<SignedPurchaseMoney value={(row.plan.simulatedReturn||0)-row.plan.stake}/>:"—"}</td></tr>;
+                return <tr key={`${row.snapshotId}-${row.plan.id}`}><td>{row.date}<small>{new Date(row.generatedAt).toLocaleTimeString("zh-CN",{hour:"2-digit",minute:"2-digit"})}</small></td><td>{row.plan.items.map(item=><div className="purchase-history-item" key={`${item.officialMatchId||item.matchId}-${item.market}`}><b>{item.matchId}</b> {item.home} vs {item.away} · {item.marketName} {(item.picks?.length?item.picks.map(pick=>pick.pick):[item.pick]).join(" / ")}<span className="purchase-history-outcome">最终赛果 {purchaseHistoryActual(item)} · 购入赔率 {purchaseHistoryOdds(item)}</span></div>)}</td><td>{planResult(row.plan)}</td><td>{settled?<SignedPurchaseMoney value={row.plan.stake} flow="stake"/>:"—"}</td><td>{settled?<SignedPurchaseMoney value={row.plan.simulatedReturn||0} flow="return"/>:"—"}</td><td>{settled?<SignedPurchaseMoney value={(row.plan.simulatedReturn||0)-row.plan.stake}/>:"—"}</td></tr>;
               }):<tr><td colSpan={6}>暂无该玩法的正式历史票</td></tr>}
             </tbody></table></div>
           </details>;

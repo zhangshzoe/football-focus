@@ -623,6 +623,8 @@ main{max-width:1320px!important;padding-bottom:88px!important}
 .purchase-history table{width:100%;min-width:780px;border-collapse:collapse;font-size:11px}
 .purchase-history th,.purchase-history td{padding:8px 10px;border-bottom:1px solid #edf2f5;text-align:left;vertical-align:top}
 .purchase-history td:nth-child(2){min-width:300px;line-height:1.6}
+.purchase-history-item+.purchase-history-item{margin-top:7px;padding-top:6px;border-top:1px dashed #e4edf2}
+.purchase-history-outcome{display:block;margin-top:2px;color:#516d7d;font-size:11px;line-height:1.45}
 .purchase-history td small{display:block;color:#71838f}
 .purchase-history td b{color:#1678b6}
 @media(max-width:767px){.purchase-history-group summary{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px 10px}.purchase-history-group summary strong{grid-column:1/-1}.purchase-history-group summary span{font-size:11px}}
