@@ -69,7 +69,13 @@ export default function AiPredictionReport({rows,coverage,unavailableMatches,loa
             <h3><strong>{row.home}</strong><i>VS</i><strong>{row.away}</strong></h3>
             <span className={row.consensus.agreement==="较一致"?"agreement good":"agreement"}>{row.consensus.agreement}</span>
           </header>
-          <p className="prediction-overview-scroll-hint" aria-hidden="true">左右滑动查看 5 类预测</p>
+          <div className="prediction-overview-scroll-hint">
+            <span>左右滑动查看 5 类预测</span>
+            <div className="prediction-overview-controls">
+              <button type="button" aria-label={`${row.id} 查看上一类预测`} onClick={event=>event.currentTarget.parentElement?.parentElement?.nextElementSibling?.scrollBy({left:-260,behavior:"smooth"})}>‹</button>
+              <button type="button" aria-label={`${row.id} 查看下一类预测`} onClick={event=>event.currentTarget.parentElement?.parentElement?.nextElementSibling?.scrollBy({left:260,behavior:"smooth"})}>›</button>
+            </div>
+          </div>
           <div className="prediction-overview-grid" role="region" aria-label={`${row.id} 五类预测，可左右滑动查看`} tabIndex={0}>
             <section className="compact-score-summary">
               <header><small>比分预测</small><span>原始概率</span></header>

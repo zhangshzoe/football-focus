@@ -19,7 +19,7 @@ export default function MobilePreviewPage() {
         <div>
           <small>MOBILE PREVIEW</small>
           <h1>手机端预览</h1>
-          <p>以 390 × 844 的常用手机视口检查真实页面，所有数据逻辑与正式页面一致。</p>
+          <p>以常用手机宽度检查真实页面；预览高度随窗口调整，页面内可继续滚动。</p>
         </div>
         <a href={route} target="_blank" rel="noreferrer">
           在新窗口打开
