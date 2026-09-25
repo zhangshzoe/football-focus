@@ -215,6 +215,31 @@ export const summarizePurchasePlanModules = (planSets) => {
   );
 };
 
+// One row is one saved batch's ticket. Pending/invalid tickets stay visible in
+// history but never enter the settled denominator or monetary totals.
+export const summarizePurchasePlanDefinitions = (planSets) =>
+  Object.fromEntries(
+    PURCHASE_PLAN_DEFINITIONS.map((definition) => {
+      const rows = (planSets || [])
+        .flatMap((set) =>
+          (set?.plans || [])
+            .filter(
+              (plan) =>
+                plan.id === definition.id && plan.status !== "unavailable" && plan.items?.length,
+            )
+            .map((plan) => ({
+              snapshotId: set.snapshotId || "",
+              date: set.date,
+              generatedAt: set.generatedAt,
+              source: set.source || "",
+              plan,
+            })),
+        )
+        .sort((a, b) => String(b.generatedAt).localeCompare(String(a.generatedAt)));
+      return [definition.id, { ...summarizePurchasePlans(rows.map((row) => row.plan)), rows }];
+    }),
+  );
+
 export const MARKET_META = {
   had: { name: "胜平负", code: "HAD", labels: ["胜", "平", "负"], maxPass: 8 },
   hhad: { name: "让球胜平负", code: "HHAD", labels: ["让胜", "让平", "让负"], maxPass: 8 },

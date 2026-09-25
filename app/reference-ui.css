@@ -603,3 +603,16 @@ main{max-width:1320px!important;padding-bottom:88px!important}
   .prediction-overview-grid{display:flex!important}
   .prediction-overview-grid>.compact-score-summary,.prediction-overview-grid>.compact-market-summary{flex-basis:min(82vw,260px);width:min(82vw,260px);min-width:min(82vw,260px)}
 }
+.purchase-notice{margin:8px 0;padding:9px 11px;border:1px solid #f0d49b;border-radius:8px;background:#fffaf0;color:#8a5b15;font-size:12px;line-height:1.5}
+.purchase-history{display:grid;gap:8px;margin:12px 0}
+.purchase-history-group{overflow:hidden;border:1px solid #d7e6ee;border-radius:9px;background:#fff}
+.purchase-history-group summary{display:grid;grid-template-columns:minmax(145px,1.3fr) repeat(4,minmax(110px,1fr));gap:10px;align-items:center;padding:10px 12px;cursor:pointer;color:#31556d;font-size:12px}
+.purchase-history-group summary strong{color:#14547d;font-size:13px}
+.purchase-history-group[open] summary{border-bottom:1px solid #d7e6ee;background:#f4faff}
+.purchase-history-scroll{overflow-x:auto}
+.purchase-history table{width:100%;min-width:780px;border-collapse:collapse;font-size:11px}
+.purchase-history th,.purchase-history td{padding:8px 10px;border-bottom:1px solid #edf2f5;text-align:left;vertical-align:top}
+.purchase-history td:nth-child(2){min-width:300px;line-height:1.6}
+.purchase-history td small{display:block;color:#71838f}
+.purchase-history td b{color:#1678b6}
+@media(max-width:767px){.purchase-history-group summary{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px 10px}.purchase-history-group summary strong{grid-column:1/-1}.purchase-history-group summary span{font-size:11px}}

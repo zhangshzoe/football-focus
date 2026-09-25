@@ -1,7 +1,8 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {readBrowserData,writeBrowserData} from "../browser-storage";
+import {readBrowserData} from "../browser-storage";
+import {fetchOfficialSporttery} from "../sporttery-official";
 import {
   calculateRecommendationReturns, priceRecommendationSelections,
   type OfficialRecommendationMatch, type PricedSelection, type RecommendationMarket,
@@ -24,6 +25,7 @@ import {
   purchasePlanModuleId,
   settlePurchasePlan,
   summarizePurchasePlanModules,
+  summarizePurchasePlanDefinitions,
   summarizePurchasePlans,
 } from "../purchase-plan-engine";
 
@@ -214,9 +216,17 @@ function refreshOfficialMarkets(): Promise<OfficialSnapshot | null> {
   officialRequest = (async () => {
     const controller = new AbortController(), timeout = setTimeout(() => controller.abort(), 25000);
     try {
-      const response = await fetch("/api/sporttery", { cache: "no-store", signal: controller.signal }),
-      payload = await response.json();
-      if (!response.ok || !Array.isArray(payload.matches)) throw new Error(payload.error || "体彩赔率读取失败");
+      let payload;
+      try {
+        const response = await fetch("/api/sporttery", { cache: "no-store", signal: controller.signal });
+        payload = await response.json();
+        if (!response.ok || !Array.isArray(payload.matches)) throw new Error(payload.error || "体彩赔率读取失败");
+      } catch (siteError) {
+        try { payload = await fetchOfficialSporttery({serverHeaders:false,timeoutMs:12000}); }
+        catch (directError) {
+          throw new Error(`站点读取失败：${siteError instanceof Error?siteError.message:"未知错误"}；浏览器直连失败：${directError instanceof Error?directError.message:"未知错误"}`);
+        }
+      }
       officialSnapshot = {
         matches: payload.matches,
         fetchedAt: payload.fetchedAt || new Date().toISOString(),
@@ -263,22 +273,12 @@ function useOfficialMarkets(data: SavedPredictionSet | null) {
 
 function DailyPurchasePlans({
   data,
-  officialMatches: provided,
   lotteryDate,
 }: {
   data: SavedPredictionSet | null;
-  officialMatches?: OfficialMatch[];
   lotteryDate?: string;
 }) {
   const liveOfficial = useOfficialMarkets(data),
-    officialMatches = provided || liveOfficial.matches,
-    scopedOfficialMatches = useMemo(()=>lotteryDate
-      ? officialMatches.filter(
-          (match) =>
-            dateOnly(match.salesDate || match.matchDate || match.kickoffAt) ===
-            lotteryDate,
-        )
-      : officialMatches,[officialMatches,lotteryDate]),
     scopedReports = useMemo(()=>lotteryDate
       ? (data?.matches || []).filter(
           (match) => matchDateKey(match) === lotteryDate,
@@ -286,10 +286,14 @@ function DailyPurchasePlans({
       : data?.matches || [],[data,lotteryDate]);
   const [planSet, setPlanSet] = useState<PurchasePlanSet | null>(null),
     [planSets, setPlanSets] = useState<PurchasePlanSet[]>([]),
+    [savedTrials, setSavedTrials] = useState<PurchasePlanSet[]>([]),
+    [historyResultCache, setHistoryResultCache] = useState<Array<{matchId?:string;date?:string}>>([]),
     [status, setStatus] = useState("正在读取方案快照…"),
     [busy, setBusy] = useState(false),
+    [previewError, setPreviewError] = useState(""),
+    [saveState, setSaveState] = useState(""),
     [collapsedModules, setCollapsedModules] = useState<Record<string, boolean>>({});
-  async function selectPlanSet(selected: PurchasePlanSet) {
+  async function selectPlanSet(selected: PurchasePlanSet, cachedResults = historyResultCache) {
     setBusy(true);
     const resultDates = Array.from(
       new Set(
@@ -304,31 +308,35 @@ function DailyPurchasePlans({
     const resultPayloads = await Promise.all(
       resultDates.map((date) =>
         fetch(`/api/sporttery/results?date=${date}`, { cache: "no-store" })
-          .then((response) => response.json())
+          .then((response) => response.ok ? response.json() : {results:[]})
           .catch(() => ({ results: [] })),
       ),
     );
-    const results = resultPayloads.flatMap((payload) =>
+    const freshResults = resultPayloads.flatMap((payload) =>
       Array.isArray(payload.results) ? payload.results : [],
     );
+    const results = [...new Map([...cachedResults,...freshResults].map(result=>[`${result.matchId}|${result.date}`,result])).values()];
     setPlanSet({
       ...selected,
       plans: selected.plans.map((plan) => settlePurchasePlan(plan, results)),
     });
     setStatus(
-      `${selected.date === shanghaiDate() ? "今日" : "历史"}方案 · ${new Date(selected.generatedAt).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })}批次`,
+      `${selected.snapshotId?.startsWith("manual-trial-")?"手动试算":selected.date === shanghaiDate() ? "今日正式" : "历史正式"}方案 · ${new Date(selected.generatedAt).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })}批次`,
     );
     setBusy(false);
   }
   useEffect(() => {
     let active = true;
     setBusy(true);
-    fetch("/api/prediction-snapshots?view=recommendations", { cache: "no-store" })
-      .then((response) => response.json())
-      .catch(() => ({ snapshots: [] }))
-      .then(async (archive) => {
+    Promise.all([
+      fetch("/api/prediction-snapshots?view=recommendations", { cache: "no-store" })
+        .then((response) => response.ok ? response.json() : {snapshots:[]})
+        .catch(() => ({ snapshots: [] })),
+      fetch("/api/purchase-trials", { cache: "no-store" })
+        .then((response) => response.ok ? response.json() : {trials:[]})
+        .catch(() => ({ trials: [] })),
+    ]).then(async ([archive, saved]) => {
         if (!active) return;
-        const matches = scopedOfficialMatches;
         let locals: PurchasePlanSet[] = [];
         try {
           const stored=await readBrowserData<PurchasePlanSet[]>(PURCHASE_PLAN_STORAGE_KEY,[]);
@@ -359,7 +367,7 @@ function DailyPurchasePlans({
           );
         const allSets = Array.from(
           new Map(
-            [...periodicSets, ...legacySets, ...locals]
+            [...periodicSets, ...legacySets, ...locals.filter(item=>item.snapshotId?.startsWith("purchase-"))]
               .sort((a, b) => b.generatedAt.localeCompare(a.generatedAt))
               .map((item) => [
                 item.snapshotId ||
@@ -367,39 +375,25 @@ function DailyPurchasePlans({
                 item,
               ]),
           ).values(),
-        ).filter(hasPurchasePlanData).filter((item) => {
-          if (!lotteryDate) return true;
-          const itemDates = item.plans.flatMap((plan) =>
-            plan.items.map(
-              (entry) =>
-                dateOnly(
-                  entry.salesDate || entry.matchDate || entry.kickoffAt,
-                ) || item.date,
-            ),
-          );
-          return itemDates.length > 0 && itemDates.every((date) => date === lotteryDate);
-        });
-        const historyDates=Array.from(new Set(allSets.flatMap(item=>item.plans.flatMap(plan=>plan.items.map(entry=>dateOnly(entry.matchDate||entry.salesDate||entry.kickoffAt)||item.date))))).filter(Boolean);
-        const historyPayloads=await Promise.all(historyDates.map(date=>fetch(`/api/sporttery/results?date=${date}`,{cache:"no-store"}).then(response=>response.json()).catch(()=>({results:[]}))));
-        const historyResults=historyPayloads.flatMap(payload=>Array.isArray(payload.results)?payload.results:[]);
+        ).filter(hasPurchasePlanData);
+        const storedTrials=(Array.isArray(saved.trials)?saved.trials:[]).filter(hasPurchasePlanData) as PurchasePlanSet[];
+        const cachedResults=Object.values(archive.resultCache&&typeof archive.resultCache==="object"?archive.resultCache:{}) as Array<{matchId?:string;date?:string}>;
+        const resultMap=new Map(cachedResults.map(result=>[`${result.matchId}|${result.date}`,result]));
+        const historyResults=[...resultMap.values()];
         const settledSets=allSets.map(item=>({...item,plans:item.plans.map(plan=>settlePurchasePlan(plan,historyResults))}));
+        const settledTrials=storedTrials.map(item=>({...item,plans:item.plans.map(plan=>settlePurchasePlan(plan,historyResults))}));
         if (active) {
           setPlanSets(settledSets);
+          setSavedTrials(settledTrials);
+          setHistoryResultCache(historyResults);
           setPlanSet(null);
         }
-        let selected = settledSets[0] || null;
-        // 已归档方案必须按生成时赔率原样读取；规则升级或当前赔率变化都不能回写历史方案。
-        if (!selected && data?.date === shanghaiDate() && matches.length) {
-          selected = generatePurchasePlans({
-            date: lotteryDate || data.date,
-            reports: scopedReports,
-            officialMatches: matches,
-          }) as PurchasePlanSet;
-          if(hasPurchasePlanData(selected))await writeBrowserData(PURCHASE_PLAN_STORAGE_KEY,[selected,...locals.filter(hasPurchasePlanData)].slice(0,30));
-          else selected=null;
-        }
-        if (selected && active) await selectPlanSet(selected);
-        else if (active) setStatus("该日期没有可用组合票，已从批次选项中移除");
+        const selected=[...settledSets,...settledTrials]
+          .filter(item=>!lotteryDate||item.date===lotteryDate)
+          .sort((a,b)=>b.generatedAt.localeCompare(a.generatedAt))[0]||null;
+        // 已归档方案必须按生成时赔率原样读取；没有 17:00 快照时不自动补造正式票。
+        if (selected && active) await selectPlanSet(selected, historyResults);
+        else if (active) setStatus("该彩票日期没有已保存组合票，可在盘口恢复后手动试算");
       })
       .finally(() => {
         if (active) setBusy(false);
@@ -407,21 +401,37 @@ function DailyPurchasePlans({
     return () => {
       active = false;
     };
-  }, [data, lotteryDate, scopedOfficialMatches, scopedReports]);
-  function preview() {
-    if (!data || !officialMatches.length) return;
-    setBusy(true);
-    const generated = generatePurchasePlans({
-      date: lotteryDate || data.date,
-      reports: scopedReports,
-      officialMatches: scopedOfficialMatches,
-    }) as PurchasePlanSet;
-    setPlanSet({
-      ...generated,
-      source: "按当前盘口手动试算（非17:00定时快照）",
-    });
-    setStatus("当前盘口试算");
-    setBusy(false);
+  // Select uses the just-loaded archive results, so this effect intentionally tracks only the date.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lotteryDate]);
+  async function preview() {
+    if (!data || busy) return;
+    setBusy(true);setPreviewError("");setSaveState("");
+    try {
+      const latest=await refreshOfficialMarkets();
+      if(!latest)throw new Error("官方盘口仍不可达，不能把过期赔率当作当前赔率试算。请稍后重试。");
+      const age=Date.now()-Date.parse(latest.fetchedAt);
+      if(!Number.isFinite(age)||age< -60000||age>60000)throw new Error("盘口采集时间无效或已过期，未生成试算。请重新获取。");
+      const current=lotteryDate?latest.matches.filter(match=>dateOnly(match.salesDate||match.matchDate||match.kickoffAt)===lotteryDate):latest.matches;
+      const generated=generatePurchasePlans({date:lotteryDate||data.date,reports:scopedReports,officialMatches:current}) as PurchasePlanSet;
+      if(!hasPurchasePlanData(generated))throw new Error("当前可售比赛或合规赔率不足，暂不能生成固定票。");
+      setPlanSet({...generated,snapshotId:`manual-trial-${crypto.randomUUID()}`,source:"当前盘口手动试算（未保存，非17:00正式快照）"});
+      setStatus("当前盘口试算 · 尚未保存");
+    }catch(error){setPreviewError(error instanceof Error?error.message:"试算失败");}
+    finally{setBusy(false);}
+  }
+  async function saveTrial() {
+    if(!planSet?.snapshotId?.startsWith("manual-trial-")||busy)return;
+    setBusy(true);setSaveState("");
+    try{
+      const response=await fetch("/api/purchase-trials",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(planSet)});
+      const payload=await response.json();
+      if(!response.ok)throw new Error(payload.error||"保存试算失败");
+      const saved=payload.trial as PurchasePlanSet;
+      setSavedTrials(current=>[saved,...current.filter(item=>item.snapshotId!==saved.snapshotId)]);
+      setPlanSet(saved);setSaveState("已保存，可在历史批次中重新查看；不计入17:00正式票统计。");
+    }catch(error){setSaveState(error instanceof Error?error.message:"保存试算失败");}
+    finally{setBusy(false);}
   }
   const planResult = (plan: PurchasePlan) =>
     ["won", "corrected_won", "void_won"].includes(plan.status)
@@ -439,6 +449,8 @@ function DailyPurchasePlans({
                 : "待赛";
   const planStats=useMemo(()=>summarizePurchasePlans(planSets.flatMap(item=>item.plans)),[planSets]);
   const moduleStats=useMemo(()=>summarizePurchasePlanModules(planSets),[planSets]);
+  const definitionHistory=useMemo(()=>summarizePurchasePlanDefinitions(planSets),[planSets]);
+  const selectableSets=[...planSets,...savedTrials].filter(item=>!lotteryDate||item.date===lotteryDate).sort((a,b)=>b.generatedAt.localeCompare(a.generatedAt));
   const visiblePlanModules=useMemo(()=>PURCHASE_PLAN_MODULES.map(module=>({
     ...module,
     definitions:PURCHASE_PLAN_DEFINITIONS.filter(definition=>purchasePlanModuleId(definition.id)===module.id&&planSet?.plans.some(plan=>plan.id===definition.id&&plan.status!=="unavailable"&&plan.items.length>0)),
@@ -455,13 +467,13 @@ function DailyPurchasePlans({
         </div>
         <div>
           <span>{status}</span>
-          {planSets.length > 1 && (
+          {(selectableSets.length > 0 || planSet) && (
             <select
               aria-label="选择预购买方案快照"
               value={planSet?.snapshotId || planSet?.generatedAt || ""}
               disabled={busy}
               onChange={(event) => {
-                const selected = planSets.find(
+                const selected = selectableSets.find(
                   (item) =>
                     (item.snapshotId || item.generatedAt) ===
                     event.target.value,
@@ -469,12 +481,13 @@ function DailyPurchasePlans({
                 if (selected) void selectPlanSet(selected);
               }}
             >
-              {planSets.map((item) => (
+              {planSet && !selectableSets.some(item=>item.snapshotId===planSet.snapshotId) && <option value={planSet.snapshotId||planSet.generatedAt}>当前未保存试算</option>}
+              {selectableSets.map((item) => (
                 <option
                   key={item.snapshotId || item.generatedAt}
                   value={item.snapshotId || item.generatedAt}
                 >
-                  {item.date}{" "}
+                  {item.snapshotId?.startsWith("manual-trial-")?"手动试算 · ":"正式快照 · "}{item.date}{" "}
                   {new Date(item.generatedAt).toLocaleTimeString("zh-CN", {
                     hour: "2-digit",
                     minute: "2-digit",
@@ -484,19 +497,40 @@ function DailyPurchasePlans({
             </select>
           )}
           <button
-            disabled={!data || !officialMatches.length || busy}
-            onClick={preview}
+            disabled={!data || busy}
+            onClick={()=>void preview()}
           >
             {busy ? "计算中…" : "按当前盘口试算"}
           </button>
+          {planSet?.snapshotId?.startsWith("manual-trial-") && !savedTrials.some(item=>item.snapshotId===planSet.snapshotId) && <button type="button" disabled={busy} onClick={()=>void saveTrial()}>保存本次试算</button>}
         </div>
       </header>
+      {!data && <p className="purchase-notice">当前浏览器没有今日预测版本，请先到 AI 预测页生成预测；没有预测时无法试算。</p>}
+      {liveOfficial.error && <p className="purchase-notice">官方盘口获取失败：{liveOfficial.error}。可点击“按当前盘口试算”重试；过期赔率不会参与试算。</p>}
+      {previewError && <p role="alert" className="purchase-notice">{previewError}</p>}
+      {saveState && <p role="status" className="purchase-notice">{saveState}</p>}
       <div className="purchase-kanban" aria-label="组合票历史统计">
         <div><span>已结算组合</span><b>{planStats.settled}</b></div>
         <div><span>中奖组合</span><b>{planStats.won}</b></div>
         <div><span>历史中奖率</span><b>{planStats.settled?`${planStats.rate.toFixed(1)}%`:"待积累"}</b></div>
         <div><span>模拟投入</span><b>¥{planStats.stake.toFixed(2)}</b></div>
         <div><span>模拟返还</span><b>¥{planStats.returned.toFixed(2)}</b></div>
+        <div><span>模拟净收益</span><b>¥{planStats.net.toFixed(2)}</b></div>
+      </div>
+      <p className="purchase-risk">以上仅统计每天固定时间生成的正式快照；手动试算单独保存，不计入正式中奖率。待赛和缺少官方赛果的票不计入已结算、投入或返还。</p>
+      <div className="purchase-history" aria-label="各投注方式历史明细">
+        {PURCHASE_PLAN_DEFINITIONS.map(definition=>{
+          const history=definitionHistory[definition.id]||{settled:0,won:0,rate:0,stake:0,returned:0,net:0,rows:[]};
+          return <details key={definition.id} className="purchase-history-group">
+            <summary><strong>{definition.title}</strong><span>中奖 / 已结算 {history.won} / {history.settled}</span><span>中奖率 {history.settled?`${history.rate.toFixed(1)}%`:"待积累"}</span><span>投入 / 返还 ¥{history.stake.toFixed(2)} / ¥{history.returned.toFixed(2)}</span><span>净收益 ¥{history.net.toFixed(2)}</span></summary>
+            <div className="purchase-history-scroll"><table><thead><tr><th>日期 / 批次</th><th>投注内容</th><th>结算</th><th>投入</th><th>模拟返还</th><th>净收益</th></tr></thead><tbody>
+              {history.rows.length?history.rows.map((row:{snapshotId:string;date:string;generatedAt:string;plan:PurchasePlan})=>{
+                const settled=["won","lost","corrected_won","corrected_lost","void_won","void_lost"].includes(row.plan.status);
+                return <tr key={`${row.snapshotId}-${row.plan.id}`}><td>{row.date}<small>{new Date(row.generatedAt).toLocaleTimeString("zh-CN",{hour:"2-digit",minute:"2-digit"})}</small></td><td>{row.plan.items.map(item=><div key={`${item.officialMatchId||item.matchId}-${item.market}`}><b>{item.matchId}</b> {item.home} vs {item.away} · {item.marketName} {(item.picks?.length?item.picks.map(pick=>pick.pick):[item.pick]).join(" / ")}</div>)}</td><td>{planResult(row.plan)}</td><td>{settled?`¥${row.plan.stake.toFixed(2)}`:"—"}</td><td>{settled?`¥${(row.plan.simulatedReturn||0).toFixed(2)}`:"—"}</td><td>{settled?`¥${((row.plan.simulatedReturn||0)-row.plan.stake).toFixed(2)}`:"—"}</td></tr>;
+              }):<tr><td colSpan={6}>暂无该玩法的正式历史票</td></tr>}
+            </tbody></table></div>
+          </details>;
+        })}
       </div>
       {visiblePlanModules.map(module=>{
         const stats=moduleStats[module.id]||{settled:0,won:0,rate:0,stake:0,returned:0,net:0};
@@ -842,7 +876,6 @@ export default function TodayRecommendations() {
       </div>
       <DailyPurchasePlans
         data={data}
-        officialMatches={official.matches}
         lotteryDate={effectiveMatchDate}
       />
       <div className="recommendation-controls">

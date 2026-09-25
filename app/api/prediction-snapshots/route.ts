@@ -61,7 +61,7 @@ export async function GET(request:Request){
   const bundledResultCache=bundledIndex.resultCache&&typeof bundledIndex.resultCache==="object"&&!Array.isArray(bundledIndex.resultCache)?bundledIndex.resultCache:{};
   const verifiedResultCache=Object.fromEntries(recoveredResults.results.map(result=>[`official|${result.matchId}`,result]));
   const bundledPurchaseSnapshots=Array.isArray(bundledIndex.purchasePlanSnapshots)?bundledIndex.purchasePlanSnapshots:[];
-  if(view==="recommendations")return NextResponse.json({snapshots:[],purchasePlanSnapshots:bundledPurchaseSnapshots,storage:"bundle-index"},{headers:{"Cache-Control":"no-store, max-age=0"}});
+  if(view==="recommendations")return NextResponse.json({snapshots:[],purchasePlanSnapshots:bundledPurchaseSnapshots,resultCache:{...bundledResultCache,...verifiedResultCache},storage:"bundle-index"},{headers:{"Cache-Control":"no-store, max-age=0"}});
   let disk:Array<ReturnType<typeof toSnapshot>>=[];
   try{
    const allNames=await readdir(directory),supplementNames=allNames.filter(name=>name.includes(".supplement."));

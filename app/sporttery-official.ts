@@ -68,7 +68,11 @@ function parsePayload(value: unknown): OfficialPayload {
     const rows = group.subMatchList.map((entry): OfficialMatchRow => {
       if (
         !isRecord(entry) ||
-        !["matchId", "matchNumStr", "matchDate", "matchTime"].every(
+        !(
+          (typeof entry.matchId === "string" && entry.matchId.trim()) ||
+          (typeof entry.matchId === "number" && Number.isFinite(entry.matchId) && entry.matchId > 0)
+        ) ||
+        !["matchNumStr", "matchDate", "matchTime"].every(
           (key) => typeof entry[key] === "string" && String(entry[key]).trim(),
         )
       )
@@ -236,7 +240,7 @@ async function fetchPool(pool: SportteryPool, timeoutMs: number, serverHeaders: 
   const controller = new AbortController(),
     timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const url = `${SPORTTERY_SOURCE_URL}?channel=0005&poolCode=${pool}&_=${Date.now()}`;
+    const url = `${SPORTTERY_SOURCE_URL}?channel=0005&poolCode=${pool}`;
     const headers: HeadersInit = serverHeaders
       ? {
           Referer: "https://www.sporttery.cn/",
@@ -251,7 +255,12 @@ async function fetchPool(pool: SportteryPool, timeoutMs: number, serverHeaders: 
       credentials: "omit",
       mode: "cors",
     });
-    if (!response.ok) throw new Error(`返回 ${response.status}`);
+    if (!response.ok)
+      throw new Error(
+        response.status === 567
+          ? "返回 567（官方站点防护拦截；需核验数据源授权或放行策略）"
+          : `返回 ${response.status}`,
+      );
     const contentType = response.headers.get("content-type") || "",
       raw = await response.text();
     let json: unknown;
@@ -326,14 +335,19 @@ export async function fetchOfficialSporttery(
     SPORTTERY_POOLS.map((pool) => [pool, [] as string[]]),
   ) as unknown as Record<SportteryPool, string[]>;
   for (let attempt = 0; attempt < attempts; attempt++) {
-    const settled = await Promise.allSettled(
-      SPORTTERY_POOLS.map((pool) => fetchPool(pool, timeoutMs, Boolean(options.serverHeaders))),
-    );
-    SPORTTERY_POOLS.forEach((pool, index) => {
-      const result = settled[index];
-      if (result.status === "fulfilled") collected[pool].push(result.value);
-      else errors[pool].push(errorMessage(result.reason));
-    });
+    // Keep request bursts modest: five simultaneous uncached requests can
+    // trigger the official gateway's rate/Bot protection.
+    for (let index = 0; index < SPORTTERY_POOLS.length; index += 2) {
+      const pools = SPORTTERY_POOLS.slice(index, index + 2);
+      const settled = await Promise.allSettled(
+        pools.map((pool) => fetchPool(pool, timeoutMs, Boolean(options.serverHeaders))),
+      );
+      pools.forEach((pool, offset) => {
+        const result = settled[offset];
+        if (result.status === "fulfilled") collected[pool].push(result.value);
+        else errors[pool].push(errorMessage(result.reason));
+      });
+    }
   }
   const byPool = {} as Partial<Record<SportteryPool, OfficialPayload>>;
   const poolStatus = {} as SportteryData["poolStatus"];

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
 import test from "node:test";
 import ts from "typescript";
-import {generatePurchasePlans,PURCHASE_PLAN_MODULES,settlePurchasePlan,summarizePurchasePlanModules} from "../app/purchase-plan-engine.js";
+import {generatePurchasePlans,PURCHASE_PLAN_MODULES,settlePurchasePlan,summarizePurchasePlanModules,summarizePurchasePlanDefinitions} from "../app/purchase-plan-engine.js";
 import {teamIdentity} from "../app/team-identity.js";
 import {decisionTargetAt,selectOfficialDecisionRows} from "../app/snapshot-decision-policy.js";
 import {snapshotIdFromFileName} from "../app/snapshot-file-policy.js";
@@ -118,6 +118,10 @@ test("official markets never fall back to demo odds and tolerate independent poo
   response=await get();data=await response.json();
   assert.equal(data.matches.length,1);assert.equal(data.matches[0].marketOdds["让球胜平负"],null);assert.equal(data.matches[0].marketStatus["让球胜平负"],"unavailable");
 
+  globalThis.fetch=async url=>{const pool=new URL(String(url)).searchParams.get("poolCode");return new Response(JSON.stringify(poolPayload([{...officialRow(pool),matchId:2041686}])),{status:200})};
+  response=await get();data=await response.json();
+  assert.equal(response.status,200);assert.equal(data.matches.length,1);assert.equal(data.matches[0].officialMatchId,"2041686");
+
   globalThis.fetch=async url=>{const pool=new URL(String(url)).searchParams.get("poolCode");if(pool==="CRS")throw new Error("比分玩法超时");return new Response(JSON.stringify(poolPayload([officialRow(pool)])),{status:200})};
   response=await get();data=await response.json();
   assert.equal(response.status,200);assert.equal(data.matches.length,1);assert.equal(data.poolStatus.CRS.status,"failed");assert.equal(data.matches[0].marketOdds["比分"],null);assert.equal(data.matches[0].marketStatus["比分"],"failed");
@@ -126,6 +130,10 @@ test("official markets never fall back to demo odds and tolerate independent poo
   response=await get();data=await response.json();
   assert.equal(response.status,200);assert.equal(data.poolStatus.HAD.status,"failed");
   assert.equal(data.matches[0].marketOdds["胜平负"],null);
+
+  globalThis.fetch=async()=>new Response("blocked",{status:567});
+  response=await get();data=await response.json();
+  assert.equal(response.status,502);assert.match(data.error,/567（官方站点防护拦截/);
  }finally{globalThis.fetch=originalFetch}
 });
 
@@ -387,6 +395,17 @@ test("daily purchase history is split into modules with independent hit-rate and
  assert.deepEqual(summary.tenfold,{settled:1,won:1,rate:100,stake:2,returned:22,net:20});
 });
 
+test("each fixed ticket has independent cross-date settlement and visible pending rows",()=>{
+ const sets=[
+  {snapshotId:"purchase-a",date:"2026-09-21",generatedAt:"2026-09-21T09:00:00Z",plans:[{id:"total-double-2",status:"won",stake:8,simulatedReturn:25,items:[{matchId:"周一001"}]}]},
+  {snapshotId:"purchase-b",date:"2026-09-22",generatedAt:"2026-09-22T09:00:00Z",plans:[{id:"total-double-2",status:"pending",stake:8,items:[{matchId:"周二001"}]}]},
+  {snapshotId:"purchase-c",date:"2026-09-23",generatedAt:"2026-09-23T09:00:00Z",plans:[{id:"total-double-2",status:"lost",stake:8,simulatedReturn:0,items:[{matchId:"周三001"}]}]},
+ ];
+ const record=summarizePurchasePlanDefinitions(sets)["total-double-2"];
+ assert.equal(record.rows.length,3);
+ assert.deepEqual({settled:record.settled,won:record.won,rate:record.rate,stake:record.stake,returned:record.returned,net:record.net},{settled:2,won:1,rate:50,stake:16,returned:25,net:9});
+});
+
 test("settlement keeps missing fields pending and isolates official ids by date",()=>{
  const plan={id:"p",status:"pending",stake:2,theoreticalReturn:6,items:[{matchId:"周一001",officialMatchId:"same-id",matchDate:"2026-09-08",kickoffAt:"2026-09-08T20:00:00+08:00",matchStatus:"Finished",market:"halfFull",pick:"胜胜",odd:3}]};
  const wrongDate={id:"周一001",matchId:"same-id",date:"2026-09-07",fullScore:"2:0",halfScore:"1:0",status:"settled"};
@@ -517,7 +536,7 @@ test("one immutable prediction version supplies prediction, recommendation and a
  assert.match(recommendations,/全部彩票日期/);
  assert.match(recommendations,/按竞彩编号所属销售日筛选/);
  assert.match(recommendations,/lotteryDate=\{effectiveMatchDate\}/);
- assert.match(recommendations,/entry\.salesDate \|\| entry\.matchDate \|\| entry\.kickoffAt/);
+ assert.match(recommendations,/match\.salesDate \|\| match\.matchDate \|\| match\.kickoffAt/);
  assert.match(recommendations,/current\?\.salesDate/);
  assert.match(page,/竞彩开售日/);
  assert.match(page,/match\.salesDate\|\|match\.matchDate/);
