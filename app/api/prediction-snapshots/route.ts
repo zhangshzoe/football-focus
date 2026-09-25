@@ -25,6 +25,13 @@ const bundledIndexFiles=import.meta.glob<{snapshots?:unknown[];resultCache?:Reco
 const toPurchaseSnapshot=(record:RawPurchaseSnapshot)=>record.recordType==="purchase-plan-snapshot"&&record.immutable===true&&record.snapshotId&&record.planSet?.plans?.length?{snapshotId:record.snapshotId,capturedAt:record.capturedAt,sourceFetchedAt:record.sourceFetchedAt,predictionId:record.predictionId,contentHash:record.contentHash,previousSnapshotId:record.previousSnapshotId,planSet:{...record.planSet,snapshotId:record.snapshotId,contentHash:record.contentHash}}:null;
 const labelFor=(slot:string)=>`${slot.slice(0,2)}:${slot.slice(2)}批次`;
 const number=(value:unknown)=>Number.isFinite(Number(value))?Number(value):0;
+const withDerivedTotalGoals=<T extends {fullScore?:string;totalGoalsResult?:string}>(result:T)=>{
+ if(result.totalGoalsResult)return result;
+ const score=/^(\d{1,2}):(\d{1,2})$/.exec(String(result.fullScore||"").trim());
+ if(!score)return result;
+ const goals=Number(score[1])+Number(score[2]);
+ return {...result,totalGoalsResult:goals>=7?"7+":String(goals),totalGoalsResultBasis:"derived_from_verified_full_score"};
+};
 
 function toSnapshot(raw:RawSnapshot,fileName:string,supplements:Supplement[]=[]){
  const matched=fileName.match(/^(\d{4}-\d{2}-\d{2})_((?:[01]\d|2[0-3])[0-5]\d)(?:\.raw)?\.json$/);
@@ -59,7 +66,7 @@ export async function GET(request:Request){
   const bundledSnapshots=Array.isArray(bundledIndex.snapshots)?bundledIndex.snapshots:[];
   const bundledMigratedSnapshots=bundledSnapshots.filter(snapshot=>snapshot.storageOrigin==="migrated-browser");
   const bundledResultCache=bundledIndex.resultCache&&typeof bundledIndex.resultCache==="object"&&!Array.isArray(bundledIndex.resultCache)?bundledIndex.resultCache:{};
-  const verifiedResultCache=Object.fromEntries(recoveredResults.results.map(result=>[`official|${result.matchId}`,result]));
+  const verifiedResultCache=Object.fromEntries(recoveredResults.results.map(result=>[`official|${result.matchId}`,withDerivedTotalGoals(result)]));
   const bundledPurchaseSnapshots=Array.isArray(bundledIndex.purchasePlanSnapshots)?bundledIndex.purchasePlanSnapshots:[];
   if(view==="recommendations")return NextResponse.json({snapshots:[],purchasePlanSnapshots:bundledPurchaseSnapshots,resultCache:{...bundledResultCache,...verifiedResultCache},storage:"bundle-index"},{headers:{"Cache-Control":"no-store, max-age=0"}});
   let disk:Array<ReturnType<typeof toSnapshot>>=[];

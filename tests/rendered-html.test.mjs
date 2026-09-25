@@ -562,6 +562,9 @@ test("September 23 and 24 recovery keeps provenance and never invents full forec
  assert.equal(payload.snapshots.find(snapshot=>snapshot.snapshotId==="2026-09-23-recovered-review-v1")?.matches.length,3);
  assert.equal(payload.snapshots.find(snapshot=>snapshot.snapshotId==="2026-09-24-recovered-review-v1")?.matches.length,8);
  assert.equal(Object.keys(payload.resultCorrections).length,11);
+ assert.equal(payload.resultCorrections["official|2041646"].totalGoalsResult,"3");
+ assert.equal(payload.resultCorrections["official|2041646"].totalGoalsResultBasis,"derived_from_verified_full_score");
+ assert.equal(payload.resultCorrections["official|2041650"].totalGoalsResult,"1");
 });
 
 test("one immutable prediction version supplies prediction, recommendation and archive probabilities",async()=>{
