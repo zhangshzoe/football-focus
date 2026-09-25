@@ -1,0 +1,2276 @@
+{
+  "schemaVersion": 1,
+  "recordType": "purchase-plan-snapshot",
+  "snapshotId": "purchase-2026-09-25-170244-7cc9f40c533a",
+  "immutable": true,
+  "capturedAt": "2026-09-25T09:02:45.316Z",
+  "sourceFetchedAt": "2026-09-25T09:02:44.696Z",
+  "upstreamUpdatedAt": "2026-09-25T09:02:44.696Z",
+  "predictionId": "pred-1s1uti2",
+  "predictionVersion": {
+    "predictionId": "pred-1s1uti2",
+    "inputSnapshotId": "input-15s0j7e",
+    "baseModelVersion": "multi-market-poisson-v5-dc-shadow",
+    "calibrationVersion": "cal-none",
+    "aiReviewVersion": null,
+    "generatedAt": "2026-09-25T09:02:44.696Z"
+  },
+  "inputHash": "input-15s0j7e",
+  "contentHash": "7cc9f40c533af0f71b9a5360301b2a2d6adf904bedce58b2fbf60b0f3020c2f5",
+  "previousSnapshotId": "purchase-2026-09-24-170309-68e58cb0dda4",
+  "reviewAfter": "2026-09-25T23:59:59+08:00",
+  "planSet": {
+    "version": 10,
+    "date": "2026-09-25",
+    "generatedAt": "2026-09-25T09:02:45.316Z",
+    "scheduledTime": "17:00",
+    "source": "每日17:00预测快照 + 中国体育彩票生成时固定奖金",
+    "plans": [
+      {
+        "id": "score-double-3",
+        "title": "比分双选",
+        "rule": "每场2个比分 · 3串1",
+        "status": "pending",
+        "items": [
+          {
+            "matchId": "周五006",
+            "officialMatchId": "2041689",
+            "salesDate": "2026-09-25",
+            "matchDate": "2026-09-26",
+            "kickoffAt": "2026-09-26T00:00:00+08:00",
+            "sourceFetchedAt": "2026-09-25T09:02:44.696Z",
+            "matchStatus": "Selling",
+            "league": "欧国联",
+            "home": "格鲁吉亚",
+            "away": "北爱尔兰",
+            "handicap": "-1",
+            "market": "score",
+            "marketCode": "CRS",
+            "marketName": "比分",
+            "maxPass": 4,
+            "allowedPassCounts": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "cutoffAt": "2026-09-26T00:00:00+08:00",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "1:0 / 1:1",
+            "probability": 26.469515167693046,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "1:0",
+                "probability": 14.307846036590835,
+                "odd": 6.5
+              },
+              {
+                "pick": "1:1",
+                "probability": 12.161669131102212,
+                "odd": 6.5
+              }
+            ]
+          },
+          {
+            "matchId": "周五007",
+            "officialMatchId": "2041690",
+            "salesDate": "2026-09-25",
+            "matchDate": "2026-09-26",
+            "kickoffAt": "2026-09-26T00:00:00+08:00",
+            "sourceFetchedAt": "2026-09-25T09:02:44.696Z",
+            "matchStatus": "Selling",
+            "league": "欧国联",
+            "home": "亚美尼亚",
+            "away": "拉脱维亚",
+            "handicap": "-1",
+            "market": "score",
+            "marketCode": "CRS",
+            "marketName": "比分",
+            "maxPass": 4,
+            "allowedPassCounts": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "cutoffAt": "2026-09-26T00:00:00+08:00",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "1:0 / 1:1",
+            "probability": 25.41894756980946,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "1:0",
+                "probability": 13.378393457794452,
+                "odd": 6.5
+              },
+              {
+                "pick": "1:1",
+                "probability": 12.04055411201501,
+                "odd": 6.5
+              }
+            ]
+          },
+          {
+            "matchId": "周五009",
+            "officialMatchId": "2041692",
+            "salesDate": "2026-09-25",
+            "matchDate": "2026-09-26",
+            "kickoffAt": "2026-09-26T02:45:00+08:00",
+            "sourceFetchedAt": "2026-09-25T09:02:44.696Z",
+            "matchStatus": "Selling",
+            "league": "欧国联",
+            "home": "黑山",
+            "away": "塞浦路斯",
+            "handicap": "-1",
+            "market": "score",
+            "marketCode": "CRS",
+            "marketName": "比分",
+            "maxPass": 4,
+            "allowedPassCounts": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "cutoffAt": "2026-09-26T02:45:00+08:00",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "1:0 / 1:1",
+            "probability": 24.48652996018057,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "1:0",
+                "probability": 12.887647347463457,
+                "odd": 7
+              },
+              {
+                "pick": "1:1",
+                "probability": 11.59888261271711,
+                "odd": 7
+              }
+            ]
+          }
+        ],
+        "passName": "3串1",
+        "combinedOdd": 0,
+        "estimatedProbability": 0.016475203837602342,
+        "betCount": 8,
+        "stake": 16,
+        "minWinningReturn": 591.5,
+        "maxWinningReturn": 591.5,
+        "minWinningProfit": 575.5,
+        "maxWinningProfit": 575.5,
+        "theoreticalReturn": 591.5
+      },
+      {
+        "id": "score-single-2",
+        "title": "比分单选",
+        "rule": "每场1个比分 · 2串1",
+        "status": "pending",
+        "items": [
+          {
+            "matchId": "周五006",
+            "officialMatchId": "2041689",
+            "salesDate": "2026-09-25",
+            "matchDate": "2026-09-26",
+            "kickoffAt": "2026-09-26T00:00:00+08:00",
+            "sourceFetchedAt": "2026-09-25T09:02:44.696Z",
+            "matchStatus": "Selling",
+            "league": "欧国联",
+            "home": "格鲁吉亚",
+            "away": "北爱尔兰",
+            "handicap": "-1",
+            "market": "score",
+            "marketCode": "CRS",
+            "marketName": "比分",
+            "maxPass": 4,
+            "allowedPassCounts": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "cutoffAt": "2026-09-26T00:00:00+08:00",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "1:0",
+            "probability": 14.307846036590835,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "1:0",
+                "probability": 14.307846036590835,
+                "odd": 6.5
+              }
+            ]
+          },
+          {
+            "matchId": "周五007",
+            "officialMatchId": "2041690",
+            "salesDate": "2026-09-25",
+            "matchDate": "2026-09-26",
+            "kickoffAt": "2026-09-26T00:00:00+08:00",
+            "sourceFetchedAt": "2026-09-25T09:02:44.696Z",
+            "matchStatus": "Selling",
+            "league": "欧国联",
+            "home": "亚美尼亚",
+            "away": "拉脱维亚",
+            "handicap": "-1",
+            "market": "score",
+            "marketCode": "CRS",
+            "marketName": "比分",
+            "maxPass": 4,
+            "allowedPassCounts": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "cutoffAt": "2026-09-26T00:00:00+08:00",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "1:0",
+            "probability": 13.378393457794452,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "1:0",
+                "probability": 13.378393457794452,
+                "odd": 6.5
+              }
+            ]
+          }
+        ],
+        "passName": "2串1",
+        "combinedOdd": 0,
+        "estimatedProbability": 0.01914159938110571,
+        "betCount": 1,
+        "stake": 2,
+        "minWinningReturn": 84.5,
+        "maxWinningReturn": 84.5,
+        "minWinningProfit": 82.5,
+        "maxWinningProfit": 82.5,
+        "theoreticalReturn": 84.5
+      },
+      {
+        "id": "score-double-2",
+        "title": "比分双选2串1",
+        "rule": "每场2个比分 · 2串1",
+        "status": "pending",
+        "items": [
+          {
+            "matchId": "周五006",
+            "officialMatchId": "2041689",
+            "salesDate": "2026-09-25",
+            "matchDate": "2026-09-26",
+            "kickoffAt": "2026-09-26T00:00:00+08:00",
+            "sourceFetchedAt": "2026-09-25T09:02:44.696Z",
+            "matchStatus": "Selling",
+            "league": "欧国联",
+            "home": "格鲁吉亚",
+            "away": "北爱尔兰",
+            "handicap": "-1",
+            "market": "score",
+            "marketCode": "CRS",
+            "marketName": "比分",
+            "maxPass": 4,
+            "allowedPassCounts": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "cutoffAt": "2026-09-26T00:00:00+08:00",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "1:0 / 1:1",
+            "probability": 26.469515167693046,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "1:0",
+                "probability": 14.307846036590835,
+                "odd": 6.5
+              },
+              {
+                "pick": "1:1",
+                "probability": 12.161669131102212,
+                "odd": 6.5
+              }
+            ]
+          },
+          {
+            "matchId": "周五007",
+            "officialMatchId": "2041690",
+            "salesDate": "2026-09-25",
+            "matchDate": "2026-09-26",
+            "kickoffAt": "2026-09-26T00:00:00+08:00",
+            "sourceFetchedAt": "2026-09-25T09:02:44.696Z",
+            "matchStatus": "Selling",
+            "league": "欧国联",
+            "home": "亚美尼亚",
+            "away": "拉脱维亚",
+            "handicap": "-1",
+            "market": "score",
+            "marketCode": "CRS",
+            "marketName": "比分",
+            "maxPass": 4,
+            "allowedPassCounts": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "cutoffAt": "2026-09-26T00:00:00+08:00",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "1:0 / 1:1",
+            "probability": 25.41894756980946,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "1:0",
+                "probability": 13.378393457794452,
+                "odd": 6.5
+              },
+              {
+                "pick": "1:1",
+                "probability": 12.04055411201501,
+                "odd": 6.5
+              }
+            ]
+          }
+        ],
+        "passName": "2串1",
+        "combinedOdd": 0,
+        "estimatedProbability": 0.06728272182458658,
+        "betCount": 4,
+        "stake": 8,
+        "minWinningReturn": 84.5,
+        "maxWinningReturn": 84.5,
+        "minWinningProfit": 76.5,
+        "maxWinningProfit": 76.5,
+        "theoreticalReturn": 84.5
+      },
+      {
+        "id": "score-single-3",
+        "title": "比分单选3串1",
+        "rule": "每场1个比分 · 3串1",
+        "status": "pending",
+        "items": [
+          {
+            "matchId": "周五006",
+            "officialMatchId": "2041689",
+            "salesDate": "2026-09-25",
+            "matchDate": "2026-09-26",
+            "kickoffAt": "2026-09-26T00:00:00+08:00",
+            "sourceFetchedAt": "2026-09-25T09:02:44.696Z",
+            "matchStatus": "Selling",
+            "league": "欧国联",
+            "home": "格鲁吉亚",
+            "away": "北爱尔兰",
+            "handicap": "-1",
+            "market": "score",
+            "marketCode": "CRS",
+            "marketName": "比分",
+            "maxPass": 4,
+            "allowedPassCounts": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "cutoffAt": "2026-09-26T00:00:00+08:00",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "1:0",
+            "probability": 14.307846036590835,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "1:0",
+                "probability": 14.307846036590835,
+                "odd": 6.5
+              }
+            ]
+          },
+          {
+            "matchId": "周五007",
+            "officialMatchId": "2041690",
+            "salesDate": "2026-09-25",
+            "matchDate": "2026-09-26",
+            "kickoffAt": "2026-09-26T00:00:00+08:00",
+            "sourceFetchedAt": "2026-09-25T09:02:44.696Z",
+            "matchStatus": "Selling",
+            "league": "欧国联",
+            "home": "亚美尼亚",
+            "away": "拉脱维亚",
+            "handicap": "-1",
+            "market": "score",
+            "marketCode": "CRS",
+            "marketName": "比分",
+            "maxPass": 4,
+            "allowedPassCounts": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "cutoffAt": "2026-09-26T00:00:00+08:00",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "1:0",
+            "probability": 13.378393457794452,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "1:0",
+                "probability": 13.378393457794452,
+                "odd": 6.5
+              }
+            ]
+          },
+          {
+            "matchId": "周五009",
+            "officialMatchId": "2041692",
+            "salesDate": "2026-09-25",
+            "matchDate": "2026-09-26",
+            "kickoffAt": "2026-09-26T02:45:00+08:00",
+            "sourceFetchedAt": "2026-09-25T09:02:44.696Z",
+            "matchStatus": "Selling",
+            "league": "欧国联",
+            "home": "黑山",
+            "away": "塞浦路斯",
+            "handicap": "-1",
+            "market": "score",
+            "marketCode": "CRS",
+            "marketName": "比分",
+            "maxPass": 4,
+            "allowedPassCounts": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "cutoffAt": "2026-09-26T02:45:00+08:00",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "1:0",
+            "probability": 12.887647347463457,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "1:0",
+                "probability": 12.887647347463457,
+                "odd": 7
+              }
+            ]
+          }
+        ],
+        "passName": "3串1",
+        "combinedOdd": 0,
+        "estimatedProbability": 0.002466901824901152,
+        "betCount": 1,
+        "stake": 2,
+        "minWinningReturn": 591.5,
+        "maxWinningReturn": 591.5,
+        "minWinningProfit": 589.5,
+        "maxWinningProfit": 589.5,
+        "theoreticalReturn": 591.5
+      },
+      {
+        "id": "total-double-3",
+        "title": "总进球双选",
+        "rule": "每场2个进球数 · 3串1",
+        "status": "pending",
+        "items": [
+          {
+            "matchId": "周五006",
+            "officialMatchId": "2041689",
+            "salesDate": "2026-09-25",
+            "matchDate": "2026-09-26",
+            "kickoffAt": "2026-09-26T00:00:00+08:00",
+            "sourceFetchedAt": "2026-09-25T09:02:44.696Z",
+            "matchStatus": "Selling",
+            "league": "欧国联",
+            "home": "格鲁吉亚",
+            "away": "北爱尔兰",
+            "handicap": "-1",
+            "market": "total",
+            "marketCode": "TTG",
+            "marketName": "总进球数",
+            "maxPass": 6,
+            "allowedPassCounts": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "cutoffAt": "2026-09-26T00:00:00+08:00",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "2球 / 1球",
+            "probability": 48.753985369683235,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "2球",
+                "probability": 26.338359912357614,
+                "odd": 3.3
+              },
+              {
+                "pick": "1球",
+                "probability": 22.41562545732562,
+                "odd": 4.3
+              }
+            ]
+          },
+          {
+            "matchId": "周五007",
+            "officialMatchId": "2041690",
+            "salesDate": "2026-09-25",
+            "matchDate": "2026-09-26",
+            "kickoffAt": "2026-09-26T00:00:00+08:00",
+            "sourceFetchedAt": "2026-09-25T09:02:44.696Z",
+            "matchStatus": "Selling",
+            "league": "欧国联",
+            "home": "亚美尼亚",
+            "away": "拉脱维亚",
+            "handicap": "-1",
+            "market": "total",
+            "marketCode": "TTG",
+            "marketName": "总进球数",
+            "maxPass": 6,
+            "allowedPassCounts": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "cutoffAt": "2026-09-26T00:00:00+08:00",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "2球 / 3球",
+            "probability": 47.05975770760657,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "2球",
+                "probability": 25.904453784003614,
+                "odd": 3.2
+              },
+              {
+                "pick": "3球",
+                "probability": 21.155303923602958,
+                "odd": 3.6
+              }
+            ]
+          },
+          {
+            "matchId": "周五009",
+            "officialMatchId": "2041692",
+            "salesDate": "2026-09-25",
+            "matchDate": "2026-09-26",
+            "kickoffAt": "2026-09-26T02:45:00+08:00",
+            "sourceFetchedAt": "2026-09-25T09:02:44.696Z",
+            "matchStatus": "Selling",
+            "league": "欧国联",
+            "home": "黑山",
+            "away": "塞浦路斯",
+            "handicap": "-1",
+            "market": "total",
+            "marketCode": "TTG",
+            "marketName": "总进球数",
+            "maxPass": 6,
+            "allowedPassCounts": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "cutoffAt": "2026-09-26T02:45:00+08:00",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "2球 / 3球",
+            "probability": 46.97986809764552,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "2球",
+                "probability": 25.394523296024605,
+                "odd": 3.3
+              },
+              {
+                "pick": "3球",
+                "probability": 21.58534480162092,
+                "odd": 3.7
+              }
+            ]
+          }
+        ],
+        "passName": "3串1",
+        "combinedOdd": 0,
+        "estimatedProbability": 0.10778829507750197,
+        "betCount": 8,
+        "stake": 16,
+        "minWinningReturn": 69.696,
+        "maxWinningReturn": 114.552,
+        "minWinningProfit": 53.696,
+        "maxWinningProfit": 98.552,
+        "theoreticalReturn": 114.552
+      },
+      {
+        "id": "total-double-2",
+        "title": "总进球双选2串1",
+        "rule": "每场2个进球数 · 2串1",
+        "status": "pending",
+        "items": [
+          {
+            "matchId": "周五006",
+            "officialMatchId": "2041689",
+            "salesDate": "2026-09-25",
+            "matchDate": "2026-09-26",
+            "kickoffAt": "2026-09-26T00:00:00+08:00",
+            "sourceFetchedAt": "2026-09-25T09:02:44.696Z",
+            "matchStatus": "Selling",
+            "league": "欧国联",
+            "home": "格鲁吉亚",
+            "away": "北爱尔兰",
+            "handicap": "-1",
+            "market": "total",
+            "marketCode": "TTG",
+            "marketName": "总进球数",
+            "maxPass": 6,
+            "allowedPassCounts": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "cutoffAt": "2026-09-26T00:00:00+08:00",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "2球 / 1球",
+            "probability": 48.753985369683235,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "2球",
+                "probability": 26.338359912357614,
+                "odd": 3.3
+              },
+              {
+                "pick": "1球",
+                "probability": 22.41562545732562,
+                "odd": 4.3
+              }
+            ]
+          },
+          {
+            "matchId": "周五007",
+            "officialMatchId": "2041690",
+            "salesDate": "2026-09-25",
+            "matchDate": "2026-09-26",
+            "kickoffAt": "2026-09-26T00:00:00+08:00",
+            "sourceFetchedAt": "2026-09-25T09:02:44.696Z",
+            "matchStatus": "Selling",
+            "league": "欧国联",
+            "home": "亚美尼亚",
+            "away": "拉脱维亚",
+            "handicap": "-1",
+            "market": "total",
+            "marketCode": "TTG",
+            "marketName": "总进球数",
+            "maxPass": 6,
+            "allowedPassCounts": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "cutoffAt": "2026-09-26T00:00:00+08:00",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "2球 / 3球",
+            "probability": 47.05975770760657,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "2球",
+                "probability": 25.904453784003614,
+                "odd": 3.2
+              },
+              {
+                "pick": "3球",
+                "probability": 21.155303923602958,
+                "odd": 3.6
+              }
+            ]
+          }
+        ],
+        "passName": "2串1",
+        "combinedOdd": 0,
+        "estimatedProbability": 0.22943507387774886,
+        "betCount": 4,
+        "stake": 8,
+        "minWinningReturn": 21.12,
+        "maxWinningReturn": 30.96,
+        "minWinningProfit": 13.120000000000001,
+        "maxWinningProfit": 22.96,
+        "theoreticalReturn": 30.96
+      },
+      {
+        "id": "total-single-2",
+        "title": "总进球单选2串1",
+        "rule": "每场1个进球数 · 2串1",
+        "status": "pending",
+        "items": [
+          {
+            "matchId": "周五006",
+            "officialMatchId": "2041689",
+            "salesDate": "2026-09-25",
+            "matchDate": "2026-09-26",
+            "kickoffAt": "2026-09-26T00:00:00+08:00",
+            "sourceFetchedAt": "2026-09-25T09:02:44.696Z",
+            "matchStatus": "Selling",
+            "league": "欧国联",
+            "home": "格鲁吉亚",
+            "away": "北爱尔兰",
+            "handicap": "-1",
+            "market": "total",
+            "marketCode": "TTG",
+            "marketName": "总进球数",
+            "maxPass": 6,
+            "allowedPassCounts": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "cutoffAt": "2026-09-26T00:00:00+08:00",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "2球",
+            "probability": 26.338359912357614,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "2球",
+                "probability": 26.338359912357614,
+                "odd": 3.3
+              }
+            ]
+          },
+          {
+            "matchId": "周五007",
+            "officialMatchId": "2041690",
+            "salesDate": "2026-09-25",
+            "matchDate": "2026-09-26",
+            "kickoffAt": "2026-09-26T00:00:00+08:00",
+            "sourceFetchedAt": "2026-09-25T09:02:44.696Z",
+            "matchStatus": "Selling",
+            "league": "欧国联",
+            "home": "亚美尼亚",
+            "away": "拉脱维亚",
+            "handicap": "-1",
+            "market": "total",
+            "marketCode": "TTG",
+            "marketName": "总进球数",
+            "maxPass": 6,
+            "allowedPassCounts": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "cutoffAt": "2026-09-26T00:00:00+08:00",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "2球",
+            "probability": 25.904453784003614,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "2球",
+                "probability": 25.904453784003614,
+                "odd": 3.2
+              }
+            ]
+          }
+        ],
+        "passName": "2串1",
+        "combinedOdd": 0,
+        "estimatedProbability": 0.06822808270961213,
+        "betCount": 1,
+        "stake": 2,
+        "minWinningReturn": 21.12,
+        "maxWinningReturn": 21.12,
+        "minWinningProfit": 19.12,
+        "maxWinningProfit": 19.12,
+        "theoreticalReturn": 21.12
+      },
+      {
+        "id": "draw-or-handicap-draw-2",
+        "title": "平/让平2串1",
+        "rule": "平或让平 · 2串1",
+        "status": "pending",
+        "items": [
+          {
+            "matchId": "周五006",
+            "officialMatchId": "2041689",
+            "salesDate": "2026-09-25",
+            "matchDate": "2026-09-26",
+            "kickoffAt": "2026-09-26T00:00:00+08:00",
+            "sourceFetchedAt": "2026-09-25T09:02:44.696Z",
+            "matchStatus": "Selling",
+            "league": "欧国联",
+            "home": "格鲁吉亚",
+            "away": "北爱尔兰",
+            "handicap": "-1",
+            "market": "had",
+            "marketCode": "HAD",
+            "marketName": "胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": "2026-09-26T00:00:00+08:00",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "平",
+            "probability": 26.17201596086568,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "平",
+                "probability": 26.17201596086568,
+                "odd": 3.35
+              }
+            ]
+          },
+          {
+            "matchId": "周五007",
+            "officialMatchId": "2041690",
+            "salesDate": "2026-09-25",
+            "matchDate": "2026-09-26",
+            "kickoffAt": "2026-09-26T00:00:00+08:00",
+            "sourceFetchedAt": "2026-09-25T09:02:44.696Z",
+            "matchStatus": "Selling",
+            "league": "欧国联",
+            "home": "亚美尼亚",
+            "away": "拉脱维亚",
+            "handicap": "-1",
+            "market": "had",
+            "marketCode": "HAD",
+            "marketName": "胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": "2026-09-26T00:00:00+08:00",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "平",
+            "probability": 25.58182633688084,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "平",
+                "probability": 25.58182633688084,
+                "odd": 3.43
+              }
+            ]
+          }
+        ],
+        "passName": "2串1",
+        "combinedOdd": 0,
+        "estimatedProbability": 0.06695279671969394,
+        "betCount": 1,
+        "stake": 2,
+        "minWinningReturn": 22.981,
+        "maxWinningReturn": 22.981,
+        "minWinningProfit": 20.981,
+        "maxWinningProfit": 20.981,
+        "theoreticalReturn": 22.981
+      },
+      {
+        "id": "draw-or-handicap-draw-3",
+        "title": "平/让平3串1",
+        "rule": "平或让平 · 3串1",
+        "status": "pending",
+        "items": [
+          {
+            "matchId": "周五006",
+            "officialMatchId": "2041689",
+            "salesDate": "2026-09-25",
+            "matchDate": "2026-09-26",
+            "kickoffAt": "2026-09-26T00:00:00+08:00",
+            "sourceFetchedAt": "2026-09-25T09:02:44.696Z",
+            "matchStatus": "Selling",
+            "league": "欧国联",
+            "home": "格鲁吉亚",
+            "away": "北爱尔兰",
+            "handicap": "-1",
+            "market": "had",
+            "marketCode": "HAD",
+            "marketName": "胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": "2026-09-26T00:00:00+08:00",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "平",
+            "probability": 26.17201596086568,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "平",
+                "probability": 26.17201596086568,
+                "odd": 3.35
+              }
+            ]
+          },
+          {
+            "matchId": "周五007",
+            "officialMatchId": "2041690",
+            "salesDate": "2026-09-25",
+            "matchDate": "2026-09-26",
+            "kickoffAt": "2026-09-26T00:00:00+08:00",
+            "sourceFetchedAt": "2026-09-25T09:02:44.696Z",
+            "matchStatus": "Selling",
+            "league": "欧国联",
+            "home": "亚美尼亚",
+            "away": "拉脱维亚",
+            "handicap": "-1",
+            "market": "had",
+            "marketCode": "HAD",
+            "marketName": "胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": "2026-09-26T00:00:00+08:00",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "平",
+            "probability": 25.58182633688084,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "平",
+                "probability": 25.58182633688084,
+                "odd": 3.43
+              }
+            ]
+          },
+          {
+            "matchId": "周五010",
+            "officialMatchId": "2041693",
+            "salesDate": "2026-09-25",
+            "matchDate": "2026-09-26",
+            "kickoffAt": "2026-09-26T02:45:00+08:00",
+            "sourceFetchedAt": "2026-09-25T09:02:44.696Z",
+            "matchStatus": "Selling",
+            "league": "欧国联",
+            "home": "波兰",
+            "away": "波黑",
+            "handicap": "-1",
+            "market": "hhad",
+            "marketCode": "HHAD",
+            "marketName": "让球胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": "2026-09-26T02:45:00+08:00",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "让平",
+            "probability": 25.150943222035274,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "让平",
+                "probability": 25.150943222035274,
+                "odd": 3.3
+              }
+            ]
+          }
+        ],
+        "passName": "3串1",
+        "combinedOdd": 0,
+        "estimatedProbability": 0.016839259888534918,
+        "betCount": 1,
+        "stake": 2,
+        "minWinningReturn": 75.8373,
+        "maxWinningReturn": 75.8373,
+        "minWinningProfit": 73.8373,
+        "maxWinningProfit": 73.8373,
+        "theoreticalReturn": 75.8373
+      },
+      {
+        "id": "result-mixed-3",
+        "title": "赛果混合3串1",
+        "rule": "胜平负/让球胜平负 · 3串1",
+        "status": "pending",
+        "items": [
+          {
+            "matchId": "周五003",
+            "officialMatchId": "2041686",
+            "salesDate": "2026-09-25",
+            "matchDate": "2026-09-25",
+            "kickoffAt": "2026-09-25T18:00:00+08:00",
+            "sourceFetchedAt": "2026-09-25T09:02:44.696Z",
+            "matchStatus": "Selling",
+            "league": "国际友谊",
+            "home": "澳大利亚",
+            "away": "巴西",
+            "handicap": "1",
+            "market": "had",
+            "marketCode": "HAD",
+            "marketName": "胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": "2026-09-25T18:00:00+08:00",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "负",
+            "probability": 77.26026689263726,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "负",
+                "probability": 77.26026689263726,
+                "odd": 1.12
+              }
+            ]
+          },
+          {
+            "matchId": "周五008",
+            "officialMatchId": "2041691",
+            "salesDate": "2026-09-25",
+            "matchDate": "2026-09-26",
+            "kickoffAt": "2026-09-26T02:45:00+08:00",
+            "sourceFetchedAt": "2026-09-25T09:02:44.696Z",
+            "matchStatus": "Selling",
+            "league": "欧国联",
+            "home": "意大利",
+            "away": "比利时",
+            "handicap": "-1",
+            "market": "hhad",
+            "marketCode": "HHAD",
+            "marketName": "让球胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": "2026-09-26T02:45:00+08:00",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "让负",
+            "probability": 55.710977390293046,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "让负",
+                "probability": 55.710977390293046,
+                "odd": 1.61
+              }
+            ]
+          },
+          {
+            "matchId": "周五011",
+            "officialMatchId": "2041694",
+            "salesDate": "2026-09-25",
+            "matchDate": "2026-09-26",
+            "kickoffAt": "2026-09-26T02:45:00+08:00",
+            "sourceFetchedAt": "2026-09-25T09:02:44.696Z",
+            "matchStatus": "Selling",
+            "league": "欧国联",
+            "home": "土耳其",
+            "away": "法国",
+            "handicap": "1",
+            "market": "had",
+            "marketCode": "HAD",
+            "marketName": "胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": "2026-09-26T02:45:00+08:00",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "负",
+            "probability": 72.31519381271094,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "负",
+                "probability": 72.31519381271094,
+                "odd": 1.2
+              }
+            ]
+          }
+        ],
+        "passName": "3串1",
+        "combinedOdd": 0,
+        "estimatedProbability": 0.31126231009243394,
+        "betCount": 1,
+        "stake": 2,
+        "minWinningReturn": 4.327680000000001,
+        "maxWinningReturn": 4.327680000000001,
+        "minWinningProfit": 2.327680000000001,
+        "maxWinningProfit": 2.327680000000001,
+        "theoreticalReturn": 4.327680000000001
+      },
+      {
+        "id": "result-mixed-4",
+        "title": "赛果混合4串1",
+        "rule": "胜平负/让球胜平负 · 4串1",
+        "status": "pending",
+        "items": [
+          {
+            "matchId": "周五003",
+            "officialMatchId": "2041686",
+            "salesDate": "2026-09-25",
+            "matchDate": "2026-09-25",
+            "kickoffAt": "2026-09-25T18:00:00+08:00",
+            "sourceFetchedAt": "2026-09-25T09:02:44.696Z",
+            "matchStatus": "Selling",
+            "league": "国际友谊",
+            "home": "澳大利亚",
+            "away": "巴西",
+            "handicap": "1",
+            "market": "had",
+            "marketCode": "HAD",
+            "marketName": "胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": "2026-09-25T18:00:00+08:00",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "负",
+            "probability": 77.26026689263726,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "负",
+                "probability": 77.26026689263726,
+                "odd": 1.12
+              }
+            ]
+          },
+          {
+            "matchId": "周五008",
+            "officialMatchId": "2041691",
+            "salesDate": "2026-09-25",
+            "matchDate": "2026-09-26",
+            "kickoffAt": "2026-09-26T02:45:00+08:00",
+            "sourceFetchedAt": "2026-09-25T09:02:44.696Z",
+            "matchStatus": "Selling",
+            "league": "欧国联",
+            "home": "意大利",
+            "away": "比利时",
+            "handicap": "-1",
+            "market": "hhad",
+            "marketCode": "HHAD",
+            "marketName": "让球胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": "2026-09-26T02:45:00+08:00",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "让负",
+            "probability": 55.710977390293046,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "让负",
+                "probability": 55.710977390293046,
+                "odd": 1.61
+              }
+            ]
+          },
+          {
+            "matchId": "周五011",
+            "officialMatchId": "2041694",
+            "salesDate": "2026-09-25",
+            "matchDate": "2026-09-26",
+            "kickoffAt": "2026-09-26T02:45:00+08:00",
+            "sourceFetchedAt": "2026-09-25T09:02:44.696Z",
+            "matchStatus": "Selling",
+            "league": "欧国联",
+            "home": "土耳其",
+            "away": "法国",
+            "handicap": "1",
+            "market": "had",
+            "marketCode": "HAD",
+            "marketName": "胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": "2026-09-26T02:45:00+08:00",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "负",
+            "probability": 72.31519381271094,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "负",
+                "probability": 72.31519381271094,
+                "odd": 1.2
+              }
+            ]
+          },
+          {
+            "matchId": "周五012",
+            "officialMatchId": "2041695",
+            "salesDate": "2026-09-25",
+            "matchDate": "2026-09-26",
+            "kickoffAt": "2026-09-26T02:45:00+08:00",
+            "sourceFetchedAt": "2026-09-25T09:02:44.696Z",
+            "matchStatus": "Selling",
+            "league": "欧国联",
+            "home": "瑞典",
+            "away": "罗马尼亚",
+            "handicap": "-1",
+            "market": "had",
+            "marketCode": "HAD",
+            "marketName": "胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": "2026-09-26T02:45:00+08:00",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "胜",
+            "probability": 68.07856635885675,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "胜",
+                "probability": 68.07856635885675,
+                "odd": 1.31
+              }
+            ]
+          }
+        ],
+        "passName": "4串1",
+        "combinedOdd": 0,
+        "estimatedProbability": 0.2119029183263881,
+        "betCount": 1,
+        "stake": 2,
+        "minWinningReturn": 5.669260800000002,
+        "maxWinningReturn": 5.669260800000002,
+        "minWinningProfit": 3.6692608000000018,
+        "maxWinningProfit": 3.6692608000000018,
+        "theoreticalReturn": 5.669260800000002
+      },
+      {
+        "id": "result-mixed-5",
+        "title": "赛果混合5串1",
+        "rule": "胜平负/让球胜平负 · 5串1",
+        "status": "pending",
+        "items": [
+          {
+            "matchId": "周五003",
+            "officialMatchId": "2041686",
+            "salesDate": "2026-09-25",
+            "matchDate": "2026-09-25",
+            "kickoffAt": "2026-09-25T18:00:00+08:00",
+            "sourceFetchedAt": "2026-09-25T09:02:44.696Z",
+            "matchStatus": "Selling",
+            "league": "国际友谊",
+            "home": "澳大利亚",
+            "away": "巴西",
+            "handicap": "1",
+            "market": "had",
+            "marketCode": "HAD",
+            "marketName": "胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": "2026-09-25T18:00:00+08:00",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "负",
+            "probability": 77.26026689263726,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "负",
+                "probability": 77.26026689263726,
+                "odd": 1.12
+              }
+            ]
+          },
+          {
+            "matchId": "周五008",
+            "officialMatchId": "2041691",
+            "salesDate": "2026-09-25",
+            "matchDate": "2026-09-26",
+            "kickoffAt": "2026-09-26T02:45:00+08:00",
+            "sourceFetchedAt": "2026-09-25T09:02:44.696Z",
+            "matchStatus": "Selling",
+            "league": "欧国联",
+            "home": "意大利",
+            "away": "比利时",
+            "handicap": "-1",
+            "market": "hhad",
+            "marketCode": "HHAD",
+            "marketName": "让球胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": "2026-09-26T02:45:00+08:00",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "让负",
+            "probability": 55.710977390293046,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "让负",
+                "probability": 55.710977390293046,
+                "odd": 1.61
+              }
+            ]
+          },
+          {
+            "matchId": "周五010",
+            "officialMatchId": "2041693",
+            "salesDate": "2026-09-25",
+            "matchDate": "2026-09-26",
+            "kickoffAt": "2026-09-26T02:45:00+08:00",
+            "sourceFetchedAt": "2026-09-25T09:02:44.696Z",
+            "matchStatus": "Selling",
+            "league": "欧国联",
+            "home": "波兰",
+            "away": "波黑",
+            "handicap": "-1",
+            "market": "had",
+            "marketCode": "HAD",
+            "marketName": "胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": "2026-09-26T02:45:00+08:00",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "胜",
+            "probability": 60.961832106203886,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "胜",
+                "probability": 60.961832106203886,
+                "odd": 1.43
+              }
+            ]
+          },
+          {
+            "matchId": "周五011",
+            "officialMatchId": "2041694",
+            "salesDate": "2026-09-25",
+            "matchDate": "2026-09-26",
+            "kickoffAt": "2026-09-26T02:45:00+08:00",
+            "sourceFetchedAt": "2026-09-25T09:02:44.696Z",
+            "matchStatus": "Selling",
+            "league": "欧国联",
+            "home": "土耳其",
+            "away": "法国",
+            "handicap": "1",
+            "market": "had",
+            "marketCode": "HAD",
+            "marketName": "胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": "2026-09-26T02:45:00+08:00",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "负",
+            "probability": 72.31519381271094,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "负",
+                "probability": 72.31519381271094,
+                "odd": 1.2
+              }
+            ]
+          },
+          {
+            "matchId": "周五012",
+            "officialMatchId": "2041695",
+            "salesDate": "2026-09-25",
+            "matchDate": "2026-09-26",
+            "kickoffAt": "2026-09-26T02:45:00+08:00",
+            "sourceFetchedAt": "2026-09-25T09:02:44.696Z",
+            "matchStatus": "Selling",
+            "league": "欧国联",
+            "home": "瑞典",
+            "away": "罗马尼亚",
+            "handicap": "-1",
+            "market": "had",
+            "marketCode": "HAD",
+            "marketName": "胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": "2026-09-26T02:45:00+08:00",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "胜",
+            "probability": 68.07856635885675,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "胜",
+                "probability": 68.07856635885675,
+                "odd": 1.31
+              }
+            ]
+          }
+        ],
+        "passName": "5串1",
+        "combinedOdd": 0,
+        "estimatedProbability": 0.12917990129827903,
+        "betCount": 1,
+        "stake": 2,
+        "minWinningReturn": 8.107042944000002,
+        "maxWinningReturn": 8.107042944000002,
+        "minWinningProfit": 6.107042944000002,
+        "maxWinningProfit": 6.107042944000002,
+        "theoreticalReturn": 8.107042944000002
+      },
+      {
+        "id": "had-safe-2",
+        "title": "胜平负稳健2串1",
+        "rule": "每场首选≥50% · 2串1",
+        "status": "pending",
+        "items": [
+          {
+            "matchId": "周五003",
+            "officialMatchId": "2041686",
+            "salesDate": "2026-09-25",
+            "matchDate": "2026-09-25",
+            "kickoffAt": "2026-09-25T18:00:00+08:00",
+            "sourceFetchedAt": "2026-09-25T09:02:44.696Z",
+            "matchStatus": "Selling",
+            "league": "国际友谊",
+            "home": "澳大利亚",
+            "away": "巴西",
+            "handicap": "1",
+            "market": "had",
+            "marketCode": "HAD",
+            "marketName": "胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": "2026-09-25T18:00:00+08:00",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "负",
+            "probability": 77.26026689263726,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "负",
+                "probability": 77.26026689263726,
+                "odd": 1.12
+              }
+            ]
+          },
+          {
+            "matchId": "周五011",
+            "officialMatchId": "2041694",
+            "salesDate": "2026-09-25",
+            "matchDate": "2026-09-26",
+            "kickoffAt": "2026-09-26T02:45:00+08:00",
+            "sourceFetchedAt": "2026-09-25T09:02:44.696Z",
+            "matchStatus": "Selling",
+            "league": "欧国联",
+            "home": "土耳其",
+            "away": "法国",
+            "handicap": "1",
+            "market": "had",
+            "marketCode": "HAD",
+            "marketName": "胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": "2026-09-26T02:45:00+08:00",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "负",
+            "probability": 72.31519381271094,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "负",
+                "probability": 72.31519381271094,
+                "odd": 1.2
+              }
+            ]
+          }
+        ],
+        "passName": "2串1",
+        "combinedOdd": 0,
+        "estimatedProbability": 0.5587091174362838,
+        "betCount": 1,
+        "stake": 2,
+        "minWinningReturn": 2.688,
+        "maxWinningReturn": 2.688,
+        "minWinningProfit": 0.6880000000000002,
+        "maxWinningProfit": 0.6880000000000002,
+        "theoreticalReturn": 2.688
+      },
+      {
+        "id": "tenfold-safe-2",
+        "title": "10倍稳健 A",
+        "rule": "目标净盈利约20元 · 2串1",
+        "status": "pending",
+        "items": [
+          {
+            "matchId": "周五006",
+            "officialMatchId": "2041689",
+            "salesDate": "2026-09-25",
+            "matchDate": "2026-09-26",
+            "kickoffAt": "2026-09-26T00:00:00+08:00",
+            "sourceFetchedAt": "2026-09-25T09:02:44.696Z",
+            "matchStatus": "Selling",
+            "league": "欧国联",
+            "home": "格鲁吉亚",
+            "away": "北爱尔兰",
+            "handicap": "-1",
+            "market": "halfFull",
+            "marketCode": "HAFU",
+            "marketName": "半全场",
+            "maxPass": 4,
+            "allowedPassCounts": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "cutoffAt": "2026-09-26T00:00:00+08:00",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "胜胜",
+            "probability": 31.949662546410952,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "胜胜",
+                "probability": 31.949662546410952,
+                "odd": 2.8
+              }
+            ]
+          },
+          {
+            "matchId": "周五007",
+            "officialMatchId": "2041690",
+            "salesDate": "2026-09-25",
+            "matchDate": "2026-09-26",
+            "kickoffAt": "2026-09-26T00:00:00+08:00",
+            "sourceFetchedAt": "2026-09-25T09:02:44.696Z",
+            "matchStatus": "Selling",
+            "league": "欧国联",
+            "home": "亚美尼亚",
+            "away": "拉脱维亚",
+            "handicap": "-1",
+            "market": "halfFull",
+            "marketCode": "HAFU",
+            "marketName": "半全场",
+            "maxPass": 4,
+            "allowedPassCounts": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "cutoffAt": "2026-09-26T00:00:00+08:00",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "胜胜",
+            "probability": 32.12910649813859,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "胜胜",
+                "probability": 32.12910649813859,
+                "odd": 2.58
+              }
+            ]
+          }
+        ],
+        "passName": "2串1",
+        "combinedOdd": 0,
+        "estimatedProbability": 0.10265141105332272,
+        "betCount": 1,
+        "stake": 2,
+        "minWinningReturn": 14.447999999999999,
+        "maxWinningReturn": 14.447999999999999,
+        "minWinningProfit": 12.447999999999999,
+        "maxWinningProfit": 12.447999999999999,
+        "theoreticalReturn": 14.447999999999999
+      },
+      {
+        "id": "tenfold-safe-3",
+        "title": "10倍稳健 B",
+        "rule": "目标净盈利约20元 · 3串1",
+        "status": "pending",
+        "items": [
+          {
+            "matchId": "周五005",
+            "officialMatchId": "2041688",
+            "salesDate": "2026-09-25",
+            "matchDate": "2026-09-25",
+            "kickoffAt": "2026-09-25T18:30:00+08:00",
+            "sourceFetchedAt": "2026-09-25T09:02:44.696Z",
+            "matchStatus": "Selling",
+            "league": "亚运女足",
+            "home": "韩国女",
+            "away": "乌兹别女",
+            "handicap": "-3",
+            "market": "hhad",
+            "marketCode": "HHAD",
+            "marketName": "让球胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": "2026-09-25T18:30:00+08:00",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "让负",
+            "probability": 47.585945193235275,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "让负",
+                "probability": 47.585945193235275,
+                "odd": 2.07
+              }
+            ]
+          },
+          {
+            "matchId": "周五006",
+            "officialMatchId": "2041689",
+            "salesDate": "2026-09-25",
+            "matchDate": "2026-09-26",
+            "kickoffAt": "2026-09-26T00:00:00+08:00",
+            "sourceFetchedAt": "2026-09-25T09:02:44.696Z",
+            "matchStatus": "Selling",
+            "league": "欧国联",
+            "home": "格鲁吉亚",
+            "away": "北爱尔兰",
+            "handicap": "-1",
+            "market": "hhad",
+            "marketCode": "HHAD",
+            "marketName": "让球胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": "2026-09-26T00:00:00+08:00",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "让负",
+            "probability": 47.482345240509304,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "让负",
+                "probability": 47.482345240509304,
+                "odd": 1.95
+              }
+            ]
+          },
+          {
+            "matchId": "周五010",
+            "officialMatchId": "2041693",
+            "salesDate": "2026-09-25",
+            "matchDate": "2026-09-26",
+            "kickoffAt": "2026-09-26T02:45:00+08:00",
+            "sourceFetchedAt": "2026-09-25T09:02:44.696Z",
+            "matchStatus": "Selling",
+            "league": "欧国联",
+            "home": "波兰",
+            "away": "波黑",
+            "handicap": "-1",
+            "market": "hhad",
+            "marketCode": "HHAD",
+            "marketName": "让球胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": "2026-09-26T02:45:00+08:00",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "让负",
+            "probability": 39.03816789379604,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "让负",
+                "probability": 39.03816789379604,
+                "odd": 2.35
+              }
+            ]
+          }
+        ],
+        "passName": "3串1",
+        "combinedOdd": 0,
+        "estimatedProbability": 0.08820643891349456,
+        "betCount": 1,
+        "stake": 2,
+        "minWinningReturn": 18.971549999999997,
+        "maxWinningReturn": 18.971549999999997,
+        "minWinningProfit": 16.971549999999997,
+        "maxWinningProfit": 16.971549999999997,
+        "theoreticalReturn": 18.971549999999997
+      },
+      {
+        "id": "tenfold-safe-4",
+        "title": "10倍稳健 C",
+        "rule": "目标净盈利约20元 · 4串1",
+        "status": "pending",
+        "items": [
+          {
+            "matchId": "周五005",
+            "officialMatchId": "2041688",
+            "salesDate": "2026-09-25",
+            "matchDate": "2026-09-25",
+            "kickoffAt": "2026-09-25T18:30:00+08:00",
+            "sourceFetchedAt": "2026-09-25T09:02:44.696Z",
+            "matchStatus": "Selling",
+            "league": "亚运女足",
+            "home": "韩国女",
+            "away": "乌兹别女",
+            "handicap": "-3",
+            "market": "hhad",
+            "marketCode": "HHAD",
+            "marketName": "让球胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": "2026-09-25T18:30:00+08:00",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "让负",
+            "probability": 47.585945193235275,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "让负",
+                "probability": 47.585945193235275,
+                "odd": 2.07
+              }
+            ]
+          },
+          {
+            "matchId": "周五007",
+            "officialMatchId": "2041690",
+            "salesDate": "2026-09-25",
+            "matchDate": "2026-09-26",
+            "kickoffAt": "2026-09-26T00:00:00+08:00",
+            "sourceFetchedAt": "2026-09-25T09:02:44.696Z",
+            "matchStatus": "Selling",
+            "league": "欧国联",
+            "home": "亚美尼亚",
+            "away": "拉脱维亚",
+            "handicap": "-1",
+            "market": "hhad",
+            "marketCode": "HHAD",
+            "marketName": "让球胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": "2026-09-26T00:00:00+08:00",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "让负",
+            "probability": 47.45891883802165,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "让负",
+                "probability": 47.45891883802165,
+                "odd": 2
+              }
+            ]
+          },
+          {
+            "matchId": "周五011",
+            "officialMatchId": "2041694",
+            "salesDate": "2026-09-25",
+            "matchDate": "2026-09-26",
+            "kickoffAt": "2026-09-26T02:45:00+08:00",
+            "sourceFetchedAt": "2026-09-25T09:02:44.696Z",
+            "matchStatus": "Selling",
+            "league": "欧国联",
+            "home": "土耳其",
+            "away": "法国",
+            "handicap": "1",
+            "market": "had",
+            "marketCode": "HAD",
+            "marketName": "胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": "2026-09-26T02:45:00+08:00",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "负",
+            "probability": 72.31519381271094,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "负",
+                "probability": 72.31519381271094,
+                "odd": 1.2
+              }
+            ]
+          },
+          {
+            "matchId": "周五013",
+            "officialMatchId": "2041696",
+            "salesDate": "2026-09-25",
+            "matchDate": "2026-09-26",
+            "kickoffAt": "2026-09-26T03:00:00+08:00",
+            "sourceFetchedAt": "2026-09-25T09:02:44.696Z",
+            "matchStatus": "Selling",
+            "league": "荷乙",
+            "home": "多德勒支",
+            "away": "阿尔梅勒",
+            "handicap": "+1",
+            "market": "hhad",
+            "marketCode": "HHAD",
+            "marketName": "让球胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": "2026-09-26T03:00:00+08:00",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "让胜",
+            "probability": 52.75363447749387,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "让胜",
+                "probability": 52.75363447749387,
+                "odd": 1.74
+              }
+            ]
+          }
+        ],
+        "passName": "4串1",
+        "combinedOdd": 0,
+        "estimatedProbability": 0.0861546020467893,
+        "betCount": 1,
+        "stake": 2,
+        "minWinningReturn": 17.288639999999997,
+        "maxWinningReturn": 17.288639999999997,
+        "minWinningProfit": 15.288639999999997,
+        "maxWinningProfit": 15.288639999999997,
+        "theoreticalReturn": 17.288639999999997
+      },
+      {
+        "id": "total-adjacent-double-2",
+        "title": "相邻进球双选2串1",
+        "rule": "每场相邻2个进球数 · 2串1",
+        "status": "pending",
+        "items": [
+          {
+            "matchId": "周五006",
+            "officialMatchId": "2041689",
+            "salesDate": "2026-09-25",
+            "matchDate": "2026-09-26",
+            "kickoffAt": "2026-09-26T00:00:00+08:00",
+            "sourceFetchedAt": "2026-09-25T09:02:44.696Z",
+            "matchStatus": "Selling",
+            "league": "欧国联",
+            "home": "格鲁吉亚",
+            "away": "北爱尔兰",
+            "handicap": "-1",
+            "market": "total",
+            "marketCode": "TTG",
+            "marketName": "总进球数",
+            "maxPass": 6,
+            "allowedPassCounts": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "cutoffAt": "2026-09-26T00:00:00+08:00",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "2球 / 1球",
+            "probability": 48.753985369683235,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "2球",
+                "probability": 26.338359912357614,
+                "odd": 3.3
+              },
+              {
+                "pick": "1球",
+                "probability": 22.41562545732562,
+                "odd": 4.3
+              }
+            ]
+          },
+          {
+            "matchId": "周五007",
+            "officialMatchId": "2041690",
+            "salesDate": "2026-09-25",
+            "matchDate": "2026-09-26",
+            "kickoffAt": "2026-09-26T00:00:00+08:00",
+            "sourceFetchedAt": "2026-09-25T09:02:44.696Z",
+            "matchStatus": "Selling",
+            "league": "欧国联",
+            "home": "亚美尼亚",
+            "away": "拉脱维亚",
+            "handicap": "-1",
+            "market": "total",
+            "marketCode": "TTG",
+            "marketName": "总进球数",
+            "maxPass": 6,
+            "allowedPassCounts": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "cutoffAt": "2026-09-26T00:00:00+08:00",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "2球 / 3球",
+            "probability": 47.05975770760657,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "2球",
+                "probability": 25.904453784003614,
+                "odd": 3.2
+              },
+              {
+                "pick": "3球",
+                "probability": 21.155303923602958,
+                "odd": 3.6
+              }
+            ]
+          }
+        ],
+        "passName": "2串1",
+        "combinedOdd": 0,
+        "estimatedProbability": 0.22943507387774886,
+        "betCount": 4,
+        "stake": 8,
+        "minWinningReturn": 21.12,
+        "maxWinningReturn": 30.96,
+        "minWinningProfit": 13.120000000000001,
+        "maxWinningProfit": 22.96,
+        "theoreticalReturn": 30.96
+      },
+      {
+        "id": "half-full-double-3",
+        "title": "半全场双选3串1",
+        "rule": "每场覆盖2个走势 · 3串1",
+        "status": "pending",
+        "items": [
+          {
+            "matchId": "周五005",
+            "officialMatchId": "2041688",
+            "salesDate": "2026-09-25",
+            "matchDate": "2026-09-25",
+            "kickoffAt": "2026-09-25T18:30:00+08:00",
+            "sourceFetchedAt": "2026-09-25T09:02:44.696Z",
+            "matchStatus": "Selling",
+            "league": "亚运女足",
+            "home": "韩国女",
+            "away": "乌兹别女",
+            "handicap": "-3",
+            "market": "halfFull",
+            "marketCode": "HAFU",
+            "marketName": "半全场",
+            "maxPass": 4,
+            "allowedPassCounts": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "cutoffAt": "2026-09-25T18:30:00+08:00",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "胜胜 / 平胜",
+            "probability": 85.32478181988391,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "胜胜",
+                "probability": 67.45242028939302,
+                "odd": 1.23
+              },
+              {
+                "pick": "平胜",
+                "probability": 17.872361530490892,
+                "odd": 4.65
+              }
+            ]
+          },
+          {
+            "matchId": "周五010",
+            "officialMatchId": "2041693",
+            "salesDate": "2026-09-25",
+            "matchDate": "2026-09-26",
+            "kickoffAt": "2026-09-26T02:45:00+08:00",
+            "sourceFetchedAt": "2026-09-25T09:02:44.696Z",
+            "matchStatus": "Selling",
+            "league": "欧国联",
+            "home": "波兰",
+            "away": "波黑",
+            "handicap": "-1",
+            "market": "halfFull",
+            "marketCode": "HAFU",
+            "marketName": "半全场",
+            "maxPass": 4,
+            "allowedPassCounts": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "cutoffAt": "2026-09-26T02:45:00+08:00",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "胜胜 / 平胜",
+            "probability": 58.25101143370273,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "胜胜",
+                "probability": 38.88881145580798,
+                "odd": 2.2
+              },
+              {
+                "pick": "平胜",
+                "probability": 19.362199977894743,
+                "odd": 4.3
+              }
+            ]
+          },
+          {
+            "matchId": "周五013",
+            "officialMatchId": "2041696",
+            "salesDate": "2026-09-25",
+            "matchDate": "2026-09-26",
+            "kickoffAt": "2026-09-26T03:00:00+08:00",
+            "sourceFetchedAt": "2026-09-25T09:02:44.696Z",
+            "matchStatus": "Selling",
+            "league": "荷乙",
+            "home": "多德勒支",
+            "away": "阿尔梅勒",
+            "handicap": "1",
+            "market": "halfFull",
+            "marketCode": "HAFU",
+            "marketName": "半全场",
+            "maxPass": 4,
+            "allowedPassCounts": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "cutoffAt": "2026-09-26T03:00:00+08:00",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "负负 / 胜胜",
+            "probability": 48.164118618737604,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "负负",
+                "probability": 29.66209067191583,
+                "odd": 3.2
+              },
+              {
+                "pick": "胜胜",
+                "probability": 18.502027946821773,
+                "odd": 4.7
+              }
+            ]
+          }
+        ],
+        "passName": "3串1",
+        "combinedOdd": 0,
+        "estimatedProbability": 0.23938794374501515,
+        "betCount": 8,
+        "stake": 16,
+        "minWinningReturn": 17.3184,
+        "maxWinningReturn": 187.953,
+        "minWinningProfit": 1.3184000000000005,
+        "maxWinningProfit": 171.953,
+        "theoreticalReturn": 187.953
+      }
+    ]
+  }
+}
