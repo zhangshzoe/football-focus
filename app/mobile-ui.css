@@ -124,7 +124,7 @@ button,a,select,input{touch-action:manipulation}
   .forecast-view-tabs,.archive-analysis-tabs,.archive-view-tabs{gap:6px!important;padding-bottom:5px!important;scrollbar-width:none}
   .forecast-view-tabs::-webkit-scrollbar,.archive-analysis-tabs::-webkit-scrollbar,.archive-view-tabs::-webkit-scrollbar,.model-health-grid::-webkit-scrollbar,.purchase-plan-grid::-webkit-scrollbar{display:none}
   .forecast-view-tabs button,.archive-analysis-tabs button,.archive-view-tabs button{min-width:104px!important;padding-inline:13px!important}
-  .market-forecast-wrap{overflow:hidden auto!important;border:1px solid #d4e6ef!important;border-radius:11px!important;background:#fff!important;box-shadow:0 5px 16px rgba(26,83,115,.06)!important}
+  .market-forecast-wrap{overflow-x:auto!important;overflow-y:hidden!important;touch-action:pan-x pan-y;border:1px solid #d4e6ef!important;border-radius:11px!important;background:#fff!important;box-shadow:0 5px 16px rgba(26,83,115,.06)!important}
   .market-forecast-table th,.market-forecast-table td{font-size:12px!important;line-height:1.45!important}
   .market-forecast-wrap:after{bottom:10px!important;font-size:10px!important}
 
