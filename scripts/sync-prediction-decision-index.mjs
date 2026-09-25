@@ -7,11 +7,7 @@ const baseUrl=process.env.FOOTBALL_FOCUS_URL||"http://127.0.0.1:3000";
 const response=await fetch(`${baseUrl}/api/prediction-snapshots`,{cache:"no-store"});
 const data=await response.json().catch(()=>({}));
 if(!response.ok)throw new Error(data.error||"盘后快照读取失败");
-const formalSourceSnapshots=(data.snapshots||[]).filter(snapshot=>snapshot.storageOrigin!=="migrated-browser");
-const days=formalSourceSnapshots.map(snapshot=>({date:snapshot.date,snapshotId:snapshot.snapshotId,matchCount:snapshot.matches?.length||0,matches:(snapshot.matches||[]).map(match=>({officialMatchId:match.officialMatchId,id:match.id,home:match.home,away:match.away,kickoffAt:match.kickoffAt,decisionTargetAt:match.decisionTargetAt,selectedSnapshotId:match.selectedSnapshotId,selectedScheduledAt:match.selectedScheduledAt,selectedCapturedAt:match.selectedCapturedAt,decisionPolicy:match.decisionPolicy}))}));
-const output={schemaVersion:1,policy:"latest_not_after_official_target_v1",generatedAt:new Date().toISOString(),rules:{weekday:"22:00及以后统一21:30，否则开赛前30分钟",weekend:"23:00及以后统一22:30，否则开赛前30分钟"},days};
-const directory=join(process.cwd(),"data","analysis");await mkdir(directory,{recursive:true});
-const path=join(directory,"prediction-decision-index.json");await writeFile(path,`${JSON.stringify(output,null,2)}\n`,"utf8");
+const formalSourceSnapshots=(data.snapshots||[]).filter(snapshot=>snapshot.storageOrigin==="server");
 const bundlePath=join(process.cwd(),"data","generated-prediction-snapshot-index.json");
 const migrationPath=join(process.cwd(),"data","migrated-browser-prediction-snapshots.json");
 const migration=JSON.parse(await readFile(migrationPath,"utf8").catch(()=>"{\"snapshots\":[]}"));
@@ -34,6 +30,14 @@ for(const name of await readdir(predictionDirectory).catch(()=>[])){
  }catch{/* 损坏文件不会进入线上索引。 */}
 }
 const formalSnapshots=formalSourceSnapshots.map(snapshot=>({...snapshot,matches:(snapshot.matches||[]).filter(match=>allowedPredictionIds.has(String(match.selectedSnapshotId||"")))})).filter(snapshot=>snapshot.matches.length);
+const days=formalSnapshots.map(snapshot=>({date:snapshot.date,snapshotId:snapshot.snapshotId,matchCount:snapshot.matches.length,matches:snapshot.matches.map(match=>({officialMatchId:match.officialMatchId,id:match.id,home:match.home,away:match.away,kickoffAt:match.kickoffAt,decisionTargetAt:match.decisionTargetAt,selectedSnapshotId:match.selectedSnapshotId,selectedScheduledAt:match.selectedScheduledAt,selectedCapturedAt:match.selectedCapturedAt,decisionPolicy:match.decisionPolicy}))}));
+const directory=join(process.cwd(),"data","analysis");await mkdir(directory,{recursive:true});
+const path=join(directory,"prediction-decision-index.json");
+const previousAnalysis=JSON.parse(await readFile(path,"utf8").catch(()=>"null"));
+const analysisBody={schemaVersion:1,policy:"latest_not_after_official_target_v1",rules:{weekday:"22:00及以后统一21:30，否则开赛前30分钟",weekend:"23:00及以后统一22:30，否则开赛前30分钟"},days};
+const analysisUnchanged=previousAnalysis&&JSON.stringify({...previousAnalysis,generatedAt:undefined})===JSON.stringify({...analysisBody,generatedAt:undefined});
+const output={...analysisBody,generatedAt:analysisUnchanged?previousAnalysis.generatedAt:new Date().toISOString()};
+if(!analysisUnchanged)await writeFile(path,`${JSON.stringify(output,null,2)}\n`,"utf8");
 const snapshotKey=snapshot=>`${snapshot.date}|${snapshot.sourceFetchedAt}|${snapshot.predictionId||"legacy"}`;
 const snapshots=Array.from(new Map([...formalSnapshots,...migratedSnapshots].map(snapshot=>[snapshotKey(snapshot),snapshot])).values()).sort((left,right)=>String(right.capturedAt||right.sourceFetchedAt).localeCompare(String(left.capturedAt||left.sourceFetchedAt)));
 const allowedPurchaseIds=new Set(),purchaseDirectory=join(process.cwd(),"data","purchase-plan-snapshots");
@@ -43,6 +47,9 @@ for(const name of await readdir(purchaseDirectory).catch(()=>[])){
  try{const record=JSON.parse(await readFile(join(purchaseDirectory,name),"utf8"));if(record.snapshotId)allowedPurchaseIds.add(String(record.snapshotId))}catch{/* 损坏文件不会进入线上索引。 */}
 }
 const purchasePlanSnapshots=(Array.isArray(data.purchasePlanSnapshots)?data.purchasePlanSnapshots:[]).filter(snapshot=>allowedPurchaseIds.has(String(snapshot.snapshotId||"")));
-const bundle={schemaVersion:2,generatedAt:new Date().toISOString(),formalSnapshotCount:formalSnapshots.length,migratedSnapshotCount:migratedSnapshots.length,snapshots,resultCache,purchasePlanSnapshots};
-await writeFile(bundlePath,`${JSON.stringify(bundle)}\n`,"utf8");
+const previousBundle=JSON.parse(await readFile(bundlePath,"utf8").catch(()=>"null"));
+const bundleBody={schemaVersion:2,formalSnapshotCount:formalSnapshots.length,migratedSnapshotCount:migratedSnapshots.length,snapshots,resultCache,purchasePlanSnapshots};
+const bundleUnchanged=previousBundle&&JSON.stringify({...previousBundle,generatedAt:undefined})===JSON.stringify({...bundleBody,generatedAt:undefined});
+const bundle={...bundleBody,generatedAt:bundleUnchanged?previousBundle.generatedAt:new Date().toISOString()};
+if(!bundleUnchanged)await writeFile(bundlePath,`${JSON.stringify(bundle)}\n`,"utf8");
 console.log(JSON.stringify({status:"saved",path,bundlePath,days:days.length,matches:days.reduce((sum,day)=>sum+day.matchCount,0),bundleBytes:Buffer.byteLength(JSON.stringify(bundle))}));

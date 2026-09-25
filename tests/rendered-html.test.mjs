@@ -476,7 +476,8 @@ test("bundled Site history includes the verified localhost migration without cha
  assert.match(api,/verifiedResultCache/);
  assert.match(archive,/setResultCache\(\{\.\.\.remote\.resultCache,\.\.\.localResults,\.\.\.remote\.resultCorrections\}\)/);
  assert.match(sync,/formalSourceSnapshots/);
- assert.match(sync,/storageOrigin!=="migrated-browser"/);
+ assert.match(sync,/storageOrigin==="server"/);
+ assert.match(sync,/allowedPredictionIds\.has/);
 });
 
 test("September 23 and 24 recovery keeps provenance and never invents full forecasts",async()=>{
