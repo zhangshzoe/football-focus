@@ -38,6 +38,7 @@ yarn-error.log*
 /.wrangler/
 /outputs/
 /work/
+/.sites-runtime/
 /.npm-cache/
 *.log
 *.tsbuildinfo
