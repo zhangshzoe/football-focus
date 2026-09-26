@@ -177,7 +177,7 @@ test("production match board has explicit official-data states and no demo fallb
  assert.match(page,/暂未开售或暂无官方赔率/);
  assert.match(page,/全部赔率选择和新预测已暂停/);
  assert.match(page,/internalError instanceof OfficialAccessBlockedError/);
- assert.match(page,/刷新不能绕过数据源限制/);
+ assert.match(page,/刷新无法解除访问限制/);
  assert.doesNotMatch(page,/liveMatches\.length\?liveMatches:demoMatches/);
  assert.doesNotMatch(page,/demoMatches|比赛研究样例/);
  assert.doesNotMatch(page,/const marketOdds:Record<Market,number\[\]>/);
