@@ -54,6 +54,7 @@ const matchDateLabel=(date:string)=>{
 };
 const recordDate=(record:Rec)=>record.date||(record.id>1_000_000_000_000?new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date(record.id)):"");
 const SPORTTERY_CACHE_KEY="ff-sporttery-official-cache-v1";
+class OfficialAccessBlockedError extends Error {}
 const matchCacheKey=(match:Match)=>`${match.salesDate||match.matchDate||""}:${match.officialMatchId||match.matchId||match.id}`;
 const mergeOfficialMatches=(current:Match[],incoming:Match[])=>{
  const merged=new Map(current.map(match=>[matchCacheKey(match),match]));
@@ -100,9 +101,13 @@ export default function Home(){
   try{
    const response=await fetch(`/api/sporttery${repair?"?repairMissing=1":""}`,{cache:"no-store"}),raw=await response.text();
    let data:any={};try{data=raw?JSON.parse(raw):{}}catch{throw new Error(`站点数据接口返回异常（HTTP ${response.status}）`)}
-   if(!response.ok)throw new Error(data.error||"官方数据读取失败");
+   if(!response.ok){
+    if(data.code==="OFFICIAL_ACCESS_BLOCKED")throw new OfficialAccessBlockedError(data.error||"官方数据源拒绝本站访问");
+    throw new Error(data.error||"官方数据读取失败");
+   }
    return data;
   }catch(internalError){
+   if(internalError instanceof OfficialAccessBlockedError)throw internalError;
    try{return await fetchOfficialSporttery({repair,serverHeaders:false,timeoutMs:12000})}
    catch(directError){throw new Error(`站点接口：${internalError instanceof Error?internalError.message:"读取失败"}；浏览器直连：${directError instanceof Error?directError.message:"读取失败"}`)}
   }
@@ -163,7 +168,7 @@ export default function Home(){
  return <main className={`view-${view}`}><div className="sky-shell"><header className="site-intro"><a className="brand" href="/matches"><span>球</span><span className="brand-copy"><b>竞彩研习室</b><small>理性分析 · 数据研究 · 提升认知</small></span></a><div className="top-utility"><a className="mobile-preview-link" href="/mobile-preview">手机预览</a><span className="weather" aria-label="天气装饰">☀ 24°C 晴</span><span className="avatar" aria-hidden="true">●</span></div></header><div className="topbar compact-nav"><nav><a className={view==="matches"?"active":""} href="/matches"><span aria-hidden="true">▣</span><b>今日比赛</b></a><a className={view==="predictions"?"active":""} href="/predictions"><span aria-hidden="true">◉</span><b>AI预测</b></a><a className={view==="market-predictions"?"active":""} href="/market-predictions"><span aria-hidden="true">◆</span><b>盘口预测</b></a><a className={view==="recommendations"?"active":""} href="/recommendations"><span aria-hidden="true">★</span><b>今日推荐</b></a><ArchiveNavLink/></nav></div></div>
  <section className="hero" id="top"><div><p className="eyebrow">PERSONAL FOOTBALL LAB</p><h1>先研究，再决定。</h1><p className="lede">把赛程、赔率和自己的判断放在同一个地方。这里不提供“稳胆”，只帮助你看清风险。</p></div><div className="budget-card"><div><span>本月娱乐预算</span><strong>¥ {budget}</strong></div><div className="progress"><i style={{width:`${Math.min(100,invested/budget*100)}%`}}/></div><small>已记录 ¥{invested} · 剩余 ¥{Math.max(0,budget-invested)}</small></div></section>
  <section className="warning"><span>理性参与</span>彩票不是投资。请只使用能够完全承受损失的娱乐预算。比赛与赔率按需读取，不在本站保存。</section>
- {dataState==="stale"&&dataError&&<p className="data-fallback" role="alert">读取失败原因：{dataError}。请点击“刷新”重试；成功取得五种玩法的新数据前不会开放赔率选择。</p>}
+ {dataState==="stale"&&dataError&&<p className="data-fallback" role="alert">读取失败原因：{dataError}。{dataError.includes("HTTP 567")?"刷新不能绕过数据源限制；待取得授权或放行后再试。":"可点击“刷新”重试；"}成功取得官方新数据前不会开放赔率选择。</p>}
  <div className="match-repair-toolbar"><div><b>比赛缺失或玩法未补全？</b><span>补抓会重试官方五种玩法，并与当前列表合并，不会删除已经获取成功的比赛。</span></div><button type="button" onClick={()=>void repairMissingMatches()} disabled={dataLoading}>{dataLoading?"正在补抓…":"补抓缺失场次"}</button>{repairNotice&&<em className={repairNotice.startsWith("补抓失败")?"failed":"success"}>{repairNotice}</em>}</div>
  <TodayRecommendations/>
  <MarketPredictionTable rows={predictionRows} coverage={predictionCoverage} unavailableMatches={unavailablePredictions} loading={predictionLoading} error={predictionError} aiError={predictionAiError} fetchedAt={predictionMeta.fetchedAt} sourceUrl={predictionMeta.sourceUrl} aiProvider={predictionAiProvider} aiLoading={predictionAiLoading} onAiReview={reviewTodayWithAi} onRetryUnavailable={retryUnavailablePredictionData} retryingUnavailable={dataLoading||predictionLoading||predictionRepairing} retryMessage={repairNotice}/>

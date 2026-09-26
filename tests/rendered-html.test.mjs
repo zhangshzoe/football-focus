@@ -133,7 +133,7 @@ test("official markets never fall back to demo odds and tolerate independent poo
 
   globalThis.fetch=async()=>new Response("blocked",{status:567});
   response=await get();data=await response.json();
-  assert.equal(response.status,502);assert.match(data.error,/567（官方站点防护拦截/);
+  assert.equal(response.status,503);assert.equal(data.code,"OFFICIAL_ACCESS_BLOCKED");assert.match(data.error,/HTTP 567/);
  }finally{globalThis.fetch=originalFetch}
 });
 
@@ -176,6 +176,8 @@ test("production match board has explicit official-data states and no demo fallb
  assert.match(page,/const oddsFor=.*return null/);
  assert.match(page,/暂未开售或暂无官方赔率/);
  assert.match(page,/全部赔率选择和新预测已暂停/);
+ assert.match(page,/internalError instanceof OfficialAccessBlockedError/);
+ assert.match(page,/刷新不能绕过数据源限制/);
  assert.doesNotMatch(page,/liveMatches\.length\?liveMatches:demoMatches/);
  assert.doesNotMatch(page,/demoMatches|比赛研究样例/);
  assert.doesNotMatch(page,/const marketOdds:Record<Market,number\[\]>/);
