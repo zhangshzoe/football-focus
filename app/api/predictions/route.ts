@@ -377,3 +377,84 @@ export async function POST(request: Request) {
     return Response.json({error: error instanceof Error ? error.message : "赔率数据读取失败"}, {status: 502});
   }
 }
+
+// 仅供 AI 预测页研究。外围编号不是竞彩官方身份，这些记录不得进入选号、固定票或正式复盘。
+export async function GET() {
+  const issue = new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  try {
+    const raw = await fetchCompanyOdds(issue);
+    const fetchedAt = oddsDataFetchedAt || new Date().toISOString();
+    const now = Date.now();
+    const unavailable: Array<{displayId:string;home:string;away:string;reason:string}> = [];
+    const candidates = Array.from(new Map(raw.filter((match:any)=>/^周[一二三四五六日天]\d+/u.test(String(match.CC_ID||""))).map((match:any)=>[String(match.SOURCE_MATCH_ID||match.ID||""),match])).values()).slice(0,40);
+    const reports = candidates.flatMap((match:any)=>{
+      const externalMatchId = String(match.SOURCE_MATCH_ID||match.ID||"").trim();
+      const displayId = String(match.CC_ID||"").trim();
+      const home = String(match.HOST_NAME||"").trim(), away = String(match.GUEST_NAME||"").trim();
+      const timeText = String(match.MATCH_TIME||"").trim();
+      const validTime = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(timeText);
+      const kickoffAt = validTime ? timeText.replace(" ","T")+"+08:00" : "";
+      const kickoff = Date.parse(kickoffAt);
+      const reject=(reason:string)=>{unavailable.push({displayId,home,away,reason});return[]};
+      if(!externalMatchId||!home||!away||!Number.isFinite(kickoff))return reject("外围赛事身份或开赛时间缺失");
+      const issueStart=Date.parse(`${issue}T00:00:00+08:00`);
+      if(kickoff<issueStart||kickoff>=issueStart+48*60*60*1000)return reject("外围赛事不属于当前批次日期");
+      if(kickoff<=now)return[];
+      const companies:CompanyOdds[]=(Array.isArray(match.listOdds)?match.listOdds:[])
+        .filter((row:any)=>COMPANY_IDS.includes(Number(row.SOURCE_COMPANY_ID)))
+        .map((row:any)=>({
+          companyId:Number(row.SOURCE_COMPANY_ID),company:String(row.COMPANY_NAME||`公司 ${row.SOURCE_COMPANY_ID}`),
+          win:numeric(row.WIN),draw:numeric(row.SAME),lose:numeric(row.LOST),
+          handicap:numeric(row.HANDICAP),homePrice:numeric(row.HOST),awayPrice:numeric(row.GUEST),
+          total:numeric(row.DW_HANDICAP),overPrice:numeric(row.BIG),underPrice:numeric(row.SMALL),
+          firstWin:numeric(row.FIRST_WIN),firstDraw:numeric(row.FIRST_SAME),firstLose:numeric(row.FIRST_LOST),
+          firstHandicap:numeric(row.FIRST_HANDICAP),firstHomePrice:numeric(row.FIRST_HOST),firstAwayPrice:numeric(row.FIRST_GUEST),
+          firstTotal:numeric(row.DW_FIRST_HANDICAP),firstOverPrice:numeric(row.FIRST_BIG),firstUnderPrice:numeric(row.FIRST_SMALL),
+        })).filter((row:CompanyOdds)=>[row.win,row.draw,row.lose].every(value=>value>1));
+      const totalRows=companies.filter(row=>row.total>0&&row.overPrice>0&&row.underPrice>0);
+      const asianRows=companies.filter(row=>row.homePrice>0&&row.awayPrice>0);
+      if(companies.length<2||!totalRows.length||!asianRows.length)return reject("外围胜平负、亚洲盘或大小球盘口不足，未生成比分概率");
+      const externalRows=companies.map(row=>deVigDecimal([row.win,row.draw,row.lose]));
+      const rawProbabilities=normalizeProbabilities(marketMedian(externalRows,[1/3,1/3,1/3]));
+      const totalLine=median(totalRows.map(row=>row.total));
+      const handicap=median(asianRows.map(row=>row.handicap));
+      const asianHomeTarget=median(asianRows.map(row=>deVigHongKong(row.homePrice,row.awayPrice)[0]));
+      const firstHandicap=median(asianRows.map(row=>row.firstHandicap));
+      const firstAsianHomeTarget=median(asianRows.map(row=>deVigHongKong(row.firstHomePrice,row.firstAwayPrice)[0]));
+      const overTarget=median(totalRows.map(row=>deVigHongKong(row.overPrice,row.underPrice)[0]));
+      const modeled=modelScores(rawProbabilities,totalLine,handicap,asianHomeTarget,overTarget,null,[],null);
+      const derived=deriveMarkets(modeled.fullScoreDistribution,null);
+      const had=derived.hadProbabilities.map(point=>point.probability);
+      const direction=["主胜","平局","客胜"][had.indexOf(Math.max(...had))];
+      const spread=Math.max(...companies.map(row=>row.win))-Math.min(...companies.map(row=>row.win));
+      return [{
+        id:`external:${issue}:${externalMatchId}`,externalMatchId,externalDisplayId:displayId,
+        sourceIssue:issue,researchOnly:true,officialMappingStatus:"unmatched",marketEligibility:{},
+        league:String(match.LEAGUE_NAME_SIMPLY||""),kickoffAt,time:timeText,matchDate:timeText.slice(0,10),
+        home,away,matchStatus:"research_only",isMock:false,sourceUpdatedAt:fetchedAt,
+        companies,marketProbabilities:rawProbabilities.map(value=>value*100),
+        probabilities:{home:had[0],draw:had[1],away:had[2]},
+        consensus:{handicap,totalLine,agreement:companies.length===3&&spread<0.3&&modeled.fitError<0.03?"较一致":"有分歧"},
+        marketSignal:{
+          direction,strength:0,probabilityShifts:[0,0,0],fairOdds:had.map(value=>value>0?100/value:0),
+          hadEv:[],hhadEv:[],evThreshold:EV_THRESHOLD,institutionAction:"外围盘口仅供研究",handicapExpectation:"不代表竞彩固定让球",firstHandicap,handicapChange:handicap-firstHandicap,
+          narrative:"仅根据外围欧赔、亚洲盘和大小球建模；竞彩赛程、赔率、让球值及销售资格均未核验。",
+          officialOdds:[],officialHandicap:"",officialHhadOdds:[],officialHhadFair:[],modeledHhad:[],hhadAvailable:false,
+          modeledTotalGoals:derived.totalGoalProbabilities.map(point=>point.probability),modeledHalfFull:modeled.halfFullProbabilities,
+          asianHomeProbability:asianHomeTarget*100,asianAwayProbability:(1-asianHomeTarget)*100,asianMovement:(asianHomeTarget-firstAsianHomeTarget)*100,
+          overProbability:overTarget*100,fitAgreement:modeled.fitError<0.03?"外围盘口较一致":"外围盘口有分歧",
+          handicapMeaning:"外围亚洲盘仅供研究；没有官方让球值，不生成体彩让球结论。"
+        },
+        expectedGoals:{home:modeled.expectedGoals[0],away:modeled.expectedGoals[1]},
+        scores:modeled.scores,fullScoreDistribution:modeled.fullScoreDistribution,
+        hadProbabilities:derived.hadProbabilities,totalGoalProbabilities:derived.totalGoalProbabilities,
+        missingCompanies:COMPANY_IDS.filter(id=>!companies.some(row=>row.companyId===id))
+      }];
+    });
+    const inputSnapshotId=`research-input-${predictionHash(reports.map(report=>({externalMatchId:report.externalMatchId,kickoffAt:report.kickoffAt,companies:report.companies})))}`;
+    const version={predictionId:`research-${predictionHash({inputSnapshotId,fetchedAt})}`,inputSnapshotId,baseModelVersion:"external-only-poisson-v1",calibrationVersion:"research-uncalibrated",generatedAt:fetchedAt};
+    return Response.json({mode:"research-only",issue,version,reports:reports.map(report=>({...report,predictionId:version.predictionId,inputSnapshotId,baseModelVersion:version.baseModelVersion,calibrationVersion:version.calibrationVersion,predictionGeneratedAt:fetchedAt})),unavailable,fetchedAt,sourceUrl:SOURCE_URL,methodology:"仅使用外围三家公司欧赔、亚洲盘与大小球；不含竞彩官方赔率、固定让球值、销售状态或投注资格。该研究版本不进入正式推荐与复盘。"}, {headers:{"Cache-Control":"no-store"}});
+  } catch(error) {
+    return Response.json({error:error instanceof Error?error.message:"外围赛事读取失败",mode:"research-only"},{status:502,headers:{"Cache-Control":"no-store"}});
+  }
+}

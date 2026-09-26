@@ -33,6 +33,24 @@ async function render(path="/"){
  return worker.fetch(new Request(`http://localhost${path}`,{headers:{accept:"text/html"}}),{ASSETS:{fetch:async()=>new Response("Not found",{status:404})}},{waitUntil(){},passThroughOnException(){}});
 }
 
+test("official outage research stays separate from purchasable and archived forecasts",async()=>{
+ const [route,page,report,review]=await Promise.all([
+  readFile(new URL("../app/api/predictions/route.ts",import.meta.url),"utf8"),
+  readFile(new URL("../app/page.tsx",import.meta.url),"utf8"),
+  readFile(new URL("../app/components/AiPredictionReport.tsx",import.meta.url),"utf8"),
+  readFile(new URL("../app/api/predictions/ai/route.ts",import.meta.url),"utf8")
+ ]);
+ assert.match(route,/mode:"research-only"/);
+ assert.match(route,/officialMappingStatus:"unmatched",marketEligibility:\{\}/);
+ assert.match(route,/officialOdds:\[\],officialHandicap:"",officialHhadOdds:\[\]/);
+ assert.match(route,/if\(kickoff<=now\)return\[\]/);
+ assert.match(page,/setResearchRows\(rows\)/);
+ assert.match(page,/researchOnly rows=\{researchRows\}/);
+ assert.match(page,/matches:predictionRows\.map\(/);
+ assert.match(report,/不参与选号、每日固定票或正式赛前复盘/);
+ assert.match(review,/外围研究赛事不能混入官方预测版本/);
+});
+
 async function loadSportteryRoute(){
  const sharedSource=await readFile(new URL("../app/sporttery-official.ts",import.meta.url),"utf8"),sharedJavascript=ts.transpileModule(sharedSource,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText,sharedUrl=`data:text/javascript;base64,${Buffer.from(sharedJavascript).toString("base64")}#${Date.now()}-${Math.random()}`;
  const source=(await readFile(new URL("../app/api/sporttery/route.ts",import.meta.url),"utf8")).replace('import {NextResponse} from "next/server";','const NextResponse={json:(body,init={})=>new Response(JSON.stringify(body),{...init,headers:{"Content-Type":"application/json",...(init.headers||{})}})};').replace('from "../../sporttery-official"',`from "${sharedUrl}"`);

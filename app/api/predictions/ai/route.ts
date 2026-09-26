@@ -7,6 +7,8 @@ export async function POST(request: Request):Promise<Response> {
   if (!apiKey) return Response.json({error: "尚未配置 DEEPSEEK_API_KEY。"}, {status: 503});
   const body = await request.json().catch(() => null);
   if (!Array.isArray(body?.reports) || body.reports.length>120 || !body?.version?.predictionId || body.reports.some((report:any)=>report.predictionId!==body.version.predictionId) || JSON.stringify(body).length > 3_000_000) return Response.json({error: "预测版本无效、赛事超过120场或已混入其他版本数据，请刷新后重试。"}, {status: 400});
+  const researchOnly=body.reports.length>0&&body.reports.every((report:any)=>report.researchOnly===true&&report.officialMappingStatus==="unmatched"&&!report.officialMatchId);
+  if(body.reports.some((report:any)=>report.researchOnly===true)&&!researchOnly)return Response.json({error:"外围研究赛事不能混入官方预测版本。"}, {status:400});
   const calibration=await getPublishedCalibration(),intelligenceWeightMultiplier=calibration?.status==="validated"?Number(calibration.intelligenceWeightMultiplier)||0:0;
   const batchSize = 6;
   if(body.reports.length>batchSize){
@@ -28,13 +30,13 @@ export async function POST(request: Request):Promise<Response> {
   const enrichedReports=await enrichReportsWithOfficialContext(body.reports);
   const evidenceById=Object.fromEntries(enrichedReports.map((report:any)=>[String(report.id),report.intelligenceEvidence||{records:[]}])) as Record<string,any>;
   const compact = enrichedReports.slice(0, 40).map((report: any) => ({id: report.id, officialMatchId:report.officialMatchId, league: report.league, home: report.home, away: report.away, companies: report.companies, probabilities: report.probabilities, consensus: report.consensus, marketSignal: report.marketSignal, baselineScores: report.scores,intelligenceEvidence:report.intelligenceEvidence||{records:[]}}));
-  const prompt = `你是审慎的足球赛事研究员和多盘口建模助手。根据以下当前竞彩足球数据，对每场比赛进行完整复核。输入含体彩胜平负、体彩固定让球胜平负、足彩网36*、ＳＢ/*、平*三家公司欧赔初盘/即盘、外围亚洲让球水位、大小球及多盘口泊松基线。
+  const prompt = `你是审慎的足球赛事研究员和多盘口建模助手。根据以下${researchOnly?"仅供研究的外围赛事数据（未匹配体彩，不含竞彩官方赔率、让球值及销售资格）":"当前竞彩足球数据"}，对每场比赛进行完整复核。输入含${researchOnly?"外围三家公司欧赔初盘/即盘、亚洲让球水位、大小球及多盘口泊松基线":"体彩胜平负、体彩固定让球胜平负、足彩网36*、ＳＢ/*、平*三家公司欧赔初盘/即盘、外围亚洲让球水位、大小球及多盘口泊松基线"}。
 
 请对每场比赛按以下六层输出结论，并把关键内容压缩进summary（允许使用分号分段）：
 1）对比两队可用的阵容、实力差距、固有球风与攻防特点；没有阵容资料时明确标注“阵容数据缺失”。
 2）结合可用的近期表现（优先近6场）、竞技状态和赛程判断战意，说明是否可能轮换练兵；没有近6场数据时不得臆测。
 3）若属于小组赛，按胜3平1负0规则分析胜/平/负对排名和出线形势的影响；若不是小组赛，标注“不适用”。
-4）综合欧赔去水概率、盘口升降、水位变动、体彩让球、大小球和模型，给出常规预测比分及理由。
+4）综合欧赔去水概率、盘口升降、水位变动、${researchOnly?"外围亚洲盘（不可当作体彩让球）":"体彩让球"}、大小球和模型，给出常规预测比分及理由。
 5）给出一个潜在爆冷比分（若无足够证据可标注“暂无可靠爆冷信号”），说明成因和触发条件，不得把爆冷当主预测。
 6）报告四重一致性：泊松比分模型、蒙特卡洛模拟（如输入不足则说明限制）、近6场表现、庄家/盘口信号；明确哪些一致、哪些冲突。
 7）明确最可能总进球数、胜平负方向、首选比分和次选比分。
