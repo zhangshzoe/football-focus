@@ -82,7 +82,29 @@ export function calculateRecommendationReturns(items: ReturnLeg[]) {
   const maximum = multiply(items.map(item => Math.max(...item.scores.map(score => score.odd!))));
   const bonusCap = items.length === 1 ? 100000 : items.length <= 3 ? 200000 : items.length <= 5 ? 500000 : 1000000;
   const minCents = officialBonusCents(minimum, bonusCap), maxCents = officialBonusCents(maximum, bonusCap);
+  // Expand the purchased ticket, including the zero payout of every missed bet.
+  // Probabilities are percentages; different fixtures use the independence assumption.
+  const validProbabilities = items.every(item => item.scores.every(score =>
+    typeof score.probability === "number" && Number.isFinite(score.probability) &&
+    score.probability >= 0 && score.probability <= 100) &&
+    item.scores.reduce((sum, score) => sum + score.probability, 0) <= 100 + 1e-8);
+  let expectedReturn: number | null = null;
+  if (validProbabilities) {
+    let total = 0;
+    const walk = (index: number, odds: number[], probability: number) => {
+      if (index === items.length) {
+        total += probability * officialBonusCents(multiply(odds), bonusCap) / 100;
+        return;
+      }
+      for (const score of items[index].scores) {
+        walk(index + 1, [...odds, score.odd!], probability * score.probability / 100);
+      }
+    };
+    walk(0, [], 1);
+    expectedReturn = total;
+  }
   return {...base, status: "ready" as const, bonusCap,
+    expectedReturn,
     minCombinedOdd: Number(minimum.numerator) / Number(minimum.denominator) / 2,
     maxCombinedOdd: Number(maximum.numerator) / Number(maximum.denominator) / 2,
     minWinningReturn: minCents / 100, maxWinningReturn: maxCents / 100,
