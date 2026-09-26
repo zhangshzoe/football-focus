@@ -18,7 +18,6 @@ import {
   ScorePoint,
 } from "../prediction-config";
 import {
-  calculatePurchaseLegReturns,
   generatePurchasePlans,
   PURCHASE_PLAN_DEFINITIONS,
   PURCHASE_PLAN_MODULES,
@@ -171,12 +170,21 @@ function SignedPurchaseMoney({value,flow="net"}:{value:number;flow?:"net"|"stake
   const signed=flow==="stake"?-Math.abs(amount):flow==="return"?Math.abs(amount):amount;
   return <b className={`purchase-money ${signed<0?"purchase-money-negative":signed>0?"purchase-money-positive":""}`}>{signed<0?"-":signed>0?"+":""}¥{Math.abs(signed).toFixed(2)}</b>;
 }
-function PurchaseLegReturns({item}:{item:PurchaseItem}){
-  const returns=calculatePurchaseLegReturns(item);
-  if(!returns)return <span className="purchase-leg-returns">单场返奖：赔率待补</span>;
+function PurchasePlanReturns({plan}:{plan:PurchasePlan}){
+  let returns;
+  try {
+    returns=calculateRecommendationReturns(plan.items.map(item=>({
+      matchKey:item.officialMatchId||`${item.salesDate||item.matchDate||""}:${item.matchId}`,
+      market:item.market as RecommendationMarket,
+      scores:(item.picks?.length?item.picks:[item]).map(pick=>({score:pick.pick,probability:pick.probability,odd:pick.odd})),
+    })));
+  } catch {
+    return <span className="purchase-leg-returns">本组合返奖：数据待补</span>;
+  }
+  if(returns.status!=="ready")return <span className="purchase-leg-returns">本组合返奖：赔率待补</span>;
   return <span className="purchase-leg-returns">
-    <span>模型预期返奖 ¥{returns.expectedReturn.toFixed(2)}</span>
-    <span>命中返奖 ¥{returns.minWinningReturn.toFixed(2)}～¥{returns.maxWinningReturn.toFixed(2)}</span>
+    <span>本组合模型预期返奖 {returns.expectedReturn===null?"概率待补":`¥${returns.expectedReturn.toFixed(2)}`}</span>
+    <span>组合命中返奖 ¥{returns.minWinningReturn.toFixed(2)}～¥{returns.maxWinningReturn.toFixed(2)}</span>
     <span>命中时最低 / 最高盈利 <SignedPurchaseMoney value={returns.minWinningProfit}/> / <SignedPurchaseMoney value={returns.maxWinningProfit}/></span>
   </span>;
 }
@@ -604,7 +612,7 @@ function DailyPurchasePlans({
             <div className="purchase-history-scroll"><table><thead><tr><th>日期 / 批次</th><th>投注内容</th><th>结算</th><th>投入</th><th>模拟返还</th><th>净收益</th></tr></thead><tbody>
               {history.rows.length?history.rows.map((row:{snapshotId:string;date:string;generatedAt:string;plan:PurchasePlan})=>{
                 const settled=["won","lost","corrected_won","corrected_lost","void_won","void_lost"].includes(row.plan.status);
-                return <tr key={`${row.snapshotId}-${row.plan.id}`}><td>{row.date}<small>{new Date(row.generatedAt).toLocaleTimeString("zh-CN",{hour:"2-digit",minute:"2-digit"})}</small></td><td>{row.plan.items.map(item=><div className="purchase-history-item" key={`${item.officialMatchId||item.matchId}-${item.market}`}><b>{item.matchId}</b> {item.home} vs {item.away} · {item.marketName} {(item.picks?.length?item.picks.map(pick=>pick.pick):[item.pick]).join(" / ")}<span className="purchase-history-outcome">最终赛果 {purchaseHistoryActual(item)} · 购入赔率 {purchaseHistoryOdds(item)}</span><PurchaseLegReturns item={item}/></div>)}</td><td>{planResult(row.plan)}</td><td>{settled?<SignedPurchaseMoney value={row.plan.stake} flow="stake"/>:"—"}</td><td>{settled?<SignedPurchaseMoney value={row.plan.simulatedReturn||0} flow="return"/>:"—"}</td><td>{settled?<SignedPurchaseMoney value={(row.plan.simulatedReturn||0)-row.plan.stake}/>:"—"}</td></tr>;
+                return <tr key={`${row.snapshotId}-${row.plan.id}`}><td>{row.date}<small>{new Date(row.generatedAt).toLocaleTimeString("zh-CN",{hour:"2-digit",minute:"2-digit"})}</small></td><td>{row.plan.items.map(item=><div className="purchase-history-item" key={`${item.officialMatchId||item.matchId}-${item.market}`}><b>{item.matchId}</b> {item.home} vs {item.away} · {item.marketName} {(item.picks?.length?item.picks.map(pick=>pick.pick):[item.pick]).join(" / ")}<span className="purchase-history-outcome">最终赛果 {purchaseHistoryActual(item)} · 购入赔率 {purchaseHistoryOdds(item)}</span></div>)}<PurchasePlanReturns plan={row.plan}/></td><td>{planResult(row.plan)}</td><td>{settled?<SignedPurchaseMoney value={row.plan.stake} flow="stake"/>:"—"}</td><td>{settled?<SignedPurchaseMoney value={row.plan.simulatedReturn||0} flow="return"/>:"—"}</td><td>{settled?<SignedPurchaseMoney value={(row.plan.simulatedReturn||0)-row.plan.stake}/>:"—"}</td></tr>;
               }):<tr><td colSpan={6}>暂无该玩法的正式历史票</td></tr>}
             </tbody></table></div>
           </details>;
@@ -684,14 +692,12 @@ function DailyPurchasePlans({
                             </i>
                           )}
                         </div>
-                        <PurchaseLegReturns item={item}/>
                       </li>
                     ))}
                   </ol>
+                  <PurchasePlanReturns plan={plan}/>
                   <footer>
                     <span>投入 <SignedPurchaseMoney value={plan.stake} flow="stake"/></span>
-                    <span>最低净收益 <SignedPurchaseMoney value={plan.minWinningProfit ?? ((plan.minWinningReturn ?? plan.theoreticalReturn)-plan.stake)}/></span>
-                    <span>最高净收益 <SignedPurchaseMoney value={plan.maxWinningProfit ?? ((plan.maxWinningReturn ?? plan.theoreticalReturn)-plan.stake)}/></span>
                     <strong>{planResult(plan)}</strong>
                   </footer>
               </>
@@ -708,7 +714,7 @@ function DailyPurchasePlans({
         </p>
       )}
       <p className="purchase-risk">
-        每场模型预期返奖包含未命中的零返奖情形；最低/最高盈利仅指该场命中时，未命中会损失该场投入。以上均为生成时固定奖金的模拟值，不代表收益或命中保证；最终以实际出票和官方计奖为准。
+        模型预期返奖按整个购买组合计算：展开为每注2元的单注后，将各注命中概率×该注返奖求和，跨场概率按独立假设相乘，未命中计零返奖。双选2串1共4注、投入8元；最低/最高盈利已扣除组合全部投入。以上均为生成时固定奖金的模拟值，不代表收益或命中保证；最终以实际出票和官方计奖为准。
       </p>
     </section>
   );
@@ -1187,6 +1193,7 @@ export default function TodayRecommendations() {
                 </div>
                 <div className="recommendation-return-grid">
                   <div><span>本组总投入</span><strong>¥{combo.returns.totalStake.toFixed(2)}</strong></div>
+                  <div><span>本组合模型预期返奖</span><strong>{combo.returns.status === "ready" && combo.returns.expectedReturn !== null ? `¥${combo.returns.expectedReturn.toFixed(2)}` : "数据待补"}</strong></div>
                   <div><span>最高盈利（中奖时）</span><strong className={combo.returns.status === "ready" && combo.returns.maxWinningProfit >= 0 ? "positive" : "negative"}>{combo.returns.status === "ready" ? `¥${combo.returns.maxWinningProfit.toFixed(2)}` : "待补赔率"}</strong></div>
                   <div><span>最低盈利（中奖时）</span><strong className={combo.returns.status === "ready" && combo.returns.minWinningProfit >= 0 ? "positive" : "negative"}>{combo.returns.status === "ready" ? `¥${combo.returns.minWinningProfit.toFixed(2)}` : "待补赔率"}</strong></div>
                   <div><span>未中奖时净亏损</span><strong className="negative">¥{combo.returns.worstCaseProfit.toFixed(2)}</strong></div>

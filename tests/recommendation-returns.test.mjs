@@ -25,6 +25,25 @@ test('two choices in each of two matches cost eight yuan and subtract the whole 
   assert.equal(result.minWinningProfit,16);assert.equal(result.maxWinningProfit,52);
   assert.equal(result.worstCaseProfit,-8);
 });
+test('expected payout sums the four purchased bets, not the two standalone fixtures',()=>{
+  const a=leg('a',[2,3]), b=leg('b',[4,8]);
+  a.scores[0].probability=30; a.scores[1].probability=20;
+  b.scores[0].probability=40; b.scores[1].probability=10;
+  const result=calculate([a,b]);
+  // 0.3*0.4*16 + 0.3*0.1*32 + 0.2*0.4*24 + 0.2*0.1*48
+  assert.ok(Math.abs(result.expectedReturn-5.76)<1e-10);
+  assert.equal(result.betCount,4); assert.equal(result.totalStake,8);
+  assert.notEqual(result.expectedReturn,calculate([a]).expectedReturn+calculate([b]).expectedReturn);
+});
+test('expected payout retains per-bet rounding, caps, misses and missing probabilities',()=>{
+  const a=leg('a',[1.65]),b=leg('b',[1.75]);
+  assert.ok(Math.abs(calculate([a,b]).expectedReturn-0.04*5.78)<1e-10);
+  assert.ok(Math.abs(calculate([leg('a',[100000]),leg('b',[100000])]).expectedReturn-8000)<1e-8);
+  a.scores[0].probability=0; assert.equal(calculate([a,b]).expectedReturn,0);
+  for(const value of [undefined,null,NaN,-1,101]){
+    a.scores[0].probability=value; assert.equal(calculate([a,b]).expectedReturn,null);
+  }
+});
 test('single-selection, mixed-market and winning-but-negative groups retain correct costs',()=>{
   const one=calculate([leg('a',[2.5])]);
   assert.equal(one.totalStake,2);assert.equal(one.minWinningProfit,3);assert.equal(one.maxWinningProfit,3);
