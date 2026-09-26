@@ -97,6 +97,15 @@ const aliasGroups={
  "visselKobe":["神户胜利","神户胜利船"],
  "kyrgyzstanU23":["吉尔吉亚","吉尔吉斯斯坦U23"],
  "japanU23":["日本亚","日本U23"],
+ "northKoreaU23":["朝鲜亚","朝鲜U23"],
+ "heraclesAlmelo":["赫拉克勒","赫拉克勒斯"],
+ "vitesseArnhem":["维迪斯","维特斯"],
+ "newYorkRedBulls":["纽约红牛","纽约红牛队"],
+ "stLouisCity":["圣路易城","圣路易斯城"],
+ "philadelphiaUnion":["费城","费城联合"],
+ "orlandoCity":["奥兰多","奥兰多城"],
+ "laGalaxy":["洛城银河","洛杉矶银河"],
+ "coloradoRapids":["科罗拉多","科罗拉多急流"],
  "wolverhampton":["伍尔弗","狼队"],
  "westBromwichAlbion":["西布罗姆","西布罗姆维奇"],
  "miltonKeynesDons":["米尔顿","米尔顿凯恩斯"],
@@ -108,7 +117,7 @@ const aliasGroups={
  "realSaltLake":["盐湖城","皇家盐湖城"],
 };
 
-export const TEAM_ALIAS_VERSION="verified-zh-aliases-2026-09-23.1";
+export const TEAM_ALIAS_VERSION="verified-zh-aliases-2026-09-26.1";
 export const TEAM_ALIAS_INDEX=new Map(Object.entries(aliasGroups).flatMap(([identity,names])=>names.map(name=>[normalize(name),identity])));
 export const teamIdentity=(value,league="")=>{
  const name=normalize(value);
