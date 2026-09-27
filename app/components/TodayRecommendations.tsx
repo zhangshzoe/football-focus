@@ -141,6 +141,7 @@ type PurchaseItem = {
 };
 type PurchasePlan = {
   id: string;
+  originPlanId?: string;
   title: string;
   rule: string;
   status: string;
@@ -203,7 +204,7 @@ function purchaseHistoryActual(item:PurchaseItem){
 }
 type PurchaseResult = {id?:string;matchId?:string;officialMatchId?:string;date?:string;matchDate?:string};
 const currentPurchasePlanIds=new Set(PURCHASE_PLAN_DEFINITIONS.map(definition=>definition.id));
-const hasPurchasePlanData=(item:PurchasePlanSet|undefined|null)=>Boolean(item?.plans?.some(plan=>currentPurchasePlanIds.has(plan.id)&&plan.status!=="unavailable"&&Array.isArray(plan.items)&&plan.items.length>0));
+const hasPurchasePlanData=(item:PurchasePlanSet|undefined|null)=>Boolean(deduplicatePurchasePlans(item?.plans).some(plan=>currentPurchasePlanIds.has(plan.id)&&plan.status!=="unavailable"&&Array.isArray(plan.items)&&plan.items.length>0));
 type OfficialMatch = OfficialRecommendationMatch;
 const shanghaiDate = () =>
   new Intl.DateTimeFormat("en-CA", {
@@ -630,7 +631,7 @@ function DailyPurchasePlans({
             <div className="purchase-history-scroll"><table><thead><tr><th>日期 / 批次</th><th>投注内容</th><th>结算</th><th>投入</th><th>模拟返还</th><th>净收益</th></tr></thead><tbody>
               {history.rows.length?history.rows.map((row:{snapshotId:string;date:string;generatedAt:string;plan:PurchasePlan})=>{
                 const settled=["won","lost","corrected_won","corrected_lost","void_won","void_lost"].includes(row.plan.status);
-                return <tr key={`${row.snapshotId}-${row.plan.id}`}><td>{row.date}<small>{new Date(row.generatedAt).toLocaleTimeString("zh-CN",{hour:"2-digit",minute:"2-digit"})}</small></td><td>{row.plan.items.map(item=><div className="purchase-history-item" key={`${item.officialMatchId||item.matchId}-${item.market}`}><b>{item.matchId}</b> {item.home} vs {item.away} · {item.marketName} {(item.picks?.length?item.picks.map(pick=>pick.pick):[item.pick]).join(" / ")}<span className="purchase-history-outcome">最终赛果 {purchaseHistoryActual(item)} · 购入赔率 {purchaseHistoryOdds(item)}</span></div>)}<PurchasePlanReturns plan={row.plan}/></td><td>{planResult(row.plan)}</td><td>{settled?<SignedPurchaseMoney value={row.plan.stake} flow="stake"/>:"—"}</td><td>{settled?<SignedPurchaseMoney value={row.plan.simulatedReturn||0} flow="return"/>:"—"}</td><td>{settled?<SignedPurchaseMoney value={(row.plan.simulatedReturn||0)-row.plan.stake}/>:"—"}</td></tr>;
+                return <tr key={`${row.snapshotId}-${row.plan.originPlanId||row.plan.id}`}><td>{row.date}<small>{new Date(row.generatedAt).toLocaleTimeString("zh-CN",{hour:"2-digit",minute:"2-digit"})}</small></td><td>{row.plan.items.map(item=><div className="purchase-history-item" key={`${item.officialMatchId||item.matchId}-${item.market}`}><b>{item.matchId}</b> {item.home} vs {item.away} · {item.marketName} {(item.picks?.length?item.picks.map(pick=>pick.pick):[item.pick]).join(" / ")}<span className="purchase-history-outcome">最终赛果 {purchaseHistoryActual(item)} · 购入赔率 {purchaseHistoryOdds(item)}</span></div>)}<PurchasePlanReturns plan={row.plan}/></td><td>{planResult(row.plan)}</td><td>{settled?<SignedPurchaseMoney value={row.plan.stake} flow="stake"/>:"—"}</td><td>{settled?<SignedPurchaseMoney value={row.plan.simulatedReturn||0} flow="return"/>:"—"}</td><td>{settled?<SignedPurchaseMoney value={(row.plan.simulatedReturn||0)-row.plan.stake}/>:"—"}</td></tr>;
               }):<tr><td colSpan={6}>暂无该玩法的正式历史票</td></tr>}
             </tbody></table></div>
           </details>;

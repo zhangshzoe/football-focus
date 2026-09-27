@@ -492,13 +492,27 @@ test("identical adjacent total-goal tickets count once per saved batch without e
  const second={snapshotId:"batch-b",date:"2026-09-22",generatedAt:"2026-09-22T09:00:00Z",plans:[canonical,distinct]};
  assert.deepEqual(deduplicatePurchasePlans(first.plans).map(plan=>plan.id),["total-double-2"]);
  assert.equal(first.plans.length,2,"immutable source batch must not be mutated");
- assert.deepEqual(deduplicatePurchasePlans(second.plans).map(plan=>plan.id),["total-double-2","total-adjacent-double-2"]);
+ assert.deepEqual(deduplicatePurchasePlans(second.plans).map(plan=>plan.id),["total-double-2","total-double-2"]);
+ assert.equal(deduplicatePurchasePlans(second.plans)[1].originPlanId,"total-adjacent-double-2");
  const days=summarizePurchasePlanDays([first,second]);
  assert.equal(days["2026-09-21"].tickets,1);
  assert.equal(days["2026-09-22"].tickets,2);
  const total=summarizePurchasePlanModules([first,second]).total;
  assert.deepEqual({settled:total.settled,won:total.won,stake:total.stake,returned:total.returned},{settled:3,won:2,stake:24,returned:48});
- assert.equal(summarizePurchasePlanDefinitions([first,second])["total-adjacent-double-2"].rows.length,1);
+ const byType=summarizePurchasePlanDefinitions([first,second]);
+ assert.equal(byType["total-double-2"].rows.length,3);
+ assert.equal(byType["total-adjacent-double-2"],undefined);
+});
+
+test("the sole September 19 adjacent-goal ticket is merged into total-goal double history",async()=>{
+ const index=JSON.parse(await readFile(new URL("../data/generated-prediction-snapshot-index.json",import.meta.url),"utf8"));
+ const snapshot=index.purchasePlanSnapshots.find(item=>item.planSet?.date==="2026-09-19");
+ assert.ok(snapshot);
+ const plans=deduplicatePurchasePlans(snapshot.planSet.plans);
+ assert.ok(plans.some(plan=>plan.id==="total-double-2"&&plan.originPlanId==="total-adjacent-double-2"));
+ assert.ok(!plans.some(plan=>plan.id==="total-adjacent-double-2"));
+ const history=summarizePurchasePlanDefinitions([{...snapshot.planSet,snapshotId:snapshot.snapshotId}]);
+ assert.equal(history["total-double-2"].rows.length,1);
 });
 
 test("settlement keeps missing fields pending and isolates official ids by date",()=>{

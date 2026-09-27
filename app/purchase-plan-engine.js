@@ -1,5 +1,5 @@
 export const PURCHASE_PLAN_STORAGE_KEY = "ff-daily-purchase-plans-v1";
-export const PURCHASE_PLAN_VERSION = 11;
+export const PURCHASE_PLAN_VERSION = 12;
 export const PURCHASE_PLAN_DEFINITIONS = [
   {
     id: "score-double-3",
@@ -145,15 +145,6 @@ export const PURCHASE_PLAN_DEFINITIONS = [
     targetProfitTolerance: 5,
   },
   {
-    id: "total-adjacent-double-2",
-    title: "相邻进球双选2串1",
-    rule: "每场相邻2个进球数 · 2串1",
-    markets: ["total"],
-    matches: 2,
-    selections: 2,
-    adjacentPicks: true,
-  },
-  {
     id: "half-full-double-3",
     title: "半全场双选3串1",
     rule: "每场覆盖2个走势 · 3串1",
@@ -192,7 +183,7 @@ export function calculatePurchaseLegReturns(item) {
 
 export const PURCHASE_PLAN_MODULES = [
   { id: "score", title: "比分方案", description: "比分单选、双选与不同串关" },
-  { id: "total", title: "进球数方案", description: "总进球单选、双选与相邻覆盖" },
+  { id: "total", title: "进球数方案", description: "总进球单选与双选组合" },
   { id: "result", title: "赛果方案", description: "胜平负与让球胜平负组合" },
   { id: "draw", title: "平局 / 让平", description: "专门跟踪平与让平组合" },
   { id: "halfFull", title: "半全场方案", description: "半全场走势覆盖组合" },
@@ -230,14 +221,33 @@ const totalGoalTicketKey = (plan) => {
 
 export const deduplicatePurchasePlans = (plans) => {
   if (!Array.isArray(plans)) return [];
-  const canonical = plans.find((plan) => plan.id === "total-double-2");
-  const canonicalKey = totalGoalTicketKey(canonical);
-  return plans.filter(
-    (plan) =>
-      plan.id !== "total-adjacent-double-2" ||
-      !canonicalKey ||
-      totalGoalTicketKey(plan) !== canonicalKey,
+  const canonical = plans.find(
+    (plan) => plan.id === "total-double-2" && plan.status !== "unavailable",
   );
+  const canonicalKey = totalGoalTicketKey(canonical);
+  const distinctLegacy = plans.filter(
+    (plan) =>
+      plan.id === "total-adjacent-double-2" &&
+      plan.status !== "unavailable" &&
+      (!canonicalKey || totalGoalTicketKey(plan) !== canonicalKey),
+  );
+  return plans.flatMap((plan) => {
+    if (plan.id === "total-adjacent-double-2") {
+      if (!distinctLegacy.includes(plan)) return [];
+      return [
+        {
+          ...plan,
+          id: "total-double-2",
+          title: "总进球双选2串1",
+          rule: "每场2个进球数 · 2串1",
+          originPlanId: "total-adjacent-double-2",
+        },
+      ];
+    }
+    if (plan.id === "total-double-2" && plan.status === "unavailable" && distinctLegacy.length)
+      return [];
+    return [plan];
+  });
 };
 
 export const deduplicatePurchasePlanSets = (planSets) =>
