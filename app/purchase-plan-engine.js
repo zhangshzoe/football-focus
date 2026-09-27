@@ -1,9 +1,9 @@
 export const PURCHASE_PLAN_STORAGE_KEY = "ff-daily-purchase-plans-v1";
-export const PURCHASE_PLAN_VERSION = 12;
+export const PURCHASE_PLAN_VERSION = 13;
 export const PURCHASE_PLAN_DEFINITIONS = [
   {
     id: "score-double-3",
-    title: "比分双选",
+    title: "比分双选3串1",
     rule: "每场2个比分 · 3串1",
     markets: ["score"],
     matches: 3,
@@ -11,7 +11,7 @@ export const PURCHASE_PLAN_DEFINITIONS = [
   },
   {
     id: "score-single-2",
-    title: "比分单选",
+    title: "比分单选2串1",
     rule: "每场1个比分 · 2串1",
     markets: ["score"],
     matches: 2,
@@ -35,7 +35,7 @@ export const PURCHASE_PLAN_DEFINITIONS = [
   },
   {
     id: "total-double-3",
-    title: "总进球双选",
+    title: "总进球双选3串1",
     rule: "每场2个进球数 · 3串1",
     markets: ["total"],
     matches: 3,
@@ -59,7 +59,7 @@ export const PURCHASE_PLAN_DEFINITIONS = [
   },
   {
     id: "draw-or-handicap-draw-2",
-    title: "平/让平2串1",
+    title: "平/让平单选2串1",
     rule: "平或让平 · 2串1",
     markets: ["had", "hhad"],
     matches: 2,
@@ -68,7 +68,7 @@ export const PURCHASE_PLAN_DEFINITIONS = [
   },
   {
     id: "draw-or-handicap-draw-3",
-    title: "平/让平3串1",
+    title: "平/让平单选3串1",
     rule: "平或让平 · 3串1",
     markets: ["had", "hhad"],
     matches: 3,
@@ -77,7 +77,7 @@ export const PURCHASE_PLAN_DEFINITIONS = [
   },
   {
     id: "result-mixed-3",
-    title: "赛果混合3串1",
+    title: "赛果混合单选3串1",
     rule: "胜平负/让球胜平负 · 3串1",
     markets: ["had", "hhad"],
     matches: 3,
@@ -86,7 +86,7 @@ export const PURCHASE_PLAN_DEFINITIONS = [
   },
   {
     id: "result-mixed-4",
-    title: "赛果混合4串1",
+    title: "赛果混合单选4串1",
     rule: "胜平负/让球胜平负 · 4串1",
     markets: ["had", "hhad"],
     matches: 4,
@@ -95,7 +95,7 @@ export const PURCHASE_PLAN_DEFINITIONS = [
   },
   {
     id: "result-mixed-5",
-    title: "赛果混合5串1",
+    title: "赛果混合单选5串1",
     rule: "胜平负/让球胜平负 · 5串1",
     markets: ["had", "hhad"],
     matches: 5,
@@ -104,7 +104,7 @@ export const PURCHASE_PLAN_DEFINITIONS = [
   },
   {
     id: "had-safe-2",
-    title: "胜平负稳健2串1",
+    title: "胜平负单选2串1",
     rule: "每场首选≥50% · 2串1",
     markets: ["had"],
     matches: 2,
@@ -113,7 +113,7 @@ export const PURCHASE_PLAN_DEFINITIONS = [
   },
   {
     id: "tenfold-safe-2",
-    title: "10倍稳健 A",
+    title: "10倍稳健 A · 单选2串1",
     rule: "目标净盈利约20元 · 2串1",
     markets: ["had", "hhad", "total", "halfFull"],
     matches: 2,
@@ -124,7 +124,7 @@ export const PURCHASE_PLAN_DEFINITIONS = [
   },
   {
     id: "tenfold-safe-3",
-    title: "10倍稳健 B",
+    title: "10倍稳健 B · 单选3串1",
     rule: "目标净盈利约20元 · 3串1",
     markets: ["had", "hhad", "total", "halfFull"],
     matches: 3,
@@ -135,7 +135,7 @@ export const PURCHASE_PLAN_DEFINITIONS = [
   },
   {
     id: "tenfold-safe-4",
-    title: "10倍稳健 C",
+    title: "10倍稳健 C · 单选4串1",
     rule: "目标净盈利约20元 · 4串1",
     markets: ["had", "hhad", "total", "halfFull"],
     matches: 4,
@@ -150,6 +150,26 @@ export const PURCHASE_PLAN_DEFINITIONS = [
     rule: "每场覆盖2个走势 · 3串1",
     markets: ["halfFull"],
     matches: 3,
+    selections: 2,
+    requirePositiveMinProfit: true,
+  },
+  ...["A", "B", "C"].map((variant) => ({
+    id: `twofold-${variant.toLowerCase()}`,
+    title: `2倍 ${variant} · 单选2串1`,
+    rule: "每场单选 · 2串1 · 最低净盈利≥投入2倍",
+    markets: ["had", "hhad", "total", "halfFull"],
+    matches: 2,
+    selections: 1,
+    minLegProbability: 30,
+    minProfitMultiplier: 2,
+    randomized: true,
+  })),
+  {
+    id: "half-full-double-2",
+    title: "半全场双选2串1",
+    rule: "每场覆盖2个走势 · 2串1",
+    markets: ["halfFull"],
+    matches: 2,
     selections: 2,
     requirePositiveMinProfit: true,
   },
@@ -188,6 +208,7 @@ export const PURCHASE_PLAN_MODULES = [
   { id: "draw", title: "平局 / 让平", description: "专门跟踪平与让平组合" },
   { id: "halfFull", title: "半全场方案", description: "半全场走势覆盖组合" },
   { id: "tenfold", title: "10倍目标", description: "2～4场、目标净盈利约20元" },
+  { id: "twofold", title: "2倍目标", description: "单选2串1，最低净盈利为投入的2倍" },
 ];
 export const purchasePlanModuleId = (planId) => {
   const id = String(planId || "");
@@ -196,6 +217,7 @@ export const purchasePlanModuleId = (planId) => {
   if (id.startsWith("draw-or-handicap-draw-")) return "draw";
   if (id.startsWith("half-full-")) return "halfFull";
   if (id.startsWith("tenfold-")) return "tenfold";
+  if (id.startsWith("twofold-")) return "twofold";
   return "result";
 };
 
@@ -578,7 +600,19 @@ function legFrom(items, count, { adjacentPicks = false, minLegProbability = 0 } 
     odd: 0,
   };
 }
-function choosePlan(groups, definition) {
+const ticketKey = (legs) =>
+  legs
+    .map((leg) =>
+      `${leg.officialMatchId}|${leg.salesDate}|${leg.market}|${leg.picks.map((pick) => pick.pick).join("/")}`,
+    )
+    .sort()
+    .join(";");
+const seededIndex = (seed, length) => {
+  let hash = 2166136261;
+  for (const character of seed) hash = Math.imul(hash ^ character.charCodeAt(0), 16777619);
+  return (hash >>> 0) % length;
+};
+function choosePlan(groups, definition, { excludedTickets = new Set(), randomSeed = "" } = {}) {
   const allowedPicks = Array.isArray(definition.allowedPicks)
     ? new Set(definition.allowedPicks)
     : null;
@@ -597,6 +631,7 @@ function choosePlan(groups, definition) {
     )
     .filter((group) => group.length);
   let best = null;
+  const randomCandidates = [];
   for (const fixtureSet of combinations(variants, definition.matches)) {
     const walk = (index, legs) => {
       if (index < fixtureSet.length) {
@@ -626,6 +661,13 @@ function choosePlan(groups, definition) {
       };
       if (candidate.minWinningProfit < 0) return;
       if (definition.requirePositiveMinProfit && candidate.minWinningProfit <= 0) return;
+      if (candidate.minWinningProfit + 1e-9 < safeNumber(definition.minProfitMultiplier) * stake)
+        return;
+      if (definition.randomized) {
+        candidate.ticketKey = ticketKey(legs);
+        if (!excludedTickets.has(candidate.ticketKey)) randomCandidates.push(candidate);
+        return;
+      }
       const target = Number(definition.targetNetProfit),
         tolerance = Math.max(0, safeNumber(definition.targetProfitTolerance));
       if (Number.isFinite(target)) {
@@ -647,6 +689,14 @@ function choosePlan(groups, definition) {
       if (better) best = candidate;
     };
     walk(0, []);
+  }
+  if (definition.randomized && randomCandidates.length) {
+    randomCandidates.sort((left, right) => right.probability - left.probability);
+    const shortlist = randomCandidates.slice(
+      0,
+      Math.min(20, Math.max(3, Math.ceil(randomCandidates.length * 0.15))),
+    );
+    return shortlist[seededIndex(randomSeed, shortlist.length)];
   }
   return best;
 }
@@ -681,8 +731,12 @@ export function generatePurchasePlans({
     .map(({ report, official }) => matchMarkets(report, official, decisionAt))
     .filter((group) => group.length);
   const plans = [];
+  const selectedTwofoldTickets = new Set();
   for (const definition of PURCHASE_PLAN_DEFINITIONS) {
-    const found = choosePlan(groups, definition);
+    const found = choosePlan(groups, definition, {
+      excludedTickets: selectedTwofoldTickets,
+      randomSeed: `${date}|${generatedAt}|${definition.id}`,
+    });
     if (!found) {
       plans.push({
         id: definition.id,
@@ -701,6 +755,7 @@ export function generatePurchasePlans({
       });
       continue;
     }
+    if (definition.randomized) selectedTwofoldTickets.add(found.ticketKey);
     plans.push({
       id: definition.id,
       title: definition.title,

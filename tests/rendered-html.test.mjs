@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
 import test from "node:test";
 import ts from "typescript";
-import {calculatePurchaseLegReturns,deduplicatePurchasePlans,generatePurchasePlans,PURCHASE_PLAN_MODULES,settlePurchasePlan,summarizePurchasePlanModules,summarizePurchasePlanDefinitions,summarizePurchasePlanDays} from "../app/purchase-plan-engine.js";
+import {calculatePurchaseLegReturns,deduplicatePurchasePlans,generatePurchasePlans,PURCHASE_PLAN_DEFINITIONS,PURCHASE_PLAN_MODULES,settlePurchasePlan,summarizePurchasePlanModules,summarizePurchasePlanDefinitions,summarizePurchasePlanDays} from "../app/purchase-plan-engine.js";
 
 test("daily snapshot summary excludes missing dates and unsettled tickets from returns",()=>{
  const days=summarizePurchasePlanDays([
@@ -415,7 +415,7 @@ test("daily purchase drafts generate all fixed traceable ticket types and settle
  const qualified=(marketCode,handicap)=>({marketCode,salesStatus:"Selling",qualification:"qualified",handicap,allowedPassCounts:[1,2,3,4,5,6,7,8],cutoffAt:"2026-09-08T19:50:00+08:00",ruleVersion:"test"});
  const officialMatches=reports.map(report=>({id:report.id,officialMatchId:report.officialMatchId,salesDate:report.salesDate,matchDate:report.matchDate,kickoffAt:report.kickoffAt,matchStatus:"Selling",marketOdds:{"胜平负":[2.1,3.2,4],"让球胜平负":[3.1,3.4,1.9],"比分":Array(31).fill(9),"总进球数":[12,6,3.5,3.2,5,8,12,16],"半全场":[4,12,25,5,6,14,18,13,7]},marketEligibility:{"胜平负":qualified("HAD"),"让球胜平负":qualified("HHAD","-1"),"比分":qualified("CRS"),"总进球数":qualified("TTG"),"半全场":qualified("HAFU")}}));
  const set=generatePurchasePlans({date:"2026-09-08",reports,officialMatches,generatedAt:"2026-09-08T09:00:00.000Z"});
- assert.equal(set.plans.length,17);assert.deepEqual(set.plans.map(plan=>plan.id),["score-double-3","score-single-2","score-double-2","score-single-3","total-double-3","total-double-2","total-single-2","draw-or-handicap-draw-2","draw-or-handicap-draw-3","result-mixed-3","result-mixed-4","result-mixed-5","had-safe-2","tenfold-safe-2","tenfold-safe-3","tenfold-safe-4","half-full-double-3"]);
+ assert.equal(set.plans.length,21);assert.deepEqual(set.plans.map(plan=>plan.id),["score-double-3","score-single-2","score-double-2","score-single-3","total-double-3","total-double-2","total-single-2","draw-or-handicap-draw-2","draw-or-handicap-draw-3","result-mixed-3","result-mixed-4","result-mixed-5","had-safe-2","tenfold-safe-2","tenfold-safe-3","tenfold-safe-4","half-full-double-3","twofold-a","twofold-b","twofold-c","half-full-double-2"]);
  assert.equal(set.plans[0].betCount,8);assert.equal(set.plans[0].stake,16);assert.equal(set.plans[1].betCount,1);assert.equal(set.plans[1].stake,2);assert.equal(set.plans[2].betCount,4);assert.equal(set.plans[4].betCount,8);assert.equal(set.plans[5].betCount,4);assert.equal(set.plans[5].stake,8);assert.equal(set.plans[6].betCount,1);
  assert.ok(set.plans[5].items.every(item=>item.market==="total"&&item.picks.length===2));
  assert.ok(set.plans[7].items.every(item=>item.pick==="平"||item.pick==="让平"));
@@ -426,6 +426,13 @@ test("daily purchase drafts generate all fixed traceable ticket types and settle
  assert.ok(!set.plans.some(plan=>plan.id==="total-adjacent-double-2"),"相同的相邻进球票不能重复生成");
  assert.equal(set.plans[16].passName,"3串1");assert.equal(set.plans[16].betCount,8);assert.equal(set.plans[16].stake,16);assert.ok(set.plans[16].minWinningProfit>0);
  assert.ok(set.plans[16].items.every(item=>item.market==="halfFull"&&item.picks.length===2));
+ const twofold=set.plans.filter(plan=>plan.id.startsWith("twofold-"));
+ assert.equal(twofold.length,3);
+ assert.equal(new Set(twofold.map(plan=>plan.items.map(item=>`${item.officialMatchId}:${item.market}:${item.pick}`).sort().join("|"))).size,3);
+ for(const plan of twofold){assert.equal(plan.passName,"2串1");assert.equal(plan.stake,2);assert.ok(plan.minWinningProfit>=plan.stake*2);assert.ok(plan.items.every(item=>item.picks.length===1&&item.probability>=30));}
+ const halfFullDouble=set.plans.find(plan=>plan.id==="half-full-double-2");
+ assert.equal(halfFullDouble.passName,"2串1");assert.equal(halfFullDouble.betCount,4);assert.equal(halfFullDouble.stake,8);assert.ok(halfFullDouble.items.every(item=>item.market==="halfFull"&&item.picks.length===2));
+ assert.ok(PURCHASE_PLAN_DEFINITIONS.every(definition=>/单选|双选/.test(definition.title)&&/\d串1/.test(definition.title)));
  for(const plan of set.plans){assert.equal(plan.status,"pending");assert.equal(new Set(plan.items.map(item=>item.matchId)).size,plan.items.length);assert.ok(plan.maxWinningReturn>=plan.minWinningReturn)}
  const first=set.plans[0],results=first.items.map(item=>({id:item.matchId,matchId:item.officialMatchId,date:"2026-09-08",fullScore:"2:0",scoreResult:"2:0",status:"settled"}));
  assert.equal(settlePurchasePlan(first,results).status,"won");
@@ -439,6 +446,7 @@ test("new fixed tickets exclude negative minimum profit and show per-match expec
  const officialMatches=reports.map(report=>({officialMatchId:report.officialMatchId,salesDate:report.salesDate,kickoffAt:report.kickoffAt,matchStatus:"Selling",marketOdds:{"总进球数":[1.2,1.3,0,0,0,0,0,0]},marketEligibility:{"总进球数":{marketCode:"TTG",salesStatus:"Selling",qualification:"qualified",allowedPassCounts:[2],cutoffAt:"2026-09-08T19:50:00+08:00"}}}));
  const set=generatePurchasePlans({date:"2026-09-08",reports,officialMatches,generatedAt:"2026-09-08T17:00:00+08:00"});
  assert.equal(set.plans.find(plan=>plan.id==="total-double-2").status,"unavailable");
+ assert.ok(set.plans.filter(plan=>plan.id.startsWith("twofold-")).every(plan=>plan.status==="unavailable"),"低赔率不得被包装成2倍盈利票");
  assert.ok(set.plans.filter(plan=>plan.status!=="unavailable").every(plan=>plan.minWinningProfit>=0));
 });
 
@@ -452,7 +460,7 @@ test("official identity and market qualification gate purchasable recommendation
 });
 
 test("daily purchase history is split into modules with independent hit-rate and return summaries",()=>{
- assert.deepEqual(PURCHASE_PLAN_MODULES.map(module=>module.id),["score","total","result","draw","halfFull","tenfold"]);
+ assert.deepEqual(PURCHASE_PLAN_MODULES.map(module=>module.id),["score","total","result","draw","halfFull","tenfold","twofold"]);
  const summary=summarizePurchasePlanModules([{plans:[
   {id:"score-double-3",status:"won",stake:16,simulatedReturn:90},
   {id:"score-single-2",status:"lost",stake:2,simulatedReturn:0},
