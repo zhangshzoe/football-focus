@@ -6,6 +6,7 @@ import {readBrowserData,updateBrowserData} from "../browser-storage";
 import {ModelCalibrationProfile,PREDICTION_RESULT_CACHE_STORAGE_KEY,PREDICTION_REVIEW_CACHE_STORAGE_KEY,PREDICTION_SNAPSHOT_STORAGE_KEY,SavedPredictionSet,ScorePoint} from "../prediction-config";
 import {buildPostMatchReview,ImprovementArea,predictionScores,ReviewPrimary} from "../post-match-review";
 import {buildModelEvaluation} from "../model-evaluation.js";
+import {compareArchiveMatchRows,uniqueArchiveMatchRows} from "../archive-match-rows.js";
 import ModelExperimentCenter from "./ModelExperimentCenter";
 
 type Result={id:string;matchId?:string;date:string;home:string;away:string;fullScore:string;halfScore?:string;handicap:string;hhadResult?:string;scoreResult?:string;totalGoalsResult?:string};
@@ -17,6 +18,7 @@ type AiReview={key:string;primary:string;summary:string;causeTags:string[];impro
 type AiReviewCache=Record<string,AiReview>;
 type ArchiveAnalysisView="review"|"score"|"had"|"hhad"|"total"|"half-full";
 type EvaluatedRow={match:SavedMatch;result:Result};
+type ReviewedArchiveRow={snapshot:Snapshot;match:SavedMatch;result:Result;review:ReturnType<typeof buildPostMatchReview>};
 type AccuracyValue={hits:number;total:number};
 type AccuracyMetricKey="scoreTop1"|"scoreTop3"|"had"|"hhad"|"totalTop1"|"totalTop2"|"halfFull"|"halfFullTop2";
 
@@ -115,7 +117,7 @@ function LeagueAccuracyPanel({rows}:{rows:EvaluatedRow[]}){
   else{points=ranked(match.halfFullProbabilities);actual=halfFullActual(result)?.label||"";limit=drilldown.key==="halfFullTop2"?2:1;}
   const normalize=(value:string)=>drilldown.key.startsWith("total")?value.replace("球",""):drilldown.key==="hhad"?normalizeHhadOutcome(value):value,shown=points.slice(0,limit),hit=Boolean(actual&&shown.some(point=>normalize(point.score)===normalize(actual)));
   return points.length&&actual?[{match,result,points:shown,actual,hit}]:[];
- }):[];
+ }).sort(compareArchiveMatchRows):[];
  return <section className="league-accuracy-panel" aria-label="按联赛评估预测正确率"><details><summary><div><small>全部已结算历史 · 按比赛去重</small><h3>各联赛预测正确率</h3></div><span>{metrics.length} 个联赛 · {validMatchCount} 场 <b className="collapse-copy"/></span></summary><div className="collapsible-panel-body">
   <div className="accuracy-panel-toolbar"><div className="archive-view-tabs" role="tablist" aria-label="联赛正确率预测类型">{ARCHIVE_TABS.map(tab=><button key={tab.key} type="button" role="tab" aria-selected={view===tab.key} className={view===tab.key?"active":""} onClick={()=>{setView(tab.key);setDrilldown(null)}}>{tab.label}</button>)}</div><label>按联赛筛选<select aria-label="正确率联赛筛选" value={selectedLeague} onChange={event=>{setSelectedLeague(event.target.value);setDrilldown(null)}}>{leagues.map(league=><option key={league}>{league}</option>)}</select></label></div>
   <div className="league-accuracy-wrap"><table className="league-accuracy-table"><thead><tr><th>联赛</th><th>样本</th>{columns.map(key=><th key={key}>{labels[key]}</th>)}</tr></thead><tbody>{displayMetrics.map(item=><tr key={item.league}><td><b>{item.league}</b></td><td>{item.matches} 场{item.matches<5&&<em>小样本</em>}</td>{columns.map(key=><td key={key}><button type="button" aria-expanded={drilldown?.league===item.league&&drilldown.key===key} className={`accuracy-rate ${accuracyTone(item[key])}`} onClick={()=>setDrilldown(current=>current?.league===item.league&&current.key===key?null:{league:item.league,key})}>{accuracyText(item[key])}</button></td>)}</tr>)}</tbody></table></div>
@@ -228,7 +230,7 @@ export default function PredictionArchive(){
  const stats=useMemo(()=>{
   if(!selected)return null;
   let total=0,score=0,backup=0,upset=0,had=0,hhad=0,goalPrimary=0,goalCovered=0,halfFull=0,halfFullCovered=0,goalTotal=0,halfFullTotal=0;
-  selected.matches.filter(match=>selected.storageOrigin!=="recovered"||match.archiveEvidence==="formal").forEach(match=>{
+  uniqueArchiveMatchRows(selected.matches.filter(match=>selected.storageOrigin!=="recovered"||match.archiveEvidence==="formal").map(match=>({snapshot:selected,match}))).forEach(({match})=>{
    const result=resultFor(match); if(!result)return;
    total++;
    const [homeGoals,awayGoals]=result.fullScore.split(":").map(Number),actual=outcome(homeGoals,awayGoals);
@@ -248,24 +250,20 @@ export default function PredictionArchive(){
 
  const snapshotAudit=useMemo(()=>{
   const today=shanghaiToday(),sourceSnapshots=snapshots.filter(snapshot=>snapshot.storageOrigin!=="recovered"),scheduled=sourceSnapshots.filter(snapshot=>snapshot.storageOrigin==="server").length,migrated=sourceSnapshots.filter(snapshot=>snapshot.storageOrigin==="migrated-browser").length,local=sourceSnapshots.length-scheduled-migrated;
-  const eligible=sourceSnapshots.flatMap(snapshot=>snapshot.matches.filter(match=>Boolean(resultCache[cacheKey(match,snapshot.date)])||matchDate(match,snapshot.date)<today).map(match=>({snapshot,match})));
+  const eligible=uniqueArchiveMatchRows(sourceSnapshots.flatMap(snapshot=>snapshot.matches.filter(match=>Boolean(resultCache[cacheKey(match,snapshot.date)])||matchDate(match,snapshot.date)<today).map(match=>({snapshot,match}))));
   const settled=eligible.filter(({snapshot,match})=>Boolean(resultCache[cacheKey(match,snapshot.date)])).length;
   const completeForecasts=eligible.filter(({match})=>Boolean(match.hadProbabilities?.length&&match.hhadProbabilities?.length&&predictionScores(match).length&&match.totalGoalProbabilities?.length&&match.halfFullProbabilities?.length)).length;
   return {total:sourceSnapshots.length,scheduled,migrated,local,eligible:eligible.length,settled,completeForecasts};
  },[snapshots,resultCache]);
 
- const allReviewedRows=useMemo(()=>snapshots.filter(snapshot=>snapshot.storageOrigin!=="recovered").flatMap(snapshot=>snapshot.matches.flatMap(match=>{const result=resultCache[cacheKey(match,snapshot.date)];return result?[{snapshot,match,result,review:buildPostMatchReview(match,result)}]:[]})),[snapshots,resultCache]);
+ const allReviewedRows=useMemo<ReviewedArchiveRow[]>(()=>uniqueArchiveMatchRows(snapshots.filter(snapshot=>snapshot.storageOrigin!=="recovered").flatMap(snapshot=>snapshot.matches.flatMap(match=>{const result=resultCache[cacheKey(match,snapshot.date)];return result?[{snapshot,match,result,review:buildPostMatchReview(match,result)}]:[]}))),[snapshots,resultCache]);
  const modelEvaluation=useMemo(()=>buildModelEvaluation(allReviewedRows.map(({snapshot,match,result})=>({
   key:`${match.salesDate||snapshot.date}|${match.officialMatchId||`${result.date}|${result.id}|${normalizeName(match.home)}|${normalizeName(match.away)}`}`,
   salesDate:match.salesDate||snapshot.date,kickoffAt:match.kickoffAt||"",capturedAt:snapshot.capturedAt||snapshot.sourceFetchedAt,
   id:match.id,officialMatchId:match.officialMatchId||"",league:match.league,home:match.home,away:match.away,completeness:match.completeness,intelligenceCoverage:match.intelligenceCoverage||0,
   modelHad:match.hadProbabilities||[],challengerHad:match.shadowHadProbabilities||[],marketHad:match.marketHadProbabilities||[],scoreDistribution:predictionScores(match),totalGoalProbabilities:match.totalGoalProbabilities||[],hhadProbabilities:match.hhadProbabilities||[],halfFullProbabilities:match.halfFullProbabilities||[],handicap:match.handicap||result.handicap||"0",fullScore:result.fullScore,halfScore:result.halfScore||""
  }))),[allReviewedRows]);
- const leagueEvaluationRows=useMemo(()=>{
-  const unique=new Map<string,EvaluatedRow>();
-  allReviewedRows.forEach(({match,result})=>{const key=match.officialMatchId||`${result.date}|${result.id}`;if(!unique.has(key))unique.set(key,{match,result});});
-  return Array.from(unique.values());
- },[allReviewedRows]);
+ const leagueEvaluationRows=useMemo(()=>allReviewedRows.map(({match,result})=>({match,result})),[allReviewedRows]);
  useEffect(()=>{
   let active=true;const observations=allReviewedRows.flatMap(({snapshot,match,result})=>{const full=validFullScore(result),half=String(result.halfScore||"").split(":").map(Number),kickoffAt=match.kickoffAt||"",capturedAt=snapshot.capturedAt||snapshot.sourceFetchedAt,market=match.marketHadProbabilities||[],baseModel=hadFromScores(match.oddsScores);if(!full||match.hadProbabilities?.length!==3||market.length!==3||!kickoffAt||!capturedAt)return[];return[{matchKey:`${match.salesDate||snapshot.date}|${match.officialMatchId||`${result.date}|${result.id}`}`,league:match.league,kickoffAt,capturedAt,modelProbabilities:match.hadProbabilities,baseModelProbabilities:baseModel.length===3?baseModel:undefined,intelligenceCandidateProbabilities:match.shadowHadProbabilities?.length===3?match.shadowHadProbabilities:undefined,marketProbabilities:market,actual:outcome(full[0],full[1]),totalGoals:full[0]+full[1],halfGoals:half.length===2&&half.every(Number.isFinite)?half[0]+half[1]:undefined,homeGoals:full[0],awayGoals:full[1],expectedHomeGoals:match.expectedGoals?.home,expectedAwayGoals:match.expectedGoals?.away,intelligenceCoverage:match.intelligenceCoverage||0}]});
   fetch("/api/calibration",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({observations})}).then(response=>response.json()).then(data=>{if(active)setCalibrationProfile(data.evaluation||data.published||null)}).catch(()=>fetch("/api/calibration",{cache:"no-store"}).then(response=>response.json()).then(data=>{if(active)setCalibrationProfile(data.profile||null)}).catch(()=>{}));return()=>{active=false};
@@ -279,7 +277,7 @@ export default function PredictionArchive(){
   }).sort((left,right)=>right.rate-left.rate||right.count-left.count);
  },[allReviewedRows]);
 
- const reviewedRows=useMemo(()=>!selected?[]:selected.matches.map(match=>{const result=resultFor(match);return{match,result,review:result&&match.archiveEvidence!=="purchase_plan_partial"?buildPostMatchReview(match,result):undefined}}),[selected,resultFor]);
+ const reviewedRows=useMemo(()=>!selected?[]:uniqueArchiveMatchRows(selected.matches.map(match=>{const result=resultFor(match);return{snapshot:selected,match,result,review:result&&match.archiveEvidence!=="purchase_plan_partial"?buildPostMatchReview(match,result):undefined}})),[selected,resultFor]);
  const reviewMetrics=useMemo(()=>{
   const completed=reviewedRows.filter(row=>row.review),count=(label:ReviewPrimary)=>completed.filter(row=>row.review?.primary===label).length;
   return{total:completed.length,normal:count("正常兑现"),deviation:count("合理偏差"),upset:count("爆冷"),insufficient:count("数据不足"),averageProbability:completed.length?completed.reduce((sum,row)=>sum+(row.review?.actualOutcomeProbability||0),0)/completed.length:0,brier:completed.length?completed.reduce((sum,row)=>sum+(row.review?.brierScore||0),0)/completed.length:0};

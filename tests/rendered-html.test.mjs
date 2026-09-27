@@ -330,7 +330,9 @@ test("post-match workspace separates analysis views and deduplicates league accu
  const [archive,styles]=await Promise.all([readFile(new URL("../app/components/PredictionArchive.tsx",import.meta.url),"utf8"),readFile(new URL("../app/reference-ui.css",import.meta.url),"utf8")]);
  for(const label of ["综合回溯","比分预测","胜平负预测","让球预测","总进球数预测","半全场预测"])assert.match(archive,new RegExp(label));
  assert.match(archive,/各联赛预测正确率/);
- assert.match(archive,/if\(!unique\.has\(key\)\)unique\.set/);
+ assert.match(archive,/uniqueArchiveMatchRows\(snapshots\.filter/);
+ assert.match(archive,/detailRows=drilldown\?rows\.flatMap/);
+ assert.match(archive,/\.sort\(compareArchiveMatchRows\):\[\]/);
  assert.match(archive,/已有真实赛果且该预测字段完整/);
  assert.match(archive,/archive-analysis-toolbar/);
  assert.match(archive,/选择彩票日期/);
