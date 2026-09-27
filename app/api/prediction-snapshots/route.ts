@@ -3,6 +3,7 @@ import {join} from "node:path";
 import {NextResponse} from "next/server";
 import {selectOfficialDecisionRows} from "../../snapshot-decision-policy.js";
 import {buildArchiveRecoverySnapshots} from "../../archive-recovery.js";
+import {deduplicatePurchasePlans} from "../../purchase-plan-engine.js";
 import recoveredResults from "../../../data/result-supplements/2026-09-23-24.json";
 
 export const dynamic="force-dynamic";
@@ -23,6 +24,12 @@ const purchaseDirectory=join(process.cwd(),"data","purchase-plan-snapshots");
 // data/prediction-snapshots 供本地审计，但不得逐个 eager import 到 128MB Worker。
 const bundledIndexFiles=import.meta.glob<{snapshots?:unknown[];resultCache?:Record<string,unknown>;purchasePlanSnapshots?:unknown[]}>("../../../data/generated-prediction-snapshot-index.json",{eager:true,import:"default"});
 const toPurchaseSnapshot=(record:RawPurchaseSnapshot)=>record.recordType==="purchase-plan-snapshot"&&record.immutable===true&&record.snapshotId&&record.planSet?.plans?.length?{snapshotId:record.snapshotId,scheduledAt:record.scheduledAt,capturedAt:record.capturedAt,sourceFetchedAt:record.sourceFetchedAt,predictionId:record.predictionId,contentHash:record.contentHash,previousSnapshotId:record.previousSnapshotId,planSet:{...record.planSet,snapshotId:record.snapshotId,contentHash:record.contentHash}}:null;
+// Serve a deduplicated projection; immutable on-disk snapshots remain unchanged.
+const withoutDuplicateTickets=(snapshot:Record<string,unknown>)=>{
+ const planSet=snapshot.planSet;
+ if(!planSet||typeof planSet!=="object"||!Array.isArray((planSet as {plans?:unknown[]}).plans))return snapshot;
+ return {...snapshot,planSet:{...planSet,plans:deduplicatePurchasePlans((planSet as {plans:unknown[]}).plans)}};
+};
 async function readPurchaseSnapshotsFromDisk(){
  try{
   const names=(await readdir(purchaseDirectory)).filter(name=>name.endsWith(".json"));
@@ -77,7 +84,7 @@ export async function GET(request:Request){
   const verifiedResultCache=Object.fromEntries(recoveredResults.results.map(result=>[`official|${result.matchId}`,withDerivedTotalGoals(result)]));
   const bundledPurchaseSnapshots=Array.isArray(bundledIndex.purchasePlanSnapshots)?bundledIndex.purchasePlanSnapshots:[];
   const diskPurchaseSnapshots=await readPurchaseSnapshotsFromDisk();
-  const purchasePlanSnapshots=Array.from(new Map([...bundledPurchaseSnapshots,...diskPurchaseSnapshots].filter(record=>record&&typeof record==="object"&&"snapshotId" in record).map(record=>[String(record.snapshotId),record])).values()).sort((a,b)=>String(b.capturedAt||"").localeCompare(String(a.capturedAt||"")));
+  const purchasePlanSnapshots=Array.from(new Map([...bundledPurchaseSnapshots,...diskPurchaseSnapshots].filter(record=>record&&typeof record==="object"&&"snapshotId" in record).map(record=>[String(record.snapshotId),record])).values()).map(withoutDuplicateTickets).sort((a,b)=>String(b.capturedAt||"").localeCompare(String(a.capturedAt||"")));
   if(view==="recommendations")return NextResponse.json({snapshots:[],purchasePlanSnapshots,resultCache:{...bundledResultCache,...verifiedResultCache},storage:diskPurchaseSnapshots.length?"disk+bundle-index":"bundle-index"},{headers:{"Cache-Control":"no-store, max-age=0"}});
   let disk:Array<ReturnType<typeof toSnapshot>>=[];
   try{

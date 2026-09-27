@@ -207,6 +207,42 @@ export const purchasePlanModuleId = (planId) => {
   if (id.startsWith("tenfold-")) return "tenfold";
   return "result";
 };
+
+// The two total-goal strategies can select the exact same ticket. A saved batch
+// is the deduplication boundary: identical picks in later batches are separate
+// decisions and must remain in the historical record.
+const totalGoalTicketKey = (plan) => {
+  if (!plan?.items?.length || plan.status === "unavailable") return "";
+  return JSON.stringify({
+    passName: plan.passName,
+    stake: plan.stake,
+    items: plan.items
+      .map((item) => ({
+        match: `${item.officialMatchId || item.matchId}|${item.salesDate || item.matchDate || ""}`,
+        market: item.market,
+        picks: (item.picks?.length ? item.picks : [item])
+          .map((pick) => [pick.pick, Number(pick.odd)])
+          .sort((a, b) => String(a[0]).localeCompare(String(b[0]))),
+      }))
+      .sort((a, b) => a.match.localeCompare(b.match)),
+  });
+};
+
+export const deduplicatePurchasePlans = (plans) => {
+  if (!Array.isArray(plans)) return [];
+  const canonical = plans.find((plan) => plan.id === "total-double-2");
+  const canonicalKey = totalGoalTicketKey(canonical);
+  return plans.filter(
+    (plan) =>
+      plan.id !== "total-adjacent-double-2" ||
+      !canonicalKey ||
+      totalGoalTicketKey(plan) !== canonicalKey,
+  );
+};
+
+export const deduplicatePurchasePlanSets = (planSets) =>
+  (planSets || []).map((set) => ({ ...set, plans: deduplicatePurchasePlans(set?.plans) }));
+
 const settledPlanStatuses = new Set([
   "won",
   "lost",
@@ -231,7 +267,7 @@ export const summarizePurchasePlans = (plans) => {
   };
 };
 export const summarizePurchasePlanModules = (planSets) => {
-  const plans = (planSets || []).flatMap((item) => (Array.isArray(item?.plans) ? item.plans : []));
+  const plans = deduplicatePurchasePlanSets(planSets).flatMap((item) => item.plans);
   return Object.fromEntries(
     PURCHASE_PLAN_MODULES.map((module) => [
       module.id,
@@ -245,7 +281,7 @@ export const summarizePurchasePlanModules = (planSets) => {
 export const summarizePurchasePlanDays = (planSets) =>
   Object.fromEntries(
     Object.entries(
-      (planSets || []).reduce((byDate, set) => {
+      deduplicatePurchasePlanSets(planSets).reduce((byDate, set) => {
         if (!/^\d{4}-\d{2}-\d{2}$/.test(String(set?.date || ""))) return byDate;
         (byDate[set.date] ||= []).push(set);
         return byDate;
@@ -272,7 +308,7 @@ export const summarizePurchasePlanDays = (planSets) =>
 export const summarizePurchasePlanDefinitions = (planSets) =>
   Object.fromEntries(
     PURCHASE_PLAN_DEFINITIONS.map((definition) => {
-      const rows = (planSets || [])
+      const rows = deduplicatePurchasePlanSets(planSets)
         .flatMap((set) =>
           (set?.plans || [])
             .filter(
@@ -679,7 +715,7 @@ export function generatePurchasePlans({
     generatedAt,
     scheduledTime: PURCHASE_PLAN_DAILY_TIME,
     source: "每日17:00预测版本 + 中国体育彩票生成时固定奖金",
-    plans,
+    plans: deduplicatePurchasePlans(plans),
   };
 }
 

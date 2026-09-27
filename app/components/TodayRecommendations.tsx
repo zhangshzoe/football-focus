@@ -18,6 +18,8 @@ import {
   ScorePoint,
 } from "../prediction-config";
 import {
+  deduplicatePurchasePlanSets,
+  deduplicatePurchasePlans,
   generatePurchasePlans,
   PURCHASE_PLAN_DEFINITIONS,
   PURCHASE_PLAN_MODULES,
@@ -398,7 +400,7 @@ function DailyPurchasePlans({
     const results = [...new Map([...cachedResults,...freshResults].map(result=>[`${result.matchId}|${result.date}`,result])).values()];
     setPlanSet({
       ...selected,
-      plans: selected.plans.map((plan) => settlePurchasePlan(plan, results)),
+      plans: deduplicatePurchasePlans(selected.plans).map((plan) => settlePurchasePlan(plan, results)),
     });
     setStatus(
       `${selected.snapshotId?.startsWith("manual-trial-")?"手动试算":selected.date === shanghaiDate() ? "今日正式" : "历史正式"}方案 · ${new Date(selected.generatedAt).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })}批次`,
@@ -459,8 +461,8 @@ function DailyPurchasePlans({
         const storedTrials=(Array.isArray(saved.trials)?saved.trials:[]).filter(hasPurchasePlanData) as PurchasePlanSet[];
         const cachedResults=Object.values(archive.resultCache&&typeof archive.resultCache==="object"?archive.resultCache:{}) as PurchaseResult[];
         const {results:historyResults,failed}=await fetchHistoricalPurchaseResults(allSets,cachedResults);
-        const settledSets=allSets.map(item=>({...item,plans:item.plans.map(plan=>settlePurchasePlan(plan,historyResults))}));
-        const settledTrials=storedTrials.map(item=>({...item,plans:item.plans.map(plan=>settlePurchasePlan(plan,historyResults))}));
+        const settledSets=(deduplicatePurchasePlanSets(allSets) as PurchasePlanSet[]).map(item=>({...item,plans:item.plans.map(plan=>settlePurchasePlan(plan,historyResults))}));
+        const settledTrials=(deduplicatePurchasePlanSets(storedTrials) as PurchasePlanSet[]).map(item=>({...item,plans:item.plans.map(plan=>settlePurchasePlan(plan,historyResults))}));
         if (active) {
           setPlanSets(settledSets);
           setSavedTrials(settledTrials);
@@ -527,7 +529,7 @@ function DailyPurchasePlans({
               : plan.status === "awaiting_result"
                 ? "已完赛待官方结果"
                 : "待赛";
-  const planStats=useMemo(()=>summarizePurchasePlans(planSets.flatMap(item=>item.plans)),[planSets]);
+  const planStats=useMemo(()=>summarizePurchasePlans((deduplicatePurchasePlanSets(planSets) as PurchasePlanSet[]).flatMap(item=>item.plans)),[planSets]);
   const moduleStats=useMemo(()=>summarizePurchasePlanModules(planSets),[planSets]);
   const definitionHistory=useMemo(()=>summarizePurchasePlanDefinitions(planSets),[planSets]);
   const dayHistory=useMemo(()=>summarizePurchasePlanDays(planSets),[planSets]);

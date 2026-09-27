@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
 import test from "node:test";
 import ts from "typescript";
-import {calculatePurchaseLegReturns,generatePurchasePlans,PURCHASE_PLAN_MODULES,settlePurchasePlan,summarizePurchasePlanModules,summarizePurchasePlanDefinitions,summarizePurchasePlanDays} from "../app/purchase-plan-engine.js";
+import {calculatePurchaseLegReturns,deduplicatePurchasePlans,generatePurchasePlans,PURCHASE_PLAN_MODULES,settlePurchasePlan,summarizePurchasePlanModules,summarizePurchasePlanDefinitions,summarizePurchasePlanDays} from "../app/purchase-plan-engine.js";
 
 test("daily snapshot summary excludes missing dates and unsettled tickets from returns",()=>{
  const days=summarizePurchasePlanDays([
@@ -411,7 +411,7 @@ test("daily purchase drafts generate all fixed traceable ticket types and settle
  const qualified=(marketCode,handicap)=>({marketCode,salesStatus:"Selling",qualification:"qualified",handicap,allowedPassCounts:[1,2,3,4,5,6,7,8],cutoffAt:"2026-09-08T19:50:00+08:00",ruleVersion:"test"});
  const officialMatches=reports.map(report=>({id:report.id,officialMatchId:report.officialMatchId,salesDate:report.salesDate,matchDate:report.matchDate,kickoffAt:report.kickoffAt,matchStatus:"Selling",marketOdds:{"胜平负":[2.1,3.2,4],"让球胜平负":[3.1,3.4,1.9],"比分":Array(31).fill(9),"总进球数":[12,6,3.5,3.2,5,8,12,16],"半全场":[4,12,25,5,6,14,18,13,7]},marketEligibility:{"胜平负":qualified("HAD"),"让球胜平负":qualified("HHAD","-1"),"比分":qualified("CRS"),"总进球数":qualified("TTG"),"半全场":qualified("HAFU")}}));
  const set=generatePurchasePlans({date:"2026-09-08",reports,officialMatches,generatedAt:"2026-09-08T09:00:00.000Z"});
- assert.equal(set.plans.length,18);assert.deepEqual(set.plans.map(plan=>plan.id),["score-double-3","score-single-2","score-double-2","score-single-3","total-double-3","total-double-2","total-single-2","draw-or-handicap-draw-2","draw-or-handicap-draw-3","result-mixed-3","result-mixed-4","result-mixed-5","had-safe-2","tenfold-safe-2","tenfold-safe-3","tenfold-safe-4","total-adjacent-double-2","half-full-double-3"]);
+ assert.equal(set.plans.length,17);assert.deepEqual(set.plans.map(plan=>plan.id),["score-double-3","score-single-2","score-double-2","score-single-3","total-double-3","total-double-2","total-single-2","draw-or-handicap-draw-2","draw-or-handicap-draw-3","result-mixed-3","result-mixed-4","result-mixed-5","had-safe-2","tenfold-safe-2","tenfold-safe-3","tenfold-safe-4","half-full-double-3"]);
  assert.equal(set.plans[0].betCount,8);assert.equal(set.plans[0].stake,16);assert.equal(set.plans[1].betCount,1);assert.equal(set.plans[1].stake,2);assert.equal(set.plans[2].betCount,4);assert.equal(set.plans[4].betCount,8);assert.equal(set.plans[5].betCount,4);assert.equal(set.plans[5].stake,8);assert.equal(set.plans[6].betCount,1);
  assert.ok(set.plans[5].items.every(item=>item.market==="total"&&item.picks.length===2));
  assert.ok(set.plans[7].items.every(item=>item.pick==="平"||item.pick==="让平"));
@@ -419,9 +419,9 @@ test("daily purchase drafts generate all fixed traceable ticket types and settle
  assert.ok(set.plans[12].items.every(item=>item.probability>=50));
  assert.ok(!set.plans.some(plan=>plan.id==="had-double-2"));
  for(const [index,matches] of [[13,2],[14,3],[15,4]]){assert.equal(set.plans[index].items.length,matches);assert.equal(set.plans[index].stake,2);assert.equal(set.plans[index].betCount,1);assert.ok(set.plans[index].minWinningProfit>0);assert.ok(set.plans[index].items.every(item=>item.probability>=30&&item.picks.length===1))}
- assert.ok(set.plans[16].items.every(item=>Math.abs(Number(item.picks[0].pick.match(/\d+/)?.[0])-Number(item.picks[1].pick.match(/\d+/)?.[0]))===1));
- assert.equal(set.plans[17].passName,"3串1");assert.equal(set.plans[17].betCount,8);assert.equal(set.plans[17].stake,16);assert.ok(set.plans[17].minWinningProfit>0);
- assert.ok(set.plans[17].items.every(item=>item.market==="halfFull"&&item.picks.length===2));
+ assert.ok(!set.plans.some(plan=>plan.id==="total-adjacent-double-2"),"相同的相邻进球票不能重复生成");
+ assert.equal(set.plans[16].passName,"3串1");assert.equal(set.plans[16].betCount,8);assert.equal(set.plans[16].stake,16);assert.ok(set.plans[16].minWinningProfit>0);
+ assert.ok(set.plans[16].items.every(item=>item.market==="halfFull"&&item.picks.length===2));
  for(const plan of set.plans){assert.equal(plan.status,"pending");assert.equal(new Set(plan.items.map(item=>item.matchId)).size,plan.items.length);assert.ok(plan.maxWinningReturn>=plan.minWinningReturn)}
  const first=set.plans[0],results=first.items.map(item=>({id:item.matchId,matchId:item.officialMatchId,date:"2026-09-08",fullScore:"2:0",scoreResult:"2:0",status:"settled"}));
  assert.equal(settlePurchasePlan(first,results).status,"won");
@@ -475,6 +475,30 @@ test("each fixed ticket has independent cross-date settlement and visible pendin
  const record=summarizePurchasePlanDefinitions(sets)["total-double-2"];
  assert.equal(record.rows.length,3);
  assert.deepEqual({settled:record.settled,won:record.won,rate:record.rate,stake:record.stake,returned:record.returned,net:record.net},{settled:2,won:1,rate:50,stake:16,returned:25,net:9});
+});
+
+test("identical adjacent total-goal tickets count once per saved batch without erasing distinct history",()=>{
+ const items=[
+  {officialMatchId:"101",salesDate:"2026-09-21",market:"total",picks:[{pick:"2球",odd:4},{pick:"3球",odd:3}]},
+  {officialMatchId:"102",salesDate:"2026-09-21",market:"total",picks:[{pick:"1球",odd:5},{pick:"2球",odd:4}]},
+ ];
+ const canonical={id:"total-double-2",status:"won",passName:"2串1",stake:8,simulatedReturn:24,items};
+ const duplicate={...canonical,id:"total-adjacent-double-2",status:"lost",simulatedReturn:0,items:[
+  {...items[1],picks:[...items[1].picks].reverse()},
+  {...items[0],picks:[...items[0].picks].reverse()},
+ ]};
+ const distinct={...duplicate,items:[items[0],{...items[1],picks:[{pick:"2球",odd:4},{pick:"3球",odd:3}]}]};
+ const first={snapshotId:"batch-a",date:"2026-09-21",generatedAt:"2026-09-21T09:00:00Z",plans:[canonical,duplicate]};
+ const second={snapshotId:"batch-b",date:"2026-09-22",generatedAt:"2026-09-22T09:00:00Z",plans:[canonical,distinct]};
+ assert.deepEqual(deduplicatePurchasePlans(first.plans).map(plan=>plan.id),["total-double-2"]);
+ assert.equal(first.plans.length,2,"immutable source batch must not be mutated");
+ assert.deepEqual(deduplicatePurchasePlans(second.plans).map(plan=>plan.id),["total-double-2","total-adjacent-double-2"]);
+ const days=summarizePurchasePlanDays([first,second]);
+ assert.equal(days["2026-09-21"].tickets,1);
+ assert.equal(days["2026-09-22"].tickets,2);
+ const total=summarizePurchasePlanModules([first,second]).total;
+ assert.deepEqual({settled:total.settled,won:total.won,stake:total.stake,returned:total.returned},{settled:3,won:2,stake:24,returned:48});
+ assert.equal(summarizePurchasePlanDefinitions([first,second])["total-adjacent-double-2"].rows.length,1);
 });
 
 test("settlement keeps missing fields pending and isolates official ids by date",()=>{
