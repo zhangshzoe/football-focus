@@ -139,6 +139,7 @@ const odds = (value: unknown): OfficialOdds | undefined =>
 
 export const SPORTTERY_SOURCE_URL =
   "https://webapi.sporttery.cn/gateway/uniform/football/getMatchCalculatorV1.qry";
+export const SPORTTERY_MOBILE_CALCULATOR_URL = "https://m.sporttery.cn/mjc/jsq/zqspf/";
 export const SPORTTERY_POOLS = ["HAD", "HHAD", "CRS", "TTG", "HAFU"] as const;
 export type SportteryPool = (typeof SPORTTERY_POOLS)[number];
 
@@ -275,6 +276,37 @@ async function fetchPool(pool: SportteryPool, timeoutMs: number, serverHeaders: 
   }
 }
 
+// The public mobile calculator requests all markets in one response with
+// channel=c and no poolCode. It is still the official gateway, not a separate
+// source or a way around an upstream access block.
+async function fetchMobileCalculator(timeoutMs: number): Promise<OfficialPayload> {
+  const controller = new AbortController(),
+    timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(`${SPORTTERY_SOURCE_URL}?channel=c`, {
+      cache: "no-store",
+      signal: controller.signal,
+      headers: { Accept: "application/json" },
+      credentials: "omit",
+      mode: "cors",
+    });
+    if (!response.ok)
+      throw new Error(response.status === 567 ? "返回 567（官方站点防护拦截）" : `返回 ${response.status}`);
+    const raw = await response.text();
+    let json: unknown;
+    try { json = JSON.parse(raw); }
+    catch { throw new Error("手机计算器接口返回了非 JSON 数据"); }
+    const payload = parsePayload(json);
+    const updatedAt = Date.parse(String(payload.value.lastUpdateTime || "").replace(" ", "T") + "+08:00");
+    if (!Number.isFinite(updatedAt) || updatedAt > Date.now() + 5 * 60_000 || Date.now() - updatedAt > 60 * 60_000)
+      throw new Error("手机计算器数据更新时间缺失或超过 60 分钟");
+    if (!rowsOf(payload).length) throw new Error("手机计算器未返回比赛");
+    return payload;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export type SportteryData = {
   source: string;
   sourcePage: string;
@@ -287,7 +319,7 @@ export type SportteryData = {
   matches: SportteryMatch[];
   repairMode: boolean;
   attempts: number;
-  deliveryMode: "server" | "browser-direct";
+  deliveryMode: "server" | "browser-direct" | "server-mobile-calculator" | "browser-mobile-calculator";
 };
 
 export type SportteryMatch = {
@@ -347,6 +379,25 @@ export async function fetchOfficialSporttery(
         if (result.status === "fulfilled") collected[pool].push(result.value);
         else errors[pool].push(errorMessage(result.reason));
       });
+    }
+  }
+  let mobileCalculatorUsed = false;
+  const missingPools = SPORTTERY_POOLS.filter((pool) => !collected[pool].some((payload) => rowsOf(payload).length));
+  if (missingPools.length) {
+    try {
+      const mobile = await fetchMobileCalculator(timeoutMs);
+      const mobileRows = rowsOf(mobile);
+      missingPools.forEach((pool) => {
+        const rows = mobileRows.filter((row) => row.poolList?.some((rule) => String(rule.poolCode).toUpperCase() === pool));
+        if (!rows.length) {
+          errors[pool].push(`${errors[pool].at(-1) || "主接口无赛事"}；手机计算器未返回 ${pool} 玩法`);
+          return;
+        }
+        collected[pool].push({ ...mobile, value: { ...mobile.value, matchInfoList: [{ subMatchList: rows }] } });
+        mobileCalculatorUsed = true;
+      });
+    } catch (error) {
+      missingPools.forEach((pool) => errors[pool].push(`${errors[pool].at(-1) || "主接口无赛事"}；手机计算器：${errorMessage(error)}`));
     }
   }
   const byPool = {} as Partial<Record<SportteryPool, OfficialPayload>>;
@@ -469,13 +520,15 @@ export async function fetchOfficialSporttery(
       .at(-1) || "";
   return {
     source: "中国体育彩票·竞彩网",
-    sourcePage: "https://www.sporttery.cn/",
+    sourcePage: mobileCalculatorUsed ? SPORTTERY_MOBILE_CALCULATOR_URL : "https://www.sporttery.cn/",
     fetchedAt: new Date().toISOString(),
     upstreamUpdatedAt,
     poolStatus,
     matches,
     repairMode: repair,
     attempts,
-    deliveryMode: options.serverHeaders ? "server" : "browser-direct",
+    deliveryMode: mobileCalculatorUsed
+      ? options.serverHeaders ? "server-mobile-calculator" : "browser-mobile-calculator"
+      : options.serverHeaders ? "server" : "browser-direct",
   };
 }

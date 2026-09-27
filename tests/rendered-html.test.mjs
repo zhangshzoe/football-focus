@@ -160,6 +160,26 @@ test("official markets never fall back to demo odds and tolerate independent poo
   assert.equal(response.status,200);assert.equal(data.poolStatus.HAD.status,"failed");
   assert.equal(data.matches[0].marketOdds["胜平负"],null);
 
+  globalThis.fetch=async url=>{
+   const request=new URL(String(url)),pool=request.searchParams.get("poolCode");
+   if(pool)return new Response("blocked",{status:567});
+   assert.equal(request.searchParams.get("channel"),"c");
+   const row={...officialRow("HAD"),hhad:officialRow("HHAD").hhad,crs:officialRow("CRS").crs,ttg:officialRow("TTG").ttg,hafu:officialRow("HAFU").hafu,poolList:["HAD","HHAD","CRS","TTG","HAFU"].map(poolCode=>({poolCode,poolStatus:"Selling",bettingAllup:1,bettingSingle:1}))};
+   const payload=poolPayload([row]);
+   payload.value.lastUpdateTime=new Date(Date.now()+8*3600000).toISOString().slice(0,19).replace("T"," ");
+   return new Response(JSON.stringify(payload),{status:200});
+  };
+  response=await get();data=await response.json();
+  assert.equal(response.status,200);assert.equal(data.deliveryMode,"server-mobile-calculator");
+  assert.equal(data.matches[0].marketOdds["胜平负"][0],2.1);
+  assert.equal(data.matches[0].marketOdds["总进球数"][2],3.2);
+
+  globalThis.fetch=async url=>new URL(String(url)).searchParams.has("poolCode")
+   ?new Response("blocked",{status:567})
+   :new Response(JSON.stringify(poolPayload([officialRow("HAD")])),{status:200});
+  response=await get();data=await response.json();
+  assert.equal(response.status,503);assert.equal(data.code,"OFFICIAL_ACCESS_BLOCKED");
+
   globalThis.fetch=async()=>new Response("blocked",{status:567});
   response=await get();data=await response.json();
   assert.equal(response.status,503);assert.equal(data.code,"OFFICIAL_ACCESS_BLOCKED");assert.match(data.error,/HTTP 567/);
