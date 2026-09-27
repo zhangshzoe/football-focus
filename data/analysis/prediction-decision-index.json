@@ -54,9 +54,9 @@
           "away": "威尔士",
           "kickoffAt": "2026-09-28T00:00:00+08:00",
           "decisionTargetAt": "2026-09-27T14:30:00.000Z",
-          "selectedSnapshotId": "2026-09-27-1730",
-          "selectedScheduledAt": "2026-09-27T17:30:00+08:00",
-          "selectedCapturedAt": "2026-09-27T09:30:50.812Z",
+          "selectedSnapshotId": "2026-09-27-2230",
+          "selectedScheduledAt": "2026-09-27T22:30:00+08:00",
+          "selectedCapturedAt": "2026-09-27T14:31:24.180Z",
           "decisionPolicy": "latest_not_after_official_target_v1"
         },
         {
@@ -66,9 +66,9 @@
           "away": "荷兰",
           "kickoffAt": "2026-09-28T00:00:00+08:00",
           "decisionTargetAt": "2026-09-27T14:30:00.000Z",
-          "selectedSnapshotId": "2026-09-27-1730",
-          "selectedScheduledAt": "2026-09-27T17:30:00+08:00",
-          "selectedCapturedAt": "2026-09-27T09:30:50.812Z",
+          "selectedSnapshotId": "2026-09-27-2230",
+          "selectedScheduledAt": "2026-09-27T22:30:00+08:00",
+          "selectedCapturedAt": "2026-09-27T14:31:24.180Z",
           "decisionPolicy": "latest_not_after_official_target_v1"
         },
         {
@@ -78,9 +78,9 @@
           "away": "科索沃",
           "kickoffAt": "2026-09-28T00:00:00+08:00",
           "decisionTargetAt": "2026-09-27T14:30:00.000Z",
-          "selectedSnapshotId": "2026-09-27-1730",
-          "selectedScheduledAt": "2026-09-27T17:30:00+08:00",
-          "selectedCapturedAt": "2026-09-27T09:30:50.812Z",
+          "selectedSnapshotId": "2026-09-27-2230",
+          "selectedScheduledAt": "2026-09-27T22:30:00+08:00",
+          "selectedCapturedAt": "2026-09-27T14:31:24.180Z",
           "decisionPolicy": "latest_not_after_official_target_v1"
         },
         {
@@ -90,9 +90,9 @@
           "away": "希腊",
           "kickoffAt": "2026-09-28T02:45:00+08:00",
           "decisionTargetAt": "2026-09-27T14:30:00.000Z",
-          "selectedSnapshotId": "2026-09-27-1730",
-          "selectedScheduledAt": "2026-09-27T17:30:00+08:00",
-          "selectedCapturedAt": "2026-09-27T09:30:50.812Z",
+          "selectedSnapshotId": "2026-09-27-2230",
+          "selectedScheduledAt": "2026-09-27T22:30:00+08:00",
+          "selectedCapturedAt": "2026-09-27T14:31:24.180Z",
           "decisionPolicy": "latest_not_after_official_target_v1"
         },
         {
@@ -102,9 +102,9 @@
           "away": "葡萄牙",
           "kickoffAt": "2026-09-28T02:45:00+08:00",
           "decisionTargetAt": "2026-09-27T14:30:00.000Z",
-          "selectedSnapshotId": "2026-09-27-1730",
-          "selectedScheduledAt": "2026-09-27T17:30:00+08:00",
-          "selectedCapturedAt": "2026-09-27T09:30:50.812Z",
+          "selectedSnapshotId": "2026-09-27-2230",
+          "selectedScheduledAt": "2026-09-27T22:30:00+08:00",
+          "selectedCapturedAt": "2026-09-27T14:31:24.180Z",
           "decisionPolicy": "latest_not_after_official_target_v1"
         },
         {
@@ -114,9 +114,9 @@
           "away": "迈国际",
           "kickoffAt": "2026-09-28T07:00:00+08:00",
           "decisionTargetAt": "2026-09-27T14:30:00.000Z",
-          "selectedSnapshotId": "2026-09-27-1730",
-          "selectedScheduledAt": "2026-09-27T17:30:00+08:00",
-          "selectedCapturedAt": "2026-09-27T09:30:50.812Z",
+          "selectedSnapshotId": "2026-09-27-2230",
+          "selectedScheduledAt": "2026-09-27T22:30:00+08:00",
+          "selectedCapturedAt": "2026-09-27T14:31:24.180Z",
           "decisionPolicy": "latest_not_after_official_target_v1"
         }
       ]
@@ -2732,5 +2732,5 @@
       ]
     }
   ],
-  "generatedAt": "2026-09-27T09:33:50.230Z"
+  "generatedAt": "2026-09-27T14:33:46.107Z"
 }
