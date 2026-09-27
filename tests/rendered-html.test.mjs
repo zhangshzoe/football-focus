@@ -330,6 +330,8 @@ test("post-match workspace separates analysis views and deduplicates league accu
  const [archive,styles]=await Promise.all([readFile(new URL("../app/components/PredictionArchive.tsx",import.meta.url),"utf8"),readFile(new URL("../app/reference-ui.css",import.meta.url),"utf8")]);
  for(const label of ["综合回溯","比分预测","胜平负预测","让球预测","总进球数预测","半全场预测"])assert.match(archive,new RegExp(label));
  assert.match(archive,/各联赛预测正确率/);
+ assert.match(archive,/metric\.total<5\?"small-sample":metric\.hits\/metric\.total>=\.9\?"very-high":metric\.hits\/metric\.total>=\.65\?"high":metric\.hits\/metric\.total>=\.4\?"medium":"low"/);
+ for(const tone of ["very-high","high","medium","low","small-sample"])assert.match(styles,new RegExp(`\\.accuracy-rate\\.${tone}\\{`));
  assert.match(archive,/uniqueArchiveMatchRows\(snapshots\.filter/);
  assert.match(archive,/detailRows=drilldown\?rows\.flatMap/);
  assert.match(archive,/\.sort\(compareArchiveMatchRows\):\[\]/);
