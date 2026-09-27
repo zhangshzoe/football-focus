@@ -23,6 +23,14 @@ const purchaseDirectory=join(process.cwd(),"data","purchase-plan-snapshots");
 // data/prediction-snapshots 供本地审计，但不得逐个 eager import 到 128MB Worker。
 const bundledIndexFiles=import.meta.glob<{snapshots?:unknown[];resultCache?:Record<string,unknown>;purchasePlanSnapshots?:unknown[]}>("../../../data/generated-prediction-snapshot-index.json",{eager:true,import:"default"});
 const toPurchaseSnapshot=(record:RawPurchaseSnapshot)=>record.recordType==="purchase-plan-snapshot"&&record.immutable===true&&record.snapshotId&&record.planSet?.plans?.length?{snapshotId:record.snapshotId,scheduledAt:record.scheduledAt,capturedAt:record.capturedAt,sourceFetchedAt:record.sourceFetchedAt,predictionId:record.predictionId,contentHash:record.contentHash,previousSnapshotId:record.previousSnapshotId,planSet:{...record.planSet,snapshotId:record.snapshotId,contentHash:record.contentHash}}:null;
+async function readPurchaseSnapshotsFromDisk(){
+ try{
+  const names=(await readdir(purchaseDirectory)).filter(name=>name.endsWith(".json"));
+  return (await Promise.all(names.map(async name=>{
+   try{return toPurchaseSnapshot(JSON.parse(await readFile(join(purchaseDirectory,name),"utf8")) as RawPurchaseSnapshot)}catch{return null}
+  }))).filter((record):record is NonNullable<ReturnType<typeof toPurchaseSnapshot>>=>record!==null);
+ }catch{return [] as Array<NonNullable<ReturnType<typeof toPurchaseSnapshot>>>}
+}
 const labelFor=(slot:string)=>`${slot.slice(0,2)}:${slot.slice(2)}批次`;
 const number=(value:unknown)=>Number.isFinite(Number(value))?Number(value):0;
 const withDerivedTotalGoals=<T extends {fullScore?:string;totalGoalsResult?:string}>(result:T)=>{
@@ -68,7 +76,9 @@ export async function GET(request:Request){
   const bundledResultCache=bundledIndex.resultCache&&typeof bundledIndex.resultCache==="object"&&!Array.isArray(bundledIndex.resultCache)?bundledIndex.resultCache:{};
   const verifiedResultCache=Object.fromEntries(recoveredResults.results.map(result=>[`official|${result.matchId}`,withDerivedTotalGoals(result)]));
   const bundledPurchaseSnapshots=Array.isArray(bundledIndex.purchasePlanSnapshots)?bundledIndex.purchasePlanSnapshots:[];
-  if(view==="recommendations")return NextResponse.json({snapshots:[],purchasePlanSnapshots:bundledPurchaseSnapshots,resultCache:{...bundledResultCache,...verifiedResultCache},storage:"bundle-index"},{headers:{"Cache-Control":"no-store, max-age=0"}});
+  const diskPurchaseSnapshots=await readPurchaseSnapshotsFromDisk();
+  const purchasePlanSnapshots=Array.from(new Map([...bundledPurchaseSnapshots,...diskPurchaseSnapshots].filter(record=>record&&typeof record==="object"&&"snapshotId" in record).map(record=>[String(record.snapshotId),record])).values()).sort((a,b)=>String(b.capturedAt||"").localeCompare(String(a.capturedAt||"")));
+  if(view==="recommendations")return NextResponse.json({snapshots:[],purchasePlanSnapshots,resultCache:{...bundledResultCache,...verifiedResultCache},storage:diskPurchaseSnapshots.length?"disk+bundle-index":"bundle-index"},{headers:{"Cache-Control":"no-store, max-age=0"}});
   let disk:Array<ReturnType<typeof toSnapshot>>=[];
   try{
    const allNames=await readdir(directory),supplementNames=allNames.filter(name=>name.includes(".supplement."));
@@ -86,17 +96,11 @@ export async function GET(request:Request){
    const completedAt=rows.map(row=>row.capturedAt).sort().at(-1)||"";
    return{snapshotId:`${date}-official-decision-v1`,immutable:true,schemaVersion:3,predictionId:`decision-${date}-v1`,date,scheduledAt:"",capturedAt:completedAt,sourceFetchedAt:completedAt,upstreamUpdatedAt:completedAt,decisionTiming:"pre_match",scheduleLabel:`每日正式复盘 · ${rows.length}场（按规定决策时点合并）`,storageOrigin:"server",matches:rows.map(row=>({...row.match,decisionTargetAt:row.targetAt,selectedSnapshotId:row.snapshot.snapshotId,selectedScheduledAt:row.scheduledAt,selectedCapturedAt:row.capturedAt,decisionPolicy:"latest_not_after_official_target_v1"}))};
   }).sort((a,b)=>b.date.localeCompare(a.date));
-  let diskPurchaseSnapshots:Array<ReturnType<typeof toPurchaseSnapshot>>=[];
-  try{
-   const names=(await readdir(purchaseDirectory)).filter(name=>name.endsWith(".json"));
-   diskPurchaseSnapshots=await Promise.all(names.map(async name=>{try{return toPurchaseSnapshot(JSON.parse(await readFile(join(purchaseDirectory,name),"utf8")))}catch{return null}}));
-  }catch{/* Worker 使用打包的独立方案快照，不能依赖本机磁盘。 */}
-  const purchasePlanSnapshots=diskPurchaseSnapshots.some(Boolean)?Array.from(new Map(diskPurchaseSnapshots.filter(record=>record!==null).map(record=>[record!.snapshotId,record])).values()).sort((a,b)=>String(b!.capturedAt||"").localeCompare(String(a!.capturedAt||""))):bundledPurchaseSnapshots;
   const snapshotKey=(snapshot:Record<string,unknown>)=>`${snapshot.date}|${snapshot.sourceFetchedAt}|${snapshot.predictionId||"legacy"}`;
   const baseSnapshots=diskSnapshots.length?Array.from(new Map([...(snapshots as unknown as Array<Record<string,unknown>>),...bundledMigratedSnapshots].map(snapshot=>[snapshotKey(snapshot),snapshot])).values()):bundledSnapshots;
   const recoverySnapshots=buildArchiveRecoverySnapshots(baseSnapshots,purchasePlanSnapshots);
   const responseSnapshots=[...recoverySnapshots,...baseSnapshots].sort((a,b)=>String(b.capturedAt||b.sourceFetchedAt).localeCompare(String(a.capturedAt||a.sourceFetchedAt)));
-  return NextResponse.json({snapshots:responseSnapshots,resultCache:{...bundledResultCache,...verifiedResultCache},resultCorrections:verifiedResultCache,purchasePlanSnapshots,storage:diskSnapshots.length||diskPurchaseSnapshots.some(Boolean)?"disk+bundle-migration":"bundle-index"},{headers:{"Cache-Control":"no-store, max-age=0"}});
+  return NextResponse.json({snapshots:responseSnapshots,resultCache:{...bundledResultCache,...verifiedResultCache},resultCorrections:verifiedResultCache,purchasePlanSnapshots,storage:diskSnapshots.length||diskPurchaseSnapshots.length?"disk+bundle-migration":"bundle-index"},{headers:{"Cache-Control":"no-store, max-age=0"}});
  }catch(error){
   return NextResponse.json({snapshots:[],error:error instanceof Error?error.message:"快照读取失败"},{status:500,headers:{"Cache-Control":"no-store, max-age=0"}});
  }

@@ -420,6 +420,16 @@ main{max-width:1320px!important;padding-bottom:88px!important}
 .topbar.compact-nav{max-width:calc(100vw - 40px)!important;overflow-x:auto;scrollbar-width:none}.topbar.compact-nav::-webkit-scrollbar{display:none}.topbar.compact-nav nav{min-width:max-content}.topbar.compact-nav nav a{min-width:154px!important}
 @media(min-width:1200px){.topbar.compact-nav nav a{min-width:172px!important}}
 
+/* Keep the desktop navigation aligned with the notices and match filters below it. */
+@media(min-width:768px){
+  .sky-shell{padding-left:0;padding-right:0}
+  .topbar.compact-nav{width:100%;min-width:0;max-width:none!important}
+  .topbar.compact-nav nav{display:grid;width:100%;min-width:0;grid-template-columns:repeat(5,minmax(0,1fr));gap:0}
+  .topbar.compact-nav nav a{min-width:0!important;justify-content:center;padding:0 8px!important}
+  .warning{width:100%}
+  .view-matches .match-repair-toolbar{margin-left:0;margin-right:0}
+}
+
 /* Evidence-based post-match review. */
 .review-overview{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:9px;margin:0 0 13px}.review-overview>div{padding:11px 12px;border:1px solid #d8e7ef;border-radius:10px;background:rgba(255,255,255,.9)}.review-overview small,.review-overview b{display:block}.review-overview small{color:#6a7e8d;font-size:11px}.review-overview b{margin-top:4px;color:#245674;font-size:14px}.review-overview .normal{background:#edf9f2}.review-overview .normal b{color:#20805a}.review-overview .deviation{background:#fff8e7}.review-overview .deviation b{color:#9b6a12}.review-overview .upset{background:#fff0f1}.review-overview .upset b{color:#bd3f4e}.review-overview .insufficient{background:#f2f4f6}.review-overview .insufficient b{color:#667085}
 .archive-review-filters{display:flex;align-items:flex-end;gap:11px;margin:0 0 12px;padding:11px 13px;border:1px solid #d7e7f0;border-radius:11px;background:rgba(248,252,255,.9)}.archive-review-filters label{display:grid;gap:5px;color:#536b7c;font-size:11px}.archive-review-filters select,.archive-review-filters input{height:36px;min-width:150px;padding:0 10px;border:1px solid #c9ddeb;border-radius:8px;background:#fff;color:#344054}.archive-review-filters select:focus,.archive-review-filters input:focus{outline:3px solid rgba(22,135,248,.16);border-color:#1687f8}.archive-review-filters .archive-review-search{min-width:220px}.archive-review-search input{width:100%}.archive-review-filters>small{margin:0 0 10px auto;color:#667085;font-variant-numeric:tabular-nums}
