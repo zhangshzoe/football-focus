@@ -12,6 +12,7 @@
     "start": "vinext start",
     "mobile:url": "node scripts/mobile-access.mjs",
     "snapshot:purchase": "node scripts/capture-purchase-plan-snapshot.mjs",
+    "snapshot:purchase:2100": "node scripts/capture-purchase-plan-snapshot.mjs --slot=2100",
     "snapshot:due": "node scripts/capture-due-prediction-snapshots.mjs",
     "audit:predictions": "node scripts/audit-prediction-history.mjs",
     "sync:decision-index": "node scripts/sync-prediction-decision-index.mjs",

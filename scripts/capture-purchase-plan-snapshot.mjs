@@ -5,6 +5,8 @@ import {generatePurchasePlans} from "../app/purchase-plan-engine.js";
 
 const baseUrl=process.env.FOOTBALL_FOCUS_URL||"http://localhost:3000";
 const directory=join(process.cwd(),"data","purchase-plan-snapshots");
+const slot=process.argv.includes("--slot=2100")?"2100":"1700";
+const slotTime=slot==="2100"?"21:00":"17:00";
 const shanghaiParts=()=>Object.fromEntries(new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}).formatToParts(new Date()).map(part=>[part.type,part.value]));
 const digest=value=>createHash("sha256").update(JSON.stringify(value)).digest("hex");
 const cleanNumber=value=>Number.isFinite(Number(value))?Number(Number(value).toFixed(8)):0;
@@ -14,12 +16,12 @@ const requestJson=async(url,options)=>{const response=await fetch(url,options),p
 await mkdir(directory,{recursive:true});
 const parts=shanghaiParts(),date=`${parts.year}-${parts.month}-${parts.day}`;
 const checkedAt=new Date().toISOString();
-if(process.env.FORCE_PURCHASE_SNAPSHOT!=="1"&&Number(parts.hour)<17){
- console.log(JSON.stringify({status:"skipped",reason:"before-daily-1700",capturedAt:checkedAt}));
+if(process.env.FORCE_PURCHASE_SNAPSHOT!=="1"&&Number(parts.hour)<Number(slot.slice(0,2))){
+ console.log(JSON.stringify({status:"skipped",reason:`before-daily-${slot}`,slot,capturedAt:checkedAt}));
  process.exit(0);
 }
 const existingNames=(await readdir(directory)).filter(name=>name.startsWith(`${date}_`)&&name.endsWith(".json"));
-for(const name of existingNames){try{const record=JSON.parse(await readFile(join(directory,name),"utf8"));if(record?.recordType==="purchase-plan-snapshot"&&record.immutable===true&&Array.isArray(record?.planSet?.plans)&&record.planSet.plans.length){console.log(JSON.stringify({status:"skipped",reason:"daily-snapshot-exists",snapshotId:record.snapshotId,capturedAt:checkedAt,version:record.planSet.version}));process.exit(0)}}catch{/* 损坏文件不阻断新快照。 */}}
+for(const name of existingNames){try{const record=JSON.parse(await readFile(join(directory,name),"utf8"));if(record?.recordType==="purchase-plan-snapshot"&&record.immutable===true&&record.scheduledAt===`${date}T${slotTime}:00+08:00`&&Array.isArray(record?.planSet?.plans)&&record.planSet.plans.length){console.log(JSON.stringify({status:"skipped",reason:"daily-snapshot-exists",slot,snapshotId:record.snapshotId,capturedAt:checkedAt,version:record.planSet.version}));process.exit(0)}}catch{/* 损坏文件不阻断新快照。 */}}
 const matchesData=await requestJson(`${baseUrl}/api/sporttery`,{cache:"no-store"});
 // 固定组合票严格按竞彩销售日生成；提前开售的次日场次不能混入当天方案。
 const matches=(Array.isArray(matchesData.matches)?matchesData.matches:[]).filter(match=>String(match.salesDate||match.matchDate||"").slice(0,10)===date);
@@ -34,25 +36,23 @@ if(!reports.length)throw new Error("没有通过官方赛事映射校验的预�
 
 const capturedAt=new Date().toISOString();
 const captureParts=shanghaiParts();
-const scheduledAt=`${date}T17:00:00+08:00`;
+const scheduledAt=`${date}T${slotTime}:00+08:00`;
 const planSet=generatePurchasePlans({date,reports,officialMatches:matches,generatedAt:capturedAt});
+planSet.scheduledTime=slotTime;
 if(!planSet.plans.some(plan=>plan.status!=="unavailable"&&plan.items?.length)){
  console.log(JSON.stringify({status:"skipped",reason:"no-eligible-plans",capturedAt}));
  process.exit(0);
 }
-planSet.source=`17:00计划批次，${captureParts.hour}:${captureParts.minute}实际生成 + 中国体育彩票生成时固定奖金`;
+planSet.source=`${slotTime}计划批次，${captureParts.hour}:${captureParts.minute}实际生成 + 中国体育彩票生成时固定奖金`;
 const contentHash=digest(materialPlans(planSet.plans));
 const priorRecords=[];
 for(const name of (await readdir(directory)).filter(name=>name.endsWith(".json"))){try{priorRecords.push(JSON.parse(await readFile(join(directory,name),"utf8")))}catch{/* 损坏文件不参与去重。 */}}
 priorRecords.sort((a,b)=>String(b.capturedAt||"").localeCompare(String(a.capturedAt||"")));
 const previous=priorRecords[0];
-if(previous?.contentHash===contentHash){
- console.log(JSON.stringify({status:"skipped",reason:"unchanged",comparedWith:previous.snapshotId,contentHash,capturedAt}));
- process.exit(0);
-}
+// Different decision times remain separate evidence even when selections match.
 
 const clock=`${captureParts.hour}${captureParts.minute}${captureParts.second}`,snapshotId=`purchase-${date}-${clock}-${contentHash.slice(0,12)}`;
 const record={schemaVersion:1,recordType:"purchase-plan-snapshot",snapshotId,immutable:true,scheduledAt,capturedAt,sourceFetchedAt:fetchedAt,upstreamUpdatedAt:predictionData.fetchedAt||matchesData.fetchedAt||fetchedAt,predictionId:predictionData.predictionId||predictionData.version?.predictionId||"",predictionVersion:predictionData.version||null,inputHash:predictionData.version?.inputSnapshotId||"",contentHash,previousSnapshotId:previous?.snapshotId||null,reviewAfter:`${date}T23:59:59+08:00`,planSet};
 const output=join(directory,`${date}_${clock}_${contentHash.slice(0,12)}.json`);
 await writeFile(output,`${JSON.stringify(record,null,2)}\n`,{encoding:"utf8",flag:"wx"});
-console.log(JSON.stringify({status:"saved",output,snapshotId,contentHash,capturedAt,plans:planSet.plans.filter(plan=>plan.status!=="unavailable").length}));
+console.log(JSON.stringify({status:"saved",slot,output,snapshotId,contentHash,capturedAt,plans:planSet.plans.filter(plan=>plan.status!=="unavailable").length}));

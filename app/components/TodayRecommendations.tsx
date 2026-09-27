@@ -207,6 +207,7 @@ function purchaseHistoryActual(item:PurchaseItem){
 type PurchaseResult = {id?:string;matchId?:string;officialMatchId?:string;date?:string;matchDate?:string};
 const currentPurchasePlanIds=new Set(PURCHASE_PLAN_DEFINITIONS.map(definition=>definition.id));
 const hasPurchasePlanData=(item:PurchasePlanSet|undefined|null)=>Boolean(deduplicatePurchasePlans(item?.plans).some(plan=>currentPurchasePlanIds.has(plan.id)&&plan.status!=="unavailable"&&Array.isArray(plan.items)&&plan.items.length>0));
+const purchaseSlot=(item:PurchasePlanSet)=>item.scheduledTime==="21:00"?"2100":"1700";
 type OfficialMatch = OfficialRecommendationMatch;
 const shanghaiDate = () =>
   new Intl.DateTimeFormat("en-CA", {
@@ -354,6 +355,7 @@ function DailyPurchasePlans({
         )
       : data?.matches || [],[data,lotteryDate]);
   const [planSet, setPlanSet] = useState<PurchasePlanSet | null>(null),
+    [activeSlot,setActiveSlot]=useState<"1700"|"2100">("1700"),
     [planSets, setPlanSets] = useState<PurchasePlanSet[]>([]),
     [savedTrials, setSavedTrials] = useState<PurchasePlanSet[]>([]),
     [historyResultCache, setHistoryResultCache] = useState<PurchaseResult[]>([]),
@@ -463,9 +465,9 @@ function DailyPurchasePlans({
           ).values(),
         ).filter(hasPurchasePlanData);
         const storedTrials=(Array.isArray(saved.trials)?saved.trials:[]).filter(hasPurchasePlanData) as PurchasePlanSet[];
-        const promoted=storedTrials.map(trial=>promoteSavedPurchaseTrial(trial,allSets.map(set=>set.date)) as PurchasePlanSet|null).filter((trial):trial is PurchasePlanSet=>Boolean(trial));
+        const promoted=storedTrials.map(trial=>promoteSavedPurchaseTrial(trial,allSets.filter(set=>purchaseSlot(set)==="1700").map(set=>set.date)) as PurchasePlanSet|null).filter((trial):trial is PurchasePlanSet=>Boolean(trial));
         const targetTrial=storedTrials.find(trial=>trial.snapshotId===PROMOTED_PURCHASE_TRIAL.snapshotId);
-        const promotionRejected=Boolean(targetTrial&&!promoted.length&&!allSets.some(set=>set.date===PROMOTED_PURCHASE_TRIAL.date));
+        const promotionRejected=Boolean(targetTrial&&!promoted.length&&!allSets.some(set=>set.date===PROMOTED_PURCHASE_TRIAL.date&&purchaseSlot(set)==="1700"));
         const formalSets=[...allSets,...promoted];
         const cachedResults=Object.values(archive.resultCache&&typeof archive.resultCache==="object"?archive.resultCache:{}) as PurchaseResult[];
         const {results:historyResults,failed}=await fetchHistoricalPurchaseResults(formalSets,cachedResults);
@@ -480,11 +482,11 @@ function DailyPurchasePlans({
           setPlanSet(null);
         }
         const selected=[...settledSets,...settledTrials]
-          .filter(item=>!lotteryDate||item.date===lotteryDate)
+          .filter(item=>purchaseSlot(item)===activeSlot&&(!lotteryDate||item.date===lotteryDate))
           .sort((a,b)=>b.generatedAt.localeCompare(a.generatedAt))[0]||null;
         // 已归档方案必须按生成时赔率原样读取；没有 17:00 快照时不自动补造正式票。
         if (selected && active) await selectPlanSet(selected, historyResults);
-        else if (active) setStatus("该彩票日期没有已保存组合票，可在盘口恢复后手动试算");
+        else if (active) setStatus(`该彩票日期没有已保存的${activeSlot==="2100"?"21:00":"17:00"}组合票`);
       })
       .finally(() => {
         if (active) setBusy(false);
@@ -494,7 +496,7 @@ function DailyPurchasePlans({
     };
   // Select uses the just-loaded archive results, so this effect tracks only the date and archive refresh.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lotteryDate,archiveReload]);
+  }, [lotteryDate,archiveReload,activeSlot]);
   async function preview() {
     if (!data || busy) return;
     setBusy(true);setPreviewError("");setSaveState("");
@@ -506,7 +508,7 @@ function DailyPurchasePlans({
       const current=lotteryDate?latest.matches.filter(match=>dateOnly(match.salesDate||match.matchDate||match.kickoffAt)===lotteryDate):latest.matches;
       const generated=generatePurchasePlans({date:lotteryDate||data.date,reports:scopedReports,officialMatches:current}) as PurchasePlanSet;
       if(!hasPurchasePlanData(generated))throw new Error("当前可售比赛或合规赔率不足，暂不能生成固定票。");
-      setPlanSet({...generated,snapshotId:`manual-trial-${crypto.randomUUID()}`,source:"当前盘口手动试算（未保存，非17:00正式快照）"});
+      setPlanSet({...generated,scheduledTime:activeSlot==="2100"?"21:00":"17:00",snapshotId:`manual-trial-${crypto.randomUUID()}`,source:"当前盘口手动试算（未保存，非固定时刻正式快照）"});
       setStatus("当前盘口试算 · 尚未保存");
     }catch(error){setPreviewError(error instanceof Error?error.message:"试算失败");}
     finally{setBusy(false);}
@@ -520,7 +522,7 @@ function DailyPurchasePlans({
       if(!response.ok)throw new Error(payload.error||"保存试算失败");
       const saved=payload.trial as PurchasePlanSet;
       setSavedTrials(current=>[saved,...current.filter(item=>item.snapshotId!==saved.snapshotId)]);
-      setPlanSet(saved);setSaveState("已保存，可在历史批次中重新查看；不计入17:00正式票统计。");
+      setPlanSet(saved);setSaveState(`已保存，可在历史批次中重新查看；不计入${activeSlot==="2100"?"21:00":"17:00"}正式票统计。`);
     }catch(error){setSaveState(error instanceof Error?error.message:"保存试算失败");}
     finally{setBusy(false);}
   }
@@ -538,16 +540,17 @@ function DailyPurchasePlans({
               : plan.status === "awaiting_result"
                 ? "已完赛待官方结果"
                 : "待赛";
-  const planStats=useMemo(()=>summarizePurchasePlans((deduplicatePurchasePlanSets(planSets) as PurchasePlanSet[]).flatMap(item=>item.plans)),[planSets]);
-  const moduleStats=useMemo(()=>summarizePurchasePlanModules(planSets),[planSets]);
-  const definitionHistory=useMemo(()=>summarizePurchasePlanDefinitions(planSets),[planSets]);
-  const dayHistory=useMemo(()=>summarizePurchasePlanDays(planSets),[planSets]);
+  const slotSets=useMemo(()=>planSets.filter(item=>purchaseSlot(item)===activeSlot),[planSets,activeSlot]);
+  const planStats=useMemo(()=>summarizePurchasePlans((deduplicatePurchasePlanSets(slotSets) as PurchasePlanSet[]).flatMap(item=>item.plans)),[slotSets]);
+  const moduleStats=useMemo(()=>summarizePurchasePlanModules(slotSets),[slotSets]);
+  const definitionHistory=useMemo(()=>summarizePurchasePlanDefinitions(slotSets),[slotSets]);
+  const dayHistory=useMemo(()=>summarizePurchasePlanDays(slotSets),[slotSets]);
   const recentDates=useMemo(()=>{
     const [year,month,day]=shanghaiDate().split("-").map(Number);
     return Array.from({length:7},(_,index)=>new Date(Date.UTC(year,month-1,day-index)).toISOString().slice(0,10));
   },[]);
-  const selectableSets=[...planSets,...savedTrials].filter(item=>!lotteryDate||item.date===lotteryDate).sort((a,b)=>b.generatedAt.localeCompare(a.generatedAt));
-  const latestFormalSet=planSets[0];
+  const selectableSets=[...slotSets,...savedTrials.filter(item=>purchaseSlot(item)===activeSlot)].filter(item=>!lotteryDate||item.date===lotteryDate).sort((a,b)=>b.generatedAt.localeCompare(a.generatedAt));
+  const latestFormalSet=slotSets[0];
   const visiblePlanModules=useMemo(()=>PURCHASE_PLAN_MODULES.map(module=>({
     ...module,
     definitions:PURCHASE_PLAN_DEFINITIONS.filter(definition=>purchasePlanModuleId(definition.id)===module.id&&planSet?.plans.some(plan=>plan.id===definition.id&&plan.status!=="unavailable"&&plan.items.length>0)),
@@ -560,7 +563,7 @@ function DailyPurchasePlans({
           <small>DAILY PURCHASE DRAFT</small>
           <h3>每日固定组合票</h3>
           <p>
-            每天北京时间17:00生成并留档；按每注2元计算实际组合投入，次日依据官方赛果自动标记。
+            每天北京时间17:00、21:00各留档一批；按每注2元计算组合投入，依据官方赛果分别结算。
           </p>
           {latestFormalSet&&<p className="purchase-latest">最近正式快照：{latestFormalSet.date} {new Date(latestFormalSet.generatedAt).toLocaleTimeString("zh-CN",{timeZone:"Asia/Shanghai",hour:"2-digit",minute:"2-digit"})} · {latestFormalSet.plans.filter(plan=>plan.status!=="unavailable"&&plan.items?.length).length} 组{lotteryDate&&lotteryDate!==latestFormalSet.date?`；当前筛选 ${lotteryDate}，可切换彩票日期查看最新批次`:""}</p>}
         </div>
@@ -606,6 +609,9 @@ function DailyPurchasePlans({
           {planSet?.snapshotId?.startsWith("manual-trial-") && !savedTrials.some(item=>item.snapshotId===planSet.snapshotId) && <button type="button" disabled={busy} onClick={()=>void saveTrial()}>保存本次试算</button>}
         </div>
       </header>
+      <div className="purchase-slot-tabs" role="tablist" aria-label="选择固定组合票批次">
+        {(["1700","2100"] as const).map(slot=><button key={slot} type="button" role="tab" aria-selected={activeSlot===slot} onClick={()=>{setPlanSet(null);setStatus("正在读取该批次快照…");setActiveSlot(slot)}}>{slot==="1700"?"17:00 场次":"21:00 场次"}</button>)}
+      </div>
       {!data && <p className="purchase-notice">当前浏览器没有今日预测版本，请先到 AI 预测页生成预测；没有预测时无法试算。</p>}
       {liveOfficial.error && <p className="purchase-notice">官方盘口获取失败：{liveOfficial.error}。可点击“按当前盘口试算”重试；过期赔率不会参与试算。</p>}
       {previewError && <p role="alert" className="purchase-notice">{previewError}</p>}
@@ -620,7 +626,7 @@ function DailyPurchasePlans({
         <div><span>模拟返还</span><SignedPurchaseMoney value={planStats.returned} flow="return"/></div>
         <div><span>模拟净收益</span><SignedPurchaseMoney value={planStats.net}/></div>
       </div>
-      <p className="purchase-risk">正式统计包含每天固定时间生成的快照，以及经确认转入的 2026-09-26 17:39 手动试算（保留实际采集时间，不冒充 17:00 快照）。其他手动试算不计入。待赛和缺少官方赛果的票不计入已结算、投入或返还。</p>
+      <p className="purchase-risk">当前只统计{activeSlot==="2100"?"21:00":"17:00"}批次，不与另一批重复合计。17:00统计另包含经确认转入的 2026-09-26 17:39 手动试算（保留实际采集时间）。其他手动试算不计入；待赛或缺少官方赛果的票不计入已结算、投入及返还。</p>
       <details className="purchase-history-panel" aria-label="最近七天正式快照与结算汇总">
         <summary><strong>最近七天留档与结算</strong><span>核对每日批次、待结算与模拟收益</span></summary>
         <div className="purchase-history-scroll"><table className="purchase-day-table"><thead><tr><th>彩票日期</th><th>正式快照</th><th>组合票</th><th>中奖 / 已结算</th><th>待结算</th><th>投入 / 模拟返还</th><th>模拟净收益</th></tr></thead><tbody>

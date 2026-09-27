@@ -132,7 +132,7 @@ export async function POST(request: Request) {
     if (body.length > 150_000) throw new Error("试算内容过大");
     const trial: unknown = JSON.parse(body);
     if (!validTrial(trial)) throw new Error("试算内容不完整或已失效");
-    const normalized = { ...trial, source: "手动保存的盘口试算（非17:00正式快照）" };
+    const normalized = { ...trial, source: "手动保存的盘口试算（非固定时刻正式快照）" };
     const db = database();
     if (db) {
       await db

@@ -566,6 +566,12 @@ test("17:00 snapshot persists purchase drafts and the recommendation page expose
  assert.match(capture,/generatePurchasePlans/);
  assert.match(api,/purchasePlans:plan\?\.plans\|\|raw\.purchasePlans/);
  assert.match(component,/每日固定组合票/);
+ assert.match(component,/17:00 场次/);
+ assert.match(component,/21:00 场次/);
+ assert.match(component,/const slotSets=useMemo\(\(\)=>planSets\.filter\(item=>purchaseSlot\(item\)===activeSlot\)/);
+ assert.match(purchaseCapture,/--slot=2100/);
+ assert.match(purchaseCapture,/record\.scheduledAt===`\$\{date\}T\$\{slotTime\}:00\+08:00`/);
+ assert.match(purchaseCapture,/planSet\.scheduledTime=slotTime/);
  assert.match(component,/已归档方案必须按生成时赔率原样读取/);
  assert.doesNotMatch(component,/高覆盖门槛更新后按当前盘口重新试算/);
  assert.match(component,/settlePurchasePlan/);
@@ -585,7 +591,7 @@ test("17:00 snapshot persists purchase drafts and the recommendation page expose
  assert.match(component,/最近正式快照/);
  assert.match(component,/刷新快照/);
  assert.match(component,/visibilitychange/);
- assert.match(purchaseCapture,/record\.immutable===true&&Array\.isArray\(record\?\.planSet\?\.plans\)/);
+ assert.match(purchaseCapture,/record\.immutable===true&&record\.scheduledAt===/);
  assert.match(component,/最终赛果 \{purchaseHistoryActual\(item\)\} · 购入赔率 \{purchaseHistoryOdds\(item\)\}/);
  assert.match(component,/<details className="purchase-history-panel"/);
  assert.match(component,/allModulesCollapsed\?"全部展开":"全部收起"/);
