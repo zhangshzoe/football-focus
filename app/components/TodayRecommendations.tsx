@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {readBrowserData} from "../browser-storage";
 import {fetchOfficialSporttery} from "../sporttery-official";
+import {PROMOTED_PURCHASE_TRIAL,promoteSavedPurchaseTrial} from "../purchase-trial-promotion.js";
 import {
   calculateRecommendationReturns, priceRecommendationSelections,
   type OfficialRecommendationMatch, type PricedSelection, type RecommendationMarket,
@@ -168,6 +169,7 @@ type PurchasePlanSet = {
   snapshotId?: string;
   contentHash?: string;
   scheduledTime?: string;
+  promotionKind?: "manual-exception";
 };
 function SignedPurchaseMoney({value,flow="net"}:{value:number;flow?:"net"|"stake"|"return"}){
   const amount=Number.isFinite(value)?value:0;
@@ -356,6 +358,7 @@ function DailyPurchasePlans({
     [savedTrials, setSavedTrials] = useState<PurchasePlanSet[]>([]),
     [historyResultCache, setHistoryResultCache] = useState<PurchaseResult[]>([]),
     [resultSyncError,setResultSyncError]=useState(""),
+    [promotionError,setPromotionError]=useState(""),
     [status, setStatus] = useState("正在读取方案快照…"),
     [busy, setBusy] = useState(false),
     [previewError, setPreviewError] = useState(""),
@@ -404,7 +407,7 @@ function DailyPurchasePlans({
       plans: deduplicatePurchasePlans(selected.plans).map((plan) => settlePurchasePlan(plan, results)),
     });
     setStatus(
-      `${selected.snapshotId?.startsWith("manual-trial-")?"手动试算":selected.date === shanghaiDate() ? "今日正式" : "历史正式"}方案 · ${new Date(selected.generatedAt).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })}批次`,
+      `${selected.promotionKind === "manual-exception" ? "手动转正式" : selected.snapshotId?.startsWith("manual-trial-")?"手动试算":selected.date === shanghaiDate() ? "今日正式" : "历史正式"}方案 · ${new Date(selected.generatedAt).toLocaleTimeString("zh-CN", { timeZone:"Asia/Shanghai", hour: "2-digit", minute: "2-digit" })}批次`,
     );
     setBusy(false);
   }
@@ -460,15 +463,20 @@ function DailyPurchasePlans({
           ).values(),
         ).filter(hasPurchasePlanData);
         const storedTrials=(Array.isArray(saved.trials)?saved.trials:[]).filter(hasPurchasePlanData) as PurchasePlanSet[];
+        const promoted=storedTrials.map(trial=>promoteSavedPurchaseTrial(trial,allSets.map(set=>set.date)) as PurchasePlanSet|null).filter((trial):trial is PurchasePlanSet=>Boolean(trial));
+        const targetTrial=storedTrials.find(trial=>trial.snapshotId===PROMOTED_PURCHASE_TRIAL.snapshotId);
+        const promotionRejected=Boolean(targetTrial&&!promoted.length&&!allSets.some(set=>set.date===PROMOTED_PURCHASE_TRIAL.date));
+        const formalSets=[...allSets,...promoted];
         const cachedResults=Object.values(archive.resultCache&&typeof archive.resultCache==="object"?archive.resultCache:{}) as PurchaseResult[];
-        const {results:historyResults,failed}=await fetchHistoricalPurchaseResults(allSets,cachedResults);
-        const settledSets=(deduplicatePurchasePlanSets(allSets) as PurchasePlanSet[]).map(item=>({...item,plans:item.plans.map(plan=>settlePurchasePlan(plan,historyResults))}));
-        const settledTrials=(deduplicatePurchasePlanSets(storedTrials) as PurchasePlanSet[]).map(item=>({...item,plans:item.plans.map(plan=>settlePurchasePlan(plan,historyResults))}));
+        const {results:historyResults,failed}=await fetchHistoricalPurchaseResults(formalSets,cachedResults);
+        const settledSets=(deduplicatePurchasePlanSets(formalSets) as PurchasePlanSet[]).map(item=>({...item,plans:item.plans.map(plan=>settlePurchasePlan(plan,historyResults))}));
+        const settledTrials=(deduplicatePurchasePlanSets(storedTrials.filter(trial=>!promoted.some(item=>item.snapshotId===trial.snapshotId))) as PurchasePlanSet[]).map(item=>({...item,plans:item.plans.map(plan=>settlePurchasePlan(plan,historyResults))}));
         if (active) {
           setPlanSets(settledSets);
           setSavedTrials(settledTrials);
           setHistoryResultCache(historyResults);
           setResultSyncError(failed?`${failed} 个比赛日期的赛果查询失败，相关组合暂不计入已结算；刷新页面可重试。`:"");
+          setPromotionError(promotionRejected?"9 月 26 日手动试算未通过正式统计核验，暂不纳入；请检查官方比赛、销售时间和赔率字段。":"");
           setPlanSet(null);
         }
         const selected=[...settledSets,...settledTrials]
@@ -578,8 +586,9 @@ function DailyPurchasePlans({
                   key={item.snapshotId || item.generatedAt}
                   value={item.snapshotId || item.generatedAt}
                 >
-                  {item.snapshotId?.startsWith("manual-trial-")?"手动试算 · ":"正式快照 · "}{item.date}{" "}
+                  {item.promotionKind === "manual-exception" ? "手动转正式 · " : item.snapshotId?.startsWith("manual-trial-")?"手动试算 · ":"正式快照 · "}{item.date}{" "}
                   {new Date(item.generatedAt).toLocaleTimeString("zh-CN", {
+                    timeZone: "Asia/Shanghai",
                     hour: "2-digit",
                     minute: "2-digit",
                   })}
@@ -602,6 +611,7 @@ function DailyPurchasePlans({
       {previewError && <p role="alert" className="purchase-notice">{previewError}</p>}
       {saveState && <p role="status" className="purchase-notice">{saveState}</p>}
       {resultSyncError && <p role="alert" className="purchase-notice">{resultSyncError}</p>}
+      {promotionError && <p role="alert" className="purchase-notice">{promotionError}</p>}
       <div className="purchase-kanban" aria-label="组合票历史统计">
         <div><span>已结算组合</span><b>{planStats.settled}</b></div>
         <div><span>中奖组合</span><b>{planStats.won}</b></div>
@@ -610,7 +620,7 @@ function DailyPurchasePlans({
         <div><span>模拟返还</span><SignedPurchaseMoney value={planStats.returned} flow="return"/></div>
         <div><span>模拟净收益</span><SignedPurchaseMoney value={planStats.net}/></div>
       </div>
-      <p className="purchase-risk">以上仅统计每天固定时间生成的正式快照；手动试算单独保存，不计入正式中奖率。待赛和缺少官方赛果的票不计入已结算、投入或返还。</p>
+      <p className="purchase-risk">正式统计包含每天固定时间生成的快照，以及经确认转入的 2026-09-26 17:39 手动试算（保留实际采集时间，不冒充 17:00 快照）。其他手动试算不计入。待赛和缺少官方赛果的票不计入已结算、投入或返还。</p>
       <details className="purchase-history-panel" aria-label="最近七天正式快照与结算汇总">
         <summary><strong>最近七天留档与结算</strong><span>核对每日批次、待结算与模拟收益</span></summary>
         <div className="purchase-history-scroll"><table className="purchase-day-table"><thead><tr><th>彩票日期</th><th>正式快照</th><th>组合票</th><th>中奖 / 已结算</th><th>待结算</th><th>投入 / 模拟返还</th><th>模拟净收益</th></tr></thead><tbody>

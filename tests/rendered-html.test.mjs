@@ -571,7 +571,8 @@ test("17:00 snapshot persists purchase drafts and the recommendation page expose
  assert.match(component,/settlePurchasePlan/);
  assert.match(component,/每注2元/);
  assert.match(component,/prediction-snapshots\?view=recommendations/);
- assert.match(component,/fetchHistoricalPurchaseResults\(allSets,cachedResults\)/);
+ assert.match(component,/fetchHistoricalPurchaseResults\(formalSets,cachedResults\)/);
+ assert.match(component,/promoteSavedPurchaseTrial/);
  assert.match(component,/赛果查询失败，相关组合暂不计入已结算/);
  assert.match(component,/purchase-plan-module/);
  assert.match(component,/collapsedModules/);
