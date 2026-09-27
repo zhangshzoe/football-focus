@@ -15,14 +15,14 @@ type RawReport={
 };
 type RawSnapshot={schemaVersion?:number;recordType?:string;snapshotId?:string;immutable?:boolean;predictionId?:string;version?:unknown;scheduledAt?:string;capturedAt?:string;upstreamUpdatedAt?:string;scheduledTime?:string;sourceFetchedAt?:string;decisionTiming?:string;reports?:RawReport[];aiProvider?:string;purchasePlans?:unknown;inputHash?:string;officialMatches?:unknown[]};
 type Supplement={recordId?:string;kind?:"ai-review"|"purchase-plans"|"result-correction";baseSnapshotId?:string;inputPredictionId?:string;outputPredictionId?:string;createdAt?:string;aiCompletedAt?:string;decisionTiming?:string;includedInPreMatchEvaluation?:boolean;provider?:string;version?:unknown;reports?:RawReport[];plans?:unknown};
-type RawPurchaseSnapshot={recordType?:string;immutable?:boolean;snapshotId?:string;capturedAt?:string;sourceFetchedAt?:string;predictionId?:string;contentHash?:string;previousSnapshotId?:string;planSet?:{plans?:unknown[];[key:string]:unknown}};
+type RawPurchaseSnapshot={recordType?:string;immutable?:boolean;snapshotId?:string;scheduledAt?:string;capturedAt?:string;sourceFetchedAt?:string;predictionId?:string;contentHash?:string;previousSnapshotId?:string;planSet?:{plans?:unknown[];[key:string]:unknown}};
 
 const directory=join(process.cwd(),"data","prediction-snapshots");
 const purchaseDirectory=join(process.cwd(),"data","purchase-plan-snapshots");
 // 线上 Worker 只加载预先生成的紧凑索引。原始快照和 AI 补充文件仍完整保留在
 // data/prediction-snapshots 供本地审计，但不得逐个 eager import 到 128MB Worker。
 const bundledIndexFiles=import.meta.glob<{snapshots?:unknown[];resultCache?:Record<string,unknown>;purchasePlanSnapshots?:unknown[]}>("../../../data/generated-prediction-snapshot-index.json",{eager:true,import:"default"});
-const toPurchaseSnapshot=(record:RawPurchaseSnapshot)=>record.recordType==="purchase-plan-snapshot"&&record.immutable===true&&record.snapshotId&&record.planSet?.plans?.length?{snapshotId:record.snapshotId,capturedAt:record.capturedAt,sourceFetchedAt:record.sourceFetchedAt,predictionId:record.predictionId,contentHash:record.contentHash,previousSnapshotId:record.previousSnapshotId,planSet:{...record.planSet,snapshotId:record.snapshotId,contentHash:record.contentHash}}:null;
+const toPurchaseSnapshot=(record:RawPurchaseSnapshot)=>record.recordType==="purchase-plan-snapshot"&&record.immutable===true&&record.snapshotId&&record.planSet?.plans?.length?{snapshotId:record.snapshotId,scheduledAt:record.scheduledAt,capturedAt:record.capturedAt,sourceFetchedAt:record.sourceFetchedAt,predictionId:record.predictionId,contentHash:record.contentHash,previousSnapshotId:record.previousSnapshotId,planSet:{...record.planSet,snapshotId:record.snapshotId,contentHash:record.contentHash}}:null;
 const labelFor=(slot:string)=>`${slot.slice(0,2)}:${slot.slice(2)}批次`;
 const number=(value:unknown)=>Number.isFinite(Number(value))?Number(value):0;
 const withDerivedTotalGoals=<T extends {fullScore?:string;totalGoalsResult?:string}>(result:T)=>{

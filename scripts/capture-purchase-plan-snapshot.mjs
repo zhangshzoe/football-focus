@@ -33,12 +33,14 @@ const reports=(Array.isArray(predictionData.reports)?predictionData.reports:[]).
 if(!reports.length)throw new Error("没有通过官方赛事映射校验的预测，未生成方案快照");
 
 const capturedAt=new Date().toISOString();
+const captureParts=shanghaiParts();
+const scheduledAt=`${date}T17:00:00+08:00`;
 const planSet=generatePurchasePlans({date,reports,officialMatches:matches,generatedAt:capturedAt});
 if(!planSet.plans.some(plan=>plan.status!=="unavailable"&&plan.items?.length)){
  console.log(JSON.stringify({status:"skipped",reason:"no-eligible-plans",capturedAt}));
  process.exit(0);
 }
-planSet.source="每日17:00预测快照 + 中国体育彩票生成时固定奖金";
+planSet.source=`17:00计划批次，${captureParts.hour}:${captureParts.minute}实际生成 + 中国体育彩票生成时固定奖金`;
 const contentHash=digest(materialPlans(planSet.plans));
 const priorRecords=[];
 for(const name of (await readdir(directory)).filter(name=>name.endsWith(".json"))){try{priorRecords.push(JSON.parse(await readFile(join(directory,name),"utf8")))}catch{/* 损坏文件不参与去重。 */}}
@@ -49,8 +51,8 @@ if(previous?.contentHash===contentHash){
  process.exit(0);
 }
 
-const clock=`${parts.hour}${parts.minute}${parts.second}`,snapshotId=`purchase-${date}-${clock}-${contentHash.slice(0,12)}`;
-const record={schemaVersion:1,recordType:"purchase-plan-snapshot",snapshotId,immutable:true,capturedAt,sourceFetchedAt:fetchedAt,upstreamUpdatedAt:predictionData.fetchedAt||matchesData.fetchedAt||fetchedAt,predictionId:predictionData.predictionId||predictionData.version?.predictionId||"",predictionVersion:predictionData.version||null,inputHash:predictionData.version?.inputSnapshotId||"",contentHash,previousSnapshotId:previous?.snapshotId||null,reviewAfter:`${date}T23:59:59+08:00`,planSet};
+const clock=`${captureParts.hour}${captureParts.minute}${captureParts.second}`,snapshotId=`purchase-${date}-${clock}-${contentHash.slice(0,12)}`;
+const record={schemaVersion:1,recordType:"purchase-plan-snapshot",snapshotId,immutable:true,scheduledAt,capturedAt,sourceFetchedAt:fetchedAt,upstreamUpdatedAt:predictionData.fetchedAt||matchesData.fetchedAt||fetchedAt,predictionId:predictionData.predictionId||predictionData.version?.predictionId||"",predictionVersion:predictionData.version||null,inputHash:predictionData.version?.inputSnapshotId||"",contentHash,previousSnapshotId:previous?.snapshotId||null,reviewAfter:`${date}T23:59:59+08:00`,planSet};
 const output=join(directory,`${date}_${clock}_${contentHash.slice(0,12)}.json`);
 await writeFile(output,`${JSON.stringify(record,null,2)}\n`,{encoding:"utf8",flag:"wx"});
 console.log(JSON.stringify({status:"saved",output,snapshotId,contentHash,capturedAt,plans:planSet.plans.filter(plan=>plan.status!=="unavailable").length}));

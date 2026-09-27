@@ -240,6 +240,33 @@ export const summarizePurchasePlanModules = (planSets) => {
   );
 };
 
+// Keep missing capture days distinct from losing tickets. A date with no saved
+// batch has no forecast to settle and must not enter the hit-rate denominator.
+export const summarizePurchasePlanDays = (planSets) =>
+  Object.fromEntries(
+    Object.entries(
+      (planSets || []).reduce((byDate, set) => {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(String(set?.date || ""))) return byDate;
+        (byDate[set.date] ||= []).push(set);
+        return byDate;
+      }, {}),
+    ).map(([date, batches]) => {
+      const plans = batches.flatMap((batch) =>
+        (batch.plans || []).filter((plan) => plan.status !== "unavailable" && plan.items?.length),
+      );
+      return [
+        date,
+        {
+          date,
+          batches: batches.length,
+          tickets: plans.length,
+          pending: plans.filter((plan) => !settledPlanStatuses.has(plan.status)).length,
+          ...summarizePurchasePlans(plans),
+        },
+      ];
+    }),
+  );
+
 // One row is one saved batch's ticket. Pending/invalid tickets stay visible in
 // history but never enter the settled denominator or monetary totals.
 export const summarizePurchasePlanDefinitions = (planSets) =>

@@ -26,6 +26,7 @@ import {
   settlePurchasePlan,
   summarizePurchasePlanModules,
   summarizePurchasePlanDefinitions,
+  summarizePurchasePlanDays,
   summarizePurchasePlans,
 } from "../purchase-plan-engine";
 
@@ -529,6 +530,11 @@ function DailyPurchasePlans({
   const planStats=useMemo(()=>summarizePurchasePlans(planSets.flatMap(item=>item.plans)),[planSets]);
   const moduleStats=useMemo(()=>summarizePurchasePlanModules(planSets),[planSets]);
   const definitionHistory=useMemo(()=>summarizePurchasePlanDefinitions(planSets),[planSets]);
+  const dayHistory=useMemo(()=>summarizePurchasePlanDays(planSets),[planSets]);
+  const recentDates=useMemo(()=>{
+    const [year,month,day]=shanghaiDate().split("-").map(Number);
+    return Array.from({length:7},(_,index)=>new Date(Date.UTC(year,month-1,day-index)).toISOString().slice(0,10));
+  },[]);
   const selectableSets=[...planSets,...savedTrials].filter(item=>!lotteryDate||item.date===lotteryDate).sort((a,b)=>b.generatedAt.localeCompare(a.generatedAt));
   const latestFormalSet=planSets[0];
   const visiblePlanModules=useMemo(()=>PURCHASE_PLAN_MODULES.map(module=>({
@@ -602,6 +608,16 @@ function DailyPurchasePlans({
         <div><span>模拟净收益</span><SignedPurchaseMoney value={planStats.net}/></div>
       </div>
       <p className="purchase-risk">以上仅统计每天固定时间生成的正式快照；手动试算单独保存，不计入正式中奖率。待赛和缺少官方赛果的票不计入已结算、投入或返还。</p>
+      <details className="purchase-history-panel" aria-label="最近七天正式快照与结算汇总">
+        <summary><strong>最近七天留档与结算</strong><span>核对每日批次、待结算与模拟收益</span></summary>
+        <div className="purchase-history-scroll"><table className="purchase-day-table"><thead><tr><th>彩票日期</th><th>正式快照</th><th>组合票</th><th>中奖 / 已结算</th><th>待结算</th><th>投入 / 模拟返还</th><th>模拟净收益</th></tr></thead><tbody>
+          {recentDates.map(date=>{
+            const day=dayHistory[date];
+            return <tr key={date}><td>{date}</td><td>{day?`${day.batches} 批`:<span className="purchase-capture-missing">未留档</span>}</td><td>{day?`${day.tickets} 组`:"—"}</td><td>{day?`${day.won} / ${day.settled}`:"—"}</td><td>{day?day.pending:"—"}</td><td>{day?<><SignedPurchaseMoney value={day.stake} flow="stake"/> / <SignedPurchaseMoney value={day.returned} flow="return"/></>:"—"}</td><td>{day?<SignedPurchaseMoney value={day.net}/>:"—"}</td></tr>;
+          })}
+        </tbody></table></div>
+        <p className="purchase-risk">“未留档”只表示没有保存的正式快照，可能是无赛事或采集失败，不算作未中奖；历史批次只按实际采集时间展示，不事后补写成17:00预测。投入与返还仅统计已结算的模拟票。</p>
+      </details>
       <details className="purchase-history-panel" aria-label="各投注方式历史汇总">
         <summary><strong>各投注方式历史汇总</strong><span>展开查看中奖率、投入与历史明细</span></summary>
       <div className="purchase-history">

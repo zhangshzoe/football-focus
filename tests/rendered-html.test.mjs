@@ -2,7 +2,18 @@ import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
 import test from "node:test";
 import ts from "typescript";
-import {calculatePurchaseLegReturns,generatePurchasePlans,PURCHASE_PLAN_MODULES,settlePurchasePlan,summarizePurchasePlanModules,summarizePurchasePlanDefinitions} from "../app/purchase-plan-engine.js";
+import {calculatePurchaseLegReturns,generatePurchasePlans,PURCHASE_PLAN_MODULES,settlePurchasePlan,summarizePurchasePlanModules,summarizePurchasePlanDefinitions,summarizePurchasePlanDays} from "../app/purchase-plan-engine.js";
+
+test("daily snapshot summary excludes missing dates and unsettled tickets from returns",()=>{
+ const days=summarizePurchasePlanDays([
+  {date:"2026-09-25",plans:[{status:"won",stake:2,simulatedReturn:20,items:[{}]},{status:"awaiting_result",stake:2,items:[{}]}]},
+  {date:"2026-09-25",plans:[{status:"lost",stake:4,simulatedReturn:0,items:[{}]}]},
+  {date:"2026-09-26",plans:[{status:"unavailable",items:[]}]},
+ ]);
+ assert.deepEqual(days["2026-09-25"],{date:"2026-09-25",batches:2,tickets:3,pending:1,settled:2,won:1,rate:50,stake:6,returned:20,net:14});
+ assert.equal(days["2026-09-26"].tickets,0);
+ assert.equal(days["2026-09-27"],undefined);
+});
 import {teamIdentity} from "../app/team-identity.js";
 import {decisionTargetAt,selectOfficialDecisionRows} from "../app/snapshot-decision-policy.js";
 import {snapshotIdFromFileName} from "../app/snapshot-file-policy.js";
