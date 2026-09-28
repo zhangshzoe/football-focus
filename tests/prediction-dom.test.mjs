@@ -164,9 +164,8 @@ test("today recommendations refresh official SP on generation, show net ranges a
   assert.match(container.querySelector(".recommendation-return-panel").textContent,/¥52\.00/);
   fail=false;missing=true;
   await act(async()=>container.querySelector(".generate-row button").click());
-  await flush(()=>!!container.querySelector(".missing-odds"));
-  assert.match(container.querySelector(".recommendation-return-panel").textContent,/待补赔率/);
-  assert.doesNotMatch(container.querySelector(".recommendation-return-panel").textContent,/¥52\.00/);
+  await flush(()=>container.querySelector('[role="alert"]')?.textContent.includes("没有符合返奖约束"));
+  assert.equal(container.querySelectorAll(".recommendation-return-panel").length,0,"Incomplete odds must not produce a recommended ticket");
   await act(async()=>container.querySelector('input[name="score-count"]').click());
   assert.equal(container.querySelectorAll(".combination-card").length,0,"Changing filters must clear old financial estimates");
   await act(async()=>root.unmount());

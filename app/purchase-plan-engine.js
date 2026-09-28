@@ -1,5 +1,5 @@
 export const PURCHASE_PLAN_STORAGE_KEY = "ff-daily-purchase-plans-v1";
-export const PURCHASE_PLAN_VERSION = 13;
+export const PURCHASE_PLAN_VERSION = 14;
 export const PURCHASE_PLAN_DEFINITIONS = [
   {
     id: "score-double-3",
@@ -113,7 +113,7 @@ export const PURCHASE_PLAN_DEFINITIONS = [
   },
   {
     id: "tenfold-safe-2",
-    title: "10倍稳健 A · 单选2串1",
+    title: "10倍目标 A · 单选2串1",
     rule: "目标净盈利约20元 · 2串1",
     markets: ["had", "hhad", "total", "halfFull"],
     matches: 2,
@@ -124,7 +124,7 @@ export const PURCHASE_PLAN_DEFINITIONS = [
   },
   {
     id: "tenfold-safe-3",
-    title: "10倍稳健 B · 单选3串1",
+    title: "10倍目标 B · 单选3串1",
     rule: "目标净盈利约20元 · 3串1",
     markets: ["had", "hhad", "total", "halfFull"],
     matches: 3,
@@ -135,7 +135,7 @@ export const PURCHASE_PLAN_DEFINITIONS = [
   },
   {
     id: "tenfold-safe-4",
-    title: "10倍稳健 C · 单选4串1",
+    title: "10倍目标 C · 单选4串1",
     rule: "目标净盈利约20元 · 4串1",
     markets: ["had", "hhad", "total", "halfFull"],
     matches: 4,
@@ -602,8 +602,9 @@ function legFrom(items, count, { adjacentPicks = false, minLegProbability = 0 } 
 }
 const ticketKey = (legs) =>
   legs
-    .map((leg) =>
-      `${leg.officialMatchId}|${leg.salesDate}|${leg.market}|${leg.picks.map((pick) => pick.pick).join("/")}`,
+    .map(
+      (leg) =>
+        `${leg.officialMatchId}|${leg.salesDate}|${leg.market}|${leg.picks.map((pick) => pick.pick).join("/")}`,
     )
     .sort()
     .join(";");
@@ -769,6 +770,26 @@ export function generatePurchasePlans({
       stake: found.stake,
       minWinningReturn: found.minWinningReturn,
       maxWinningReturn: found.maxWinningReturn,
+      decision: {
+        objective: definition.randomized
+          ? "高概率候选池内随机"
+          : Number.isFinite(definition.targetNetProfit)
+            ? "目标命中净盈利优先，再比较模型概率"
+            : "合规约束内模型命中概率优先",
+        targetNetProfit: Number.isFinite(definition.targetNetProfit)
+          ? definition.targetNetProfit
+          : null,
+        targetProfitTolerance: Number.isFinite(definition.targetNetProfit)
+          ? definition.targetProfitTolerance
+          : null,
+        targetMet: Number.isFinite(definition.targetNetProfit)
+          ? Boolean(found.inTargetRange)
+          : null,
+        minWinningProfitConstraint: safeNumber(definition.minProfitMultiplier) * found.stake,
+        maximumLoss: found.stake,
+        probabilityAssumption: "independent-matches",
+        expectedProfitGuaranteed: false,
+      },
       minWinningProfit: found.minWinningProfit,
       maxWinningProfit: found.maxWinningProfit,
       theoreticalReturn: found.maxWinningReturn,

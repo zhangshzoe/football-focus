@@ -1,6 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {createBasePredictionVersion,deriveMarkets,predictionHash} from "../../prediction-version";
 import {getPublishedCalibration,MIN_TEMPERATURE_CALIBRATION_MATCHES} from "../../calibration-service";
+import {PREDICTION_PIPELINE_VERSION,predictFromSnapshot,compatibleCalibration} from "../../prediction-model.js";
+import {normalizeCompany,assessPredictionInput,createOddsBatchLoader} from "../../prediction-input.js";
+import {deVig,asianMarketTarget,validAsianLine} from "../../asian-market.js";
 import {TEAM_ALIAS_VERSION,teamIdentity,teamNamesCompatible} from "../../team-identity.js";
 type CompanyOdds = {
   companyId: number;
@@ -31,56 +34,38 @@ const COMPANY_IDS = [2, 3, 22];
 const SOURCE_URL = "https://plzx.zgzcw.com/";
 const DATA_URL = "https://plzx.zgzcw.com/odds/oyzs_ajax.action";
 const EV_THRESHOLD = 0.05;
-const DEFAULT_FIRST_HALF_GOAL_SHARE = 0.45;
 const TOTAL_GOAL_LABELS = ["0球", "1球", "2球", "3球", "4球", "5球", "6球", "7+球"];
 const HALF_FULL_LABELS = ["胜胜", "胜平", "胜负", "平胜", "平平", "平负", "负胜", "负平", "负负"];
-const oddsCache = new Map<string,{expiresAt:number;data:any[]}>();
-const oddsRequests = new Map<string,Promise<any[]>>();
-let oddsDataFetchedAt="";
-const numeric = (value: unknown) => {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : 0;
-};
-
-async function fetchCompanyOdds(issue: string, forceRefresh = false) {
-  if(forceRefresh)oddsCache.delete(issue);
-  const cached=oddsCache.get(issue);if(cached&&cached.expiresAt>Date.now())return cached.data;
-  const pending=oddsRequests.get(issue);if(pending)return pending;
-  const request = (async () => {
-    const response = await fetch(DATA_URL, {
-      method: "POST",
-      headers: {"content-type": "application/x-www-form-urlencoded", referer: SOURCE_URL, "x-requested-with": "XMLHttpRequest"},
-      body: new URLSearchParams({type: "", issue, date: "", companys: COMPANY_IDS.join(",")}),
-      cache: "no-store",
-    });
-    if (!response.ok) throw new Error(`赔率源响应 ${response.status}`);
-    const upstreamText = await response.text();
-    if (/Access Verification|请求过于频繁|人机验证/.test(upstreamText)) throw new Error("足彩网触发访问频率保护，请等待几分钟后再刷新；页面不会使用虚构赔率替代");
-    const data = JSON.parse(upstreamText);
-    if (!Array.isArray(data)) throw new Error("足彩网赔率格式发生变化");
-    oddsDataFetchedAt=new Date().toISOString();oddsCache.set(issue,{expiresAt:Date.now()+5*60*1000,data});
-    return data;
-  })();
-  oddsRequests.set(issue,request);
-  try { return await request; }
-  finally { oddsRequests.delete(issue); }
-}
+const numeric = (value: unknown) => Number.isFinite(Number(value)) ? Number(value) : 0;
+const fetchCompanyOdds = createOddsBatchLoader(async (issue:string) => {
+  const response = await fetch(DATA_URL, {
+    method:"POST", headers:{"content-type":"application/x-www-form-urlencoded",referer:SOURCE_URL,"x-requested-with":"XMLHttpRequest"},
+    body:new URLSearchParams({type:"",issue,date:"",companys:COMPANY_IDS.join(",")}),cache:"no-store",
+    signal:AbortSignal.timeout(15000),
+  });
+  if(!response.ok)throw new Error(`赔率源响应 ${response.status}`);
+  const text=await response.text();
+  if(/Access Verification|请求过于频繁|人机验证/.test(text))throw new Error("足彩网触发访问频率保护，请稍后再试；不会使用虚构赔率替代");
+  const rows=JSON.parse(text);
+  if(!Array.isArray(rows))throw new Error("足彩网赔率格式发生变化");
+  return rows;
+});
+const parsedCompanies=(match:any,fetchedAt:string):any[] =>
+  (Array.isArray(match.listOdds)?match.listOdds:[]).filter((row:any)=>COMPANY_IDS.includes(Number(row.SOURCE_COMPANY_ID))).map((row:any)=>normalizeCompany(row,fetchedAt));
+const displayCompanies=(rows:any[])=>rows.filter(row=>deVig([row.win,row.draw,row.lose],3));
+const inputSnapshot=(companies:any[],decisionAt:string,official:any={})=>({
+  schemaVersion:1,pipelineVersion:PREDICTION_PIPELINE_VERSION,decisionAt,companies,
+  official:{officialMatchId:String(official.officialMatchId||official.matchId||""),salesDate:official.salesDate||"",kickoffAt:official.kickoffAt||"",
+    hadOdds:official.odds||[],handicap:official.marketEligibility?.["让球胜平负"]?.qualification==="qualified"?nullableHandicap(official.marketEligibility["让球胜平负"].handicap??official.handicap):null,
+    hhadOdds:official.marketEligibility?.["让球胜平负"]?.qualification==="qualified"?(official.hhadOdds||[]):[],
+    totalOdds:official.marketOdds?.["总进球数"]||[],fetchedAt:official.sourceFetchedAt||official.fetchedAt||null,updatedAt:official.updatedAt||null}
+});
 
 function median(values: number[]) {
   const sorted = values.filter(Number.isFinite).sort((a, b) => a - b);
-  if (!sorted.length) return 0;
+  if (!sorted.length) return Number.NaN;
   const middle = Math.floor(sorted.length / 2);
   return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
-}
-
-function normalizeProbabilities(values:number[]){
- const valid=values.map(value=>Number.isFinite(value)&&value>0?value:0),total=valid.reduce((sum,value)=>sum+value,0);
- return total>0?valid.map(value=>value/total):valid.map(()=>1/Math.max(1,valid.length));
-}
-
-function temperatureCalibrate(values:number[],temperature:number){
- const safeTemperature=Number.isFinite(temperature)?Math.max(.7,Math.min(2.5,temperature)):1;
- return normalizeProbabilities(values.map(value=>Math.pow(Math.max(value,.0001),1/safeTemperature)));
 }
 
 function validCalibrationBucket(value:unknown):CalibrationBucket|null{
@@ -97,7 +82,7 @@ function normalized1x2(rows: CompanyOdds[], sporttery: number[]) {
     const total = raw.reduce((sum, value) => sum + value, 0);
     return raw.map((value) => value / total);
   });
-  return [0, 1, 2].map((index) => median(probabilities.map((row) => row[index])) || 1 / 3);
+  return [0, 1, 2].map((index) => median(probabilities.map((row) => row[index])));
 }
 
 function deVigDecimal(odds: number[]) {
@@ -108,14 +93,10 @@ function deVigDecimal(odds: number[]) {
 }
 
 function deVigHongKong(homePrice: number, awayPrice: number) {
-  if (!(homePrice > 0) || !(awayPrice > 0)) return [0.5, 0.5];
+  if (!(homePrice > 0) || !(awayPrice > 0)) return [Number.NaN, Number.NaN];
   const raw = [1 / (1 + homePrice), 1 / (1 + awayPrice)];
   const total = raw[0] + raw[1];
   return raw.map((value) => value / total);
-}
-
-function marketMedian(rows: number[][], fallback: number[]) {
-  return fallback.map((value, index) => median(rows.map((row) => row[index])) || value);
 }
 
 function handicapMeaning(asianLine: number, officialLine: number|null) {
@@ -141,6 +122,7 @@ function handicapExpectation(line: number) {
 }
 
 function interpretInstitutionAction(firstLine: number, line: number, firstHome: number, home: number, firstAway: number, away: number) {
+  if (![firstLine,line,firstHome,home,firstAway,away].every(Number.isFinite)) return "初盘或即盘信息不足，不判断机构变盘方向";
   const lineDelta = line - firstLine;
   const homeMove = movementLabel(firstHome, home);
   const awayMove = movementLabel(firstAway, away);
@@ -154,105 +136,6 @@ function interpretInstitutionAction(firstLine: number, line: number, firstHome: 
 function expectedValue(probabilities: number[], odds: number[]) {
   if (!Array.isArray(odds) || odds.length !== probabilities.length) return [];
   return odds.map((odd, index) => odd > 1 ? probabilities[index] * odd - 1 : Number.NaN);
-}
-
-function poisson(lambda: number, goals: number) {
-  let factorial = 1;
-  for (let index = 2; index <= goals; index += 1) factorial *= index;
-  return Math.exp(-lambda) * Math.pow(lambda, goals) / factorial;
-}
-
-function resultLabel(home: number, away: number) {
-  return home > away ? "胜" : home === away ? "平" : "负";
-}
-
-function tempoScales(dispersion:number){
- const spread=Math.max(0,Math.min(.28,Math.sqrt(Math.max(0,dispersion-1))*.32));
- return spread>0.005?[{scale:1-spread,weight:.2},{scale:1,weight:.6},{scale:1+spread,weight:.2}]:[{scale:1,weight:1}];
-}
-
-function dixonColesTau(homeGoals:number,awayGoals:number,homeLambda:number,awayLambda:number,rho:number){
- if(homeGoals===0&&awayGoals===0)return 1-homeLambda*awayLambda*rho;
- if(homeGoals===0&&awayGoals===1)return 1+homeLambda*rho;
- if(homeGoals===1&&awayGoals===0)return 1+awayLambda*rho;
- if(homeGoals===1&&awayGoals===1)return 1-rho;
- return 1;
-}
-
-function jointScoreProbability(homeLambda:number,awayLambda:number,homeGoals:number,awayGoals:number,dispersion:number,lowScoreRho=0){
- return tempoScales(dispersion).reduce((sum,state)=>{const scaledHome=homeLambda*state.scale,scaledAway=awayLambda*state.scale,tau=Math.max(.05,dixonColesTau(homeGoals,awayGoals,scaledHome,scaledAway,lowScoreRho));return sum+state.weight*poisson(scaledHome,homeGoals)*poisson(scaledAway,awayGoals)*tau},0);
-}
-
-function totalGoalProbabilities(homeLambda: number, awayLambda: number,dispersion:number) {
-  const lambda = homeLambda + awayLambda;
-  const firstSeven = Array.from({length: 7}, (_, goals) => tempoScales(dispersion).reduce((sum,state)=>sum+state.weight*poisson(lambda*state.scale,goals),0));
-  return [...firstSeven, Math.max(0, 1 - firstSeven.reduce((sum, value) => sum + value, 0))].map((value) => value * 100);
-}
-
-// 将全场进球拆成独立的上、下半场泊松增量，确保半全场与同一套预期进球一致。
-function halfFullProbabilities(homeLambda: number, awayLambda: number,firstHalfGoalShare:number,dispersion:number) {
-  const values = new Array(HALF_FULL_LABELS.length).fill(0) as number[];
-  for(const state of tempoScales(dispersion)){
-   const halfHomeLambda = homeLambda * firstHalfGoalShare*state.scale;
-   const halfAwayLambda = awayLambda * firstHalfGoalShare*state.scale;
-   const secondHomeLambda = homeLambda * (1 - firstHalfGoalShare)*state.scale;
-   const secondAwayLambda = awayLambda * (1 - firstHalfGoalShare)*state.scale;
-   for (let halfHome = 0; halfHome <= 7; halfHome += 1) for (let halfAway = 0; halfAway <= 7; halfAway += 1) {
-    const halfProbability = poisson(halfHomeLambda, halfHome) * poisson(halfAwayLambda, halfAway);
-    for (let secondHome = 0; secondHome <= 7; secondHome += 1) for (let secondAway = 0; secondAway <= 7; secondAway += 1) {
-     const label = `${resultLabel(halfHome, halfAway)}${resultLabel(halfHome + secondHome, halfAway + secondAway)}`;
-     values[HALF_FULL_LABELS.indexOf(label)] += state.weight*halfProbability * poisson(secondHomeLambda, secondHome) * poisson(secondAwayLambda, secondAway);
-    }
-   }
-  }
-  const captured = values.reduce((sum, value) => sum + value, 0);
-  return values.map((value) => captured > 0 ? value / captured * 100 : 0);
-}
-
-function modelScores(target: number[], totalLine: number, handicap: number, asianHomeTarget: number, overTarget: number, officialHandicap: number|null, hhadTarget: number[],calibration:CalibrationBucket|null) {
-  let best = { home: 1.35, away: 1.1, error: Number.POSITIVE_INFINITY };
-  const dispersion=calibration?.goalDispersion||1,lowScoreRho=calibration?.lowScoreRho||0,historyWeight=calibration?Math.min(.12,calibration.sampleSize/250):0;
-  for (let home = 0.25; home <= 3.95; home += 0.05) {
-    for (let away = 0.2; away <= 3.7; away += 0.05) {
-      let homeWin = 0, draw = 0, awayWin = 0, asianHome = 0, over = 0, hhadHome = 0, hhadDraw = 0, hhadAway = 0;
-      for (let h = 0; h <= 9; h += 1) for (let a = 0; a <= 9; a += 1) {
-        const probability = jointScoreProbability(home,away,h,a,dispersion,lowScoreRho);
-        if (h > a) homeWin += probability;
-        else if (h === a) draw += probability;
-        else awayWin += probability;
-        asianHome += probability / (1 + Math.exp(-6 * (h - a + handicap)));
-        over += probability / (1 + Math.exp(-6 * (h + a - totalLine)));
-        if(officialHandicap!==null){const adjusted = h - a + officialHandicap;if (adjusted > 0) hhadHome += probability;else if (adjusted === 0) hhadDraw += probability;else hhadAway += probability}
-      }
-      const marketError = (Math.pow(homeWin - target[0], 2) + Math.pow(draw - target[1], 2) + Math.pow(awayWin - target[2], 2)) * 0.48;
-      const asianError = Number.isFinite(handicap) ? Math.pow(asianHome - asianHomeTarget, 2) * 0.30 : 0;
-      const totalError = totalLine > 0 ? Math.pow(over - overTarget, 2) * 0.18 : 0;
-      const hhadError = officialHandicap!==null&&hhadTarget.length === 3 ? (Math.pow(hhadHome - hhadTarget[0], 2) + Math.pow(hhadDraw - hhadTarget[1], 2) + Math.pow(hhadAway - hhadTarget[2], 2)) * 0.38 : 0;
-      const lineError = Number.isFinite(handicap) ? Math.pow((home - away + handicap * 0.82) / 3, 2) * 0.06 : 0;
-      const historyGoalError=calibration?Math.pow((home+away-calibration.meanTotalGoals)/3,2)*historyWeight:0;
-      const error = marketError + asianError + totalError + hhadError + lineError+historyGoalError;
-      if (error < best.error) best = {home, away, error};
-    }
-  }
-  const scores: Array<{score: string; probability: number}> = [];
-  for (let home = 0; home <= 7; home += 1) for (let away = 0; away <= 7; away += 1) {
-    scores.push({score: `${home}:${away}`, probability: jointScoreProbability(best.home,best.away,home,away,dispersion,lowScoreRho) * 100});
-  }
-  const fullScores = scores.sort((a, b) => b.probability - a.probability),fullMass=scores.reduce((sum,item)=>sum+item.probability,0),fullScoreDistribution=fullScores.map(item=>({...item,probability:fullMass>0?item.probability/fullMass*100:0}));
-  const hhad = officialHandicap===null?[]:[0, 0, 0];
-  const capturedProbability=fullScoreDistribution.reduce((sum,item)=>sum+item.probability/100,0);
-  fullScoreDistribution.forEach((item) => {
-    const [home, away] = item.score.split(":").map(Number);
-    if(officialHandicap!==null){const adjusted = home - away + officialHandicap;hhad[adjusted > 0 ? 0 : adjusted === 0 ? 1 : 2] += item.probability / 100}
-  });
-  return {
-    expectedGoals: [best.home, best.away],
-    scores: fullScoreDistribution.slice(0, 4),fullScoreDistribution,
-    hhadProbabilities: hhad.map((value) => capturedProbability>0?value/capturedProbability*100:0),
-    totalGoalProbabilities: totalGoalProbabilities(best.home, best.away,dispersion),
-    halfFullProbabilities: halfFullProbabilities(best.home, best.away,calibration?.firstHalfGoalShare||DEFAULT_FIRST_HALF_GOAL_SHARE,dispersion),
-    fitError: best.error,lowScoreRho,
-  };
 }
 
 const datePart=(value:unknown)=>String(value||"").match(/\d{4}-\d{2}-\d{2}/)?.[0]||"";
@@ -288,54 +171,50 @@ export async function POST(request: Request) {
   const sportteryMatches: any[] = Array.isArray(input?.matches) ? input.matches.slice(0, 120) : [];
   const forceRefresh = input?.forceRefresh === true;
   const calibrationProfile = await getPublishedCalibration() as Partial<ModelCalibrationProfile> | null;
-  const globalCalibration = calibrationProfile?.status==="validated"&&calibrationProfile?.trainingSampleSize&&calibrationProfile.trainingSampleSize>=20
+  const globalCalibration = compatibleCalibration(calibrationProfile)&&calibrationProfile?.trainingSampleSize&&calibrationProfile.trainingSampleSize>=20
     ? validCalibrationBucket(calibrationProfile.global)
     : null;
-  const probabilityTemperature = calibrationProfile?.status==="validated"&&calibrationProfile?.calibrationSampleSize&&calibrationProfile.calibrationSampleSize>=MIN_TEMPERATURE_CALIBRATION_MATCHES
+  const probabilityTemperature = compatibleCalibration(calibrationProfile)&&calibrationProfile?.calibrationSampleSize&&calibrationProfile.calibrationSampleSize>=MIN_TEMPERATURE_CALIBRATION_MATCHES
     ? Math.max(.7, Math.min(2.5, numeric(calibrationProfile.probabilityTemperature) || 1))
     : 1;
   if (!sportteryMatches.length) return Response.json({reports:[],fetchedAt:new Date().toISOString(),sourceUrl:SOURCE_URL,methodology:"没有可确认的官方比赛，未执行赔率模型。"});
   try {
     const issue = new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
     const issues=Array.from(new Set(sportteryMatches.map(match=>datePart(match.salesDate)).filter(Boolean)));if(!issues.length)issues.push(issue);
-    const raw=Array.from(new Map((await Promise.all(issues.map(async saleIssue=>(await fetchCompanyOdds(saleIssue,forceRefresh)).map(match=>({...match,__issue:saleIssue}))))).flat().map(match=>[`${match.CC_ID||""}|${match.MATCH_ID||match.ID||""}`,match])).values());
+    const batches=await Promise.allSettled(issues.map(saleIssue=>fetchCompanyOdds(saleIssue,forceRefresh)));
+    const sourceFailures=batches.flatMap((result,index)=>result.status==="rejected"?[{issue:issues[index],reason:String(result.reason?.message||result.reason)}]:[]);
+    const rawRows:any[]=batches.flatMap(result=>result.status==="fulfilled"?result.value.rows.map((match:any)=>({...match,__issue:result.value.issue,__fetchedAt:result.value.fetchedAt})):[]);
+    const raw:any[]=Array.from(new Map(rawRows.map(match=>[`${match.__issue}|${match.CC_ID||""}|${match.MATCH_ID||match.ID||""}`,match])).values());
+    if(!raw.length&&sourceFailures.length)throw new Error(sourceFailures.map(row=>row.issue+": "+row.reason).join("；"));
+    const generatedAt=new Date().toISOString();
     const pendingVerification:any[]=[];
     const reports = raw.filter((match) => String(match.CC_ID || "").includes("周")).map((match) => {
-      const companies: CompanyOdds[] = (match.listOdds || []).filter((row: any) => COMPANY_IDS.includes(Number(row.SOURCE_COMPANY_ID))).map((row: any) => ({
-        companyId: Number(row.SOURCE_COMPANY_ID), company: String(row.COMPANY_NAME),
-        win: numeric(row.WIN), draw: numeric(row.SAME), lose: numeric(row.LOST),
-        handicap: numeric(row.HANDICAP), homePrice: numeric(row.HOST), awayPrice: numeric(row.GUEST),
-        total: numeric(row.DW_HANDICAP), overPrice: numeric(row.BIG), underPrice: numeric(row.SMALL),
-        firstWin: numeric(row.FIRST_WIN), firstDraw: numeric(row.FIRST_SAME), firstLose: numeric(row.FIRST_LOST),
-        firstHandicap: numeric(row.FIRST_HANDICAP), firstHomePrice: numeric(row.FIRST_HOST), firstAwayPrice: numeric(row.FIRST_GUEST),
-        firstTotal: numeric(row.DW_FIRST_HANDICAP), firstOverPrice: numeric(row.FIRST_BIG), firstUnderPrice: numeric(row.FIRST_SMALL),
-      }));
+      const sourceCompanies=parsedCompanies(match,match.__fetchedAt),companies=displayCompanies(sourceCompanies);
       const saleIssue=String(match.__issue||issue),mapping=verifyOfficialMapping(match,sportteryMatches,saleIssue),official=mapping.official;
       if (!official){pendingVerification.push({externalId:String(match.MATCH_ID||match.ID||""),displayId:String(match.CC_ID||""),matchDate:datePart(match.MATCH_TIME)||saleIssue,time:clockPart(match.MATCH_TIME),home:String(match.HOST_NAME||""),away:String(match.GUEST_NAME||""),mappingStatus:mapping.status,reason:mapping.reason,candidateOfficialMatchIds:mapping.candidateOfficialMatchIds});return null}
-      const externalRows = companies.map((row) => deVigDecimal([row.win, row.draw, row.lose])).filter((row) => row.length === 3);
-      const externalProbabilities = marketMedian(externalRows, [1 / 3, 1 / 3, 1 / 3]);
-      const officialProbabilities = deVigDecimal(official?.odds || []);
-      const rawProbabilities = normalizeProbabilities(officialProbabilities.length === 3 ? externalProbabilities.map((value, index) => value * 0.65 + officialProbabilities[index] * 0.35) : externalProbabilities);
-      const probabilities = temperatureCalibrate(rawProbabilities, probabilityTemperature);
-      const totalLine = median(companies.map((row) => row.total));
-      const handicap = median(companies.map((row) => row.handicap));
-      const asianHomeTarget = median(companies.map((row) => deVigHongKong(row.homePrice, row.awayPrice)[0])) || 0.5;
-      const initialAsianHomeTarget = median(companies.map((row) => deVigHongKong(row.firstHomePrice, row.firstAwayPrice)[0])) || 0.5;
-      const overTarget = median(companies.map((row) => deVigHongKong(row.overPrice, row.underPrice)[0])) || 0.5;
+      const modelInput=inputSnapshot(sourceCompanies,generatedAt,official),dataQuality=assessPredictionInput(sourceCompanies,generatedAt);
+      if(dataQuality.status!=="ready"){pendingVerification.push({reason:dataQuality.reasons.join("；"),candidateOfficialMatchIds:[String(official.officialMatchId||official.matchId)],displayId:match.CC_ID});return null}
+      const totalLine = median(sourceCompanies.filter(row=>validAsianLine(row.total)&&row.total>0).map(row=>row.total));
+      const handicap = median(sourceCompanies.filter(row=>validAsianLine(row.handicap)).map(row=>row.handicap));
+      const asianHomeTarget = median(companies.map((row) => deVigHongKong(row.homePrice, row.awayPrice)[0]));
+      const initialAsianHomeTarget = median(companies.map((row) => deVigHongKong(row.firstHomePrice, row.firstAwayPrice)[0]));
+      const overTarget = median(companies.map((row) => deVigHongKong(row.overPrice, row.underPrice)[0]));
       const hhadEligibility=official?.marketEligibility?.["让球胜平负"],officialHandicap=hhadEligibility?.qualification==="qualified"?nullableHandicap(hhadEligibility.handicap??official?.handicap):null;
       const officialHhadOdds=hhadEligibility?.qualification==="qualified"&&officialHandicap!==null?(official?.hhadOdds||[]):[];
       const officialHhadFair = deVigDecimal(officialHhadOdds);
       const league = String(match.LEAGUE_NAME_SIMPLY || official?.league || "");
       const leagueCalibrationCandidate = calibrationProfile?.leagues?.[league];
-      const leagueCalibration = leagueCalibrationCandidate && numeric(leagueCalibrationCandidate.sampleSize) >= 8
+      const leagueCalibration = compatibleCalibration(calibrationProfile) && leagueCalibrationCandidate && numeric(leagueCalibrationCandidate.sampleSize) >= 8
         ? validCalibrationBucket(leagueCalibrationCandidate)
         : null;
       const activeCalibration = leagueCalibration || globalCalibration;
-      const modeled = modelScores(probabilities, totalLine, handicap, asianHomeTarget, overTarget, officialHandicap, officialHhadFair, activeCalibration);
+      const modelParameters={...(activeCalibration||{}),temperature:probabilityTemperature};
+      const modeled = predictFromSnapshot(modelInput,modelParameters),rawProbabilities:number[]=modeled.marketProbabilities,probabilities=rawProbabilities;
       const derived=deriveMarkets(modeled.fullScoreDistribution,officialHandicap),finalProbabilities=derived.hadProbabilities.map(point=>point.probability/100),finalHhad=derived.hhadProbabilities?.map(point=>point.probability)||[],finalGoals=derived.totalGoalProbabilities.map(point=>point.probability);
       const initialProbabilities = normalized1x2(companies.map(row=>({...row,win:row.firstWin,draw:row.firstDraw,lose:row.firstLose})), []);
       const shifts = probabilities.map((value,index)=>(value-initialProbabilities[index])*100);
-      const asianMovement = (asianHomeTarget - initialAsianHomeTarget) * 100;
+      const movementAvailable=initialProbabilities.every(Number.isFinite)&&Number.isFinite(initialAsianHomeTarget);
+      const asianMovement = movementAvailable?(asianHomeTarget - initialAsianHomeTarget) * 100:Number.NaN;
       const combinedDirectionScores = [shifts[0] + asianMovement * 0.45, shifts[1], shifts[2] - asianMovement * 0.45];
       const movementDirectionIndex = combinedDirectionScores.indexOf(Math.max(...combinedDirectionScores));
       const directions = ["主队方向","平局方向","客队方向"];
@@ -343,18 +222,19 @@ export async function POST(request: Request) {
       const firstHandicap = median(companies.map(row=>row.firstHandicap));
       const handicapChange = handicap-firstHandicap;
       const fairOdds = finalProbabilities.map(value=>value>0?1/value:0);
-      const hadEv = expectedValue(finalProbabilities, official?.odds || []);
-      const hhadEv = officialHandicap===null?[]:expectedValue(finalHhad.map(value => value / 100), officialHhadOdds);
+      const hadEv = expectedValue(finalProbabilities, modeled.officialFresh?(official?.odds || []):[]);
+      const hhadEv = officialHandicap===null||!modeled.officialFresh?[]:expectedValue(finalHhad.map(value => value / 100), officialHhadOdds);
       const directionStrength = Math.max(...combinedDirectionScores);
       const fitAgreement = modeled.fitError < 0.012 ? "多盘口较一致" : modeled.fitError < 0.03 ? "部分一致" : "盘口分歧较大";
       const institutionAction = interpretInstitutionAction(firstHandicap, handicap, median(companies.map(row=>row.firstHomePrice)), median(companies.map(row=>row.homePrice)), median(companies.map(row=>row.firstAwayPrice)), median(companies.map(row=>row.awayPrice)));
       const expectation = handicapExpectation(handicap);
       const calibrationNarrative = activeCalibration ? `已使用 ${leagueCalibration ? league : "全局"} 历史样本 ${activeCalibration.sampleSize} 场，对概率锐度、总进球离散度、低比分相关性和半场进球占比作小幅校准。` : "历史有效样本不足，本场保持盘口模型基线；低比分相关修正保持影子状态，不以短样本强行启用。";
-      const narrative = `当前绝对概率最高为${directions[directionIndex]}；变盘相对偏向${directions[movementDirectionIndex]}。${institutionAction}。该变盘信号表示相对强弱变化，不等同于赛果概率最高项；欧赔变化 ${Math.abs(shifts[movementDirectionIndex]).toFixed(1)} 个百分点，亚盘主队侧水位概率变化 ${asianMovement>=0?"+":""}${asianMovement.toFixed(1)} 个百分点。${expectation}；当前结论为“${fitAgreement}”。${calibrationNarrative}`;
+      const narrative = !movementAvailable?`初盘信息不足，不计算变盘方向。${calibrationNarrative}`:`当前绝对概率最高为${directions[directionIndex]}；变盘相对偏向${directions[movementDirectionIndex]}。${institutionAction}。该变盘信号表示相对强弱变化，不等同于赛果概率最高项；欧赔变化 ${Math.abs(shifts[movementDirectionIndex]).toFixed(1)} 个百分点，亚盘主队侧水位概率变化 ${asianMovement>=0?"+":""}${asianMovement.toFixed(1)} 个百分点。${expectation}；当前结论为“${fitAgreement}”。${calibrationNarrative}`;
       const spread = Math.max(...companies.map((row) => row.win), 0) - Math.min(...companies.map((row) => row.win), Number.POSITIVE_INFINITY);
       return {
         id: String(official.id),externalDisplayId:String(match.CC_ID),officialMatchId:String(official.officialMatchId||official.matchId),salesDate:String(official.salesDate||official.matchDate||""),kickoffAt:String(official.kickoffAt||""),homeTeamId:String(official.homeTeamId||""),awayTeamId:String(official.awayTeamId||""),homeTeamCode:String(official.homeTeamCode||""),awayTeamCode:String(official.awayTeamCode||""),officialMappingStatus:"verified",mappingReason:mapping.reason,marketEligibility:official.marketEligibility||{},league,
         time: String(official?.matchDate&&official?.time?`${official.matchDate} ${official.time}`:official?.kickoffAt||official?.time||match.MATCH_TIME||""), matchDate: String(official?.matchDate || match.MATCH_TIME || ""), home: String(official.home), away: String(official.away), matchStatus: official?.matchStatus || "", isMock: Boolean(official?.isMock), sourceUpdatedAt: official?.updatedAt || "",
+        modelInput,modelParameters,dataQuality,sourceFetchedAt:match.__fetchedAt,officialOddsFresh:modeled.officialFresh,marketTotalGoalProbabilities:modeled.marketTotalGoalProbabilities,priceDiagnostics:modeled.priceDiagnostics,
         companies, marketProbabilities:rawProbabilities.map(value=>value*100),probabilities: {home: finalProbabilities[0] * 100, draw: finalProbabilities[1] * 100, away: finalProbabilities[2] * 100},
         consensus: {handicap, totalLine, agreement: companies.length === 3 && spread < 0.3 && modeled.fitError < 0.03 ? "较一致" : "有分歧"},
         marketSignal: {direction:directions[directionIndex],movementDirection:directions[movementDirectionIndex],strength:directionStrength,probabilityShifts:shifts,fairOdds,hadEv,hhadEv,evThreshold:EV_THRESHOLD,institutionAction,handicapExpectation:expectation,firstHandicap,handicapChange,narrative,officialOdds:official?.odds||[],officialHandicap:officialHandicap===null?"":String(officialHandicap),officialHhadOdds,officialHhadFair:officialHhadFair.map(value=>value*100),modeledHhad:finalHhad,hhadAvailable:officialHandicap!==null&&officialHhadOdds.length===3,modeledTotalGoals:finalGoals,totalGoalLabels:TOTAL_GOAL_LABELS,modeledHalfFull:modeled.halfFullProbabilities,halfFullLabels:HALF_FULL_LABELS,asianHomeProbability:asianHomeTarget*100,asianAwayProbability:(1-asianHomeTarget)*100,asianMovement,overProbability:overTarget*100,fitAgreement,handicapMeaning:handicapMeaning(handicap,officialHandicap),rawProbabilities:rawProbabilities.map(value=>value*100),calibrationSampleSize:activeCalibration?.sampleSize||0,probabilityTemperature,historicalMeanTotalGoals:activeCalibration?.meanTotalGoals,goalDispersion:activeCalibration?.goalDispersion,firstHalfGoalShare:activeCalibration?.firstHalfGoalShare,lowScoreRho:modeled.lowScoreRho},
@@ -362,17 +242,17 @@ export async function POST(request: Request) {
         missingCompanies: COMPANY_IDS.filter((id) => !companies.some((row) => row.companyId === id)),
       };
     }).filter(Boolean);
-    const generatedAt=oddsDataFetchedAt||new Date().toISOString(),calibrationVersion=globalCalibration?String(calibrationProfile?.profileId||`cal-${predictionHash(calibrationProfile)}`):"cal-none",version=createBasePredictionVersion(reports,calibrationVersion,generatedAt),versionedReports=reports.map(report=>({...report,predictionId:version.predictionId,inputSnapshotId:version.inputSnapshotId,baseModelVersion:version.baseModelVersion,calibrationVersion:version.calibrationVersion,predictionGeneratedAt:version.generatedAt}));
+    const calibrationVersion=globalCalibration?String(calibrationProfile?.profileId||`cal-${predictionHash(calibrationProfile)}`):"cal-none",version=createBasePredictionVersion(reports,calibrationVersion,generatedAt),versionedReports=reports.map(report=>({...report,predictionId:version.predictionId,inputSnapshotId:version.inputSnapshotId,baseModelVersion:version.baseModelVersion,calibrationVersion:version.calibrationVersion,predictionGeneratedAt:version.generatedAt}));
     const coveredIds=new Set(reports.map((report:any)=>String(report.officialMatchId||"")));
     const unavailableOfficialMatches=sportteryMatches.filter(match=>!coveredIds.has(String(match.officialMatchId||match.matchId||""))).map(match=>{
       const officialMatchId=String(match.officialMatchId||match.matchId||"");
       const related=pendingVerification.filter(record=>record.candidateOfficialMatchIds?.includes(officialMatchId));
       const reasons=Array.from(new Set(related.map(record=>record.reason)));
       const externalCandidates=related.map(record=>({displayId:record.displayId,home:record.home,away:record.away,matchDate:record.matchDate,time:record.time}));
-      return{id:match.id,officialMatchId,salesDate:match.salesDate,kickoffAt:match.kickoffAt,matchDate:match.matchDate,time:match.time,league:match.league,home:match.home,away:match.away,reason:reasons.join("；")||"外围盘口尚未提供可核验的本场数据",externalCandidates};
+      return{id:match.id,officialMatchId,salesDate:match.salesDate,kickoffAt:match.kickoffAt,matchDate:match.matchDate,time:match.time,league:match.league,home:match.home,away:match.away,reason:reasons.join("；")||sourceFailures.find(source=>source.issue===datePart(match.salesDate))?.reason||"外围盘口尚未提供可核验的本场数据",externalCandidates};
     });
     const coverage={officialMatches:sportteryMatches.length,predictedMatches:versionedReports.length,unavailableMatches:unavailableOfficialMatches.length,pendingExternalMappings:pendingVerification.length};
-    return Response.json({predictionId:version.predictionId,version,reports:versionedReports,pendingVerification,unavailableOfficialMatches,coverage, fetchedAt: generatedAt, sourceUrl: SOURCE_URL, methodology: `覆盖 ${coverage.predictedMatches}/${coverage.officialMatches} 场官方赛事；${coverage.unavailableMatches} 场因外围盘口缺失或身份未通过校验而不生成概率，另有 ${coverage.pendingExternalMappings} 条外围记录待核验。多盘口交叉校准：三家公司欧赔初盘/即盘、亚洲让球水位、大小球与体彩胜平负/固定让球盘共同约束预期进球；${globalCalibration ? `使用服务端校准版本 ${calibrationProfile?.profileId}，其参数只由训练/校准区间确定，并已保留未来测试区间；低比分相关参数 ${globalCalibration.lowScoreRho||0}` : "尚无通过未来测试门槛的服务端校准版本，保持盘口模型基线，Dixon–Coles 低比分修正处于影子验证"}；外围赛事仅在日期、主客队与开赛时间全部通过官方校验后进入可执行预测，盘口冲突会降低一致度。`});
+    return Response.json({predictionId:version.predictionId,version,reports:versionedReports,pendingVerification,unavailableOfficialMatches,coverage,sourceFailures, fetchedAt: generatedAt, sourceUrl: SOURCE_URL, methodology: `覆盖 ${coverage.predictedMatches}/${coverage.officialMatches} 场官方赛事；${coverage.unavailableMatches} 场因外围盘口缺失或身份未通过校验而不生成概率，另有 ${coverage.pendingExternalMappings} 条外围记录待核验。多盘口交叉校准：三家公司欧赔初盘/即盘、亚洲让球水位、大小球与体彩胜平负/固定让球盘共同约束预期进球；${globalCalibration ? `使用服务端校准版本 ${calibrationProfile?.profileId}，其参数只由训练/校准区间确定，并已保留未来测试区间；低比分相关参数 ${globalCalibration.lowScoreRho||0}` : "尚无通过未来测试门槛的服务端校准版本，保持盘口模型基线，Dixon–Coles 低比分修正处于影子验证"}；外围赛事仅在日期、主客队与开赛时间全部通过官方校验后进入可执行预测，盘口冲突会降低一致度。`});
   } catch (error) {
     return Response.json({error: error instanceof Error ? error.message : "赔率数据读取失败"}, {status: 502});
   }
@@ -382,8 +262,8 @@ export async function POST(request: Request) {
 export async function GET() {
   const issue = new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
   try {
-    const raw = await fetchCompanyOdds(issue);
-    const fetchedAt = oddsDataFetchedAt || new Date().toISOString();
+    const batch = await fetchCompanyOdds(issue),raw=batch.rows;
+    const fetchedAt = batch.fetchedAt,decisionAt=new Date().toISOString();
     const now = Date.now();
     const unavailable: Array<{displayId:string;home:string;away:string;reason:string}> = [];
     const candidates = Array.from(new Map(raw.filter((match:any)=>/^周[一二三四五六日天]\d+/u.test(String(match.CC_ID||""))).map((match:any)=>[String(match.SOURCE_MATCH_ID||match.ID||""),match])).values()).slice(0,40);
@@ -400,29 +280,18 @@ export async function GET() {
       const issueStart=Date.parse(`${issue}T00:00:00+08:00`);
       if(kickoff<issueStart||kickoff>=issueStart+48*60*60*1000)return reject("外围赛事不属于当前批次日期");
       if(kickoff<=now)return[];
-      const companies:CompanyOdds[]=(Array.isArray(match.listOdds)?match.listOdds:[])
-        .filter((row:any)=>COMPANY_IDS.includes(Number(row.SOURCE_COMPANY_ID)))
-        .map((row:any)=>({
-          companyId:Number(row.SOURCE_COMPANY_ID),company:String(row.COMPANY_NAME||`公司 ${row.SOURCE_COMPANY_ID}`),
-          win:numeric(row.WIN),draw:numeric(row.SAME),lose:numeric(row.LOST),
-          handicap:numeric(row.HANDICAP),homePrice:numeric(row.HOST),awayPrice:numeric(row.GUEST),
-          total:numeric(row.DW_HANDICAP),overPrice:numeric(row.BIG),underPrice:numeric(row.SMALL),
-          firstWin:numeric(row.FIRST_WIN),firstDraw:numeric(row.FIRST_SAME),firstLose:numeric(row.FIRST_LOST),
-          firstHandicap:numeric(row.FIRST_HANDICAP),firstHomePrice:numeric(row.FIRST_HOST),firstAwayPrice:numeric(row.FIRST_GUEST),
-          firstTotal:numeric(row.DW_FIRST_HANDICAP),firstOverPrice:numeric(row.FIRST_BIG),firstUnderPrice:numeric(row.FIRST_SMALL),
-        })).filter((row:CompanyOdds)=>[row.win,row.draw,row.lose].every(value=>value>1));
-      const totalRows=companies.filter(row=>row.total>0&&row.overPrice>0&&row.underPrice>0);
-      const asianRows=companies.filter(row=>row.homePrice>0&&row.awayPrice>0);
-      if(companies.length<2||!totalRows.length||!asianRows.length)return reject("外围胜平负、亚洲盘或大小球盘口不足，未生成比分概率");
-      const externalRows=companies.map(row=>deVigDecimal([row.win,row.draw,row.lose]));
-      const rawProbabilities=normalizeProbabilities(marketMedian(externalRows,[1/3,1/3,1/3]));
+      const sourceCompanies=parsedCompanies(match,fetchedAt),companies=displayCompanies(sourceCompanies);
+      const modelInput=inputSnapshot(sourceCompanies,decisionAt),dataQuality=assessPredictionInput(sourceCompanies,decisionAt);
+      if(dataQuality.status!=="ready")return reject(dataQuality.reasons.join("；"));
+      const modeled=predictFromSnapshot(modelInput),rawProbabilities:number[]=modeled.marketProbabilities;
+      const totalRows=sourceCompanies.filter(row=>validAsianLine(row.total)&&row.total>0&&asianMarketTarget(row.overPrice,row.underPrice)!==null);
+      const asianRows=sourceCompanies.filter(row=>validAsianLine(row.handicap)&&asianMarketTarget(row.homePrice,row.awayPrice)!==null);
       const totalLine=median(totalRows.map(row=>row.total));
       const handicap=median(asianRows.map(row=>row.handicap));
       const asianHomeTarget=median(asianRows.map(row=>deVigHongKong(row.homePrice,row.awayPrice)[0]));
       const firstHandicap=median(asianRows.map(row=>row.firstHandicap));
       const firstAsianHomeTarget=median(asianRows.map(row=>deVigHongKong(row.firstHomePrice,row.firstAwayPrice)[0]));
       const overTarget=median(totalRows.map(row=>deVigHongKong(row.overPrice,row.underPrice)[0]));
-      const modeled=modelScores(rawProbabilities,totalLine,handicap,asianHomeTarget,overTarget,null,[],null);
       const derived=deriveMarkets(modeled.fullScoreDistribution,null);
       const had=derived.hadProbabilities.map(point=>point.probability);
       const direction=["主胜","平局","客胜"][had.indexOf(Math.max(...had))];
@@ -432,6 +301,7 @@ export async function GET() {
         sourceIssue:issue,researchOnly:true,officialMappingStatus:"unmatched",marketEligibility:{},
         league:String(match.LEAGUE_NAME_SIMPLY||""),kickoffAt,time:timeText,matchDate:timeText.slice(0,10),
         home,away,matchStatus:"research_only",isMock:false,sourceUpdatedAt:fetchedAt,
+        modelInput,modelParameters:{},dataQuality,sourceFetchedAt:fetchedAt,priceDiagnostics:modeled.priceDiagnostics,
         companies,marketProbabilities:rawProbabilities.map(value=>value*100),
         probabilities:{home:had[0],draw:had[1],away:had[2]},
         consensus:{handicap,totalLine,agreement:companies.length===3&&spread<0.3&&modeled.fitError<0.03?"较一致":"有分歧"},
@@ -452,7 +322,7 @@ export async function GET() {
       }];
     });
     const inputSnapshotId=`research-input-${predictionHash(reports.map(report=>({externalMatchId:report.externalMatchId,kickoffAt:report.kickoffAt,companies:report.companies})))}`;
-    const version={predictionId:`research-${predictionHash({inputSnapshotId,fetchedAt})}`,inputSnapshotId,baseModelVersion:"external-only-poisson-v1",calibrationVersion:"research-uncalibrated",generatedAt:fetchedAt};
+    const version={predictionId:`research-${predictionHash({inputSnapshotId,fetchedAt})}`,inputSnapshotId,baseModelVersion:`${PREDICTION_PIPELINE_VERSION}-research`,calibrationVersion:"research-uncalibrated",generatedAt:fetchedAt};
     return Response.json({mode:"research-only",issue,version,reports:reports.map(report=>({...report,predictionId:version.predictionId,inputSnapshotId,baseModelVersion:version.baseModelVersion,calibrationVersion:version.calibrationVersion,predictionGeneratedAt:fetchedAt})),unavailable,fetchedAt,sourceUrl:SOURCE_URL,methodology:"仅使用外围三家公司欧赔、亚洲盘与大小球；不含竞彩官方赔率、固定让球值、销售状态或投注资格。该研究版本不进入正式推荐与复盘。"}, {headers:{"Cache-Control":"no-store"}});
   } catch(error) {
     return Response.json({error:error instanceof Error?error.message:"外围赛事读取失败",mode:"research-only"},{status:502,headers:{"Cache-Control":"no-store"}});

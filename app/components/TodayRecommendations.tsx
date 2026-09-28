@@ -141,6 +141,7 @@ type PurchaseItem = {
   settlementState?: string;
 };
 type PurchasePlan = {
+  decision?:{objective:string;targetNetProfit:number|null;targetMet:boolean|null;maximumLoss:number};
   id: string;
   originPlanId?: string;
   title: string;
@@ -731,6 +732,7 @@ function DailyPurchasePlans({
                     ))}
                   </ol>
                   <PurchasePlanReturns plan={plan}/>
+                  <p className="purchase-risk">筛选目标：{plan.decision?.objective||"历史版本未记录"}。全部未中时损失 ¥{plan.stake.toFixed(2)}。{plan.decision?.targetNetProfit!=null&&<>目标为命中后净盈利 ¥{plan.decision.targetNetProfit.toFixed(2)}；{plan.decision.targetMet?"在目标区间":"未达目标区间，当前为最接近方案"}。</>}</p>
                   <footer>
                     <span>投入 <SignedPurchaseMoney value={plan.stake} flow="stake"/></span>
                     <strong>{planResult(plan)}</strong>
@@ -749,7 +751,7 @@ function DailyPurchasePlans({
         </p>
       )}
       <p className="purchase-risk">
-        模型预期返奖按整个购买组合计算：展开为每注2元的单注后，将各注命中概率×该注返奖求和，跨场概率按独立假设相乘，未命中计零返奖。双选2串1共4注、投入8元；最低/最高盈利已扣除组合全部投入。以上均为生成时固定奖金的模拟值，不代表收益或命中保证；最终以实际出票和官方计奖为准。
+        命中后最低盈利非负只是返奖约束，不代表长期期望收益为正，也不保证中奖。模型预期返奖按整个购买组合计算：展开为每注2元的单注后，将各注命中概率×该注返奖求和，跨场概率按独立假设相乘，未命中计零返奖。双选2串1共4注、投入8元；最低/最高盈利已扣除组合全部投入。以上均为生成时固定奖金的模拟值，不代表收益或命中保证；最终以实际出票和官方计奖为准。
       </p>
     </section>
   );
@@ -938,11 +940,13 @@ export default function TodayRecommendations() {
         oddsFetchedAt: latest.fetchedAt,
         returns: calculateRecommendationReturns(items.map(item => ({matchKey: officialKey(item.match), market: item.market, scores: item.scores}))),
       }))
+      .filter(combination => combination.returns.status === "ready" && combination.returns.minWinningProfit >= 0)
       .sort(
         (a, b) =>
           b.probability - a.probability ||
           b.averageCompleteness - a.averageCompleteness,
       );
+    if (!combos.length) { setResults([]); throw new Error("缺少完整赔率，或命中后最低盈利为负；没有符合返奖约束的组合，未生成推荐。"); }
     setResults(combos.slice(0, groupCount));
       setGeneratedAt(new Date(now).toISOString());
     } catch (error) {

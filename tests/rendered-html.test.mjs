@@ -290,7 +290,7 @@ test("historical calibration is wired into predictions without treating missing 
  assert.match(archive,/未参与调参的未来测试成绩/);
  assert.match(engine,/predictedGoalPoint&&!totalTopTwoMatched/);
  assert.match(engine,/actualHalfFull&&halfFull\.length&&!halfFullMatched/);
- assert.match(predictions,/temperatureCalibrate/);
+ assert.match(predictions,/predictFromSnapshot/);
  assert.match(predictions,/goalDispersion/);
  assert.doesNotMatch(page,/PREDICTION_CALIBRATION_STORAGE_KEY/);
  assert.match(predictions,/getPublishedCalibration/);
@@ -310,6 +310,7 @@ test("historical calibration is wired into predictions without treating missing 
 test("small independent calibration samples keep temperature at one",async()=>{
  const policyUrl=new URL("../app/snapshot-decision-policy.js",import.meta.url).href;
  const source=(await readFile(new URL("../app/calibration-service.ts",import.meta.url),"utf8"))
+  .replace('from "./prediction-model.js"',`from "${new URL("../app/prediction-model.js",import.meta.url).href}"`)
   .replace('from "./snapshot-decision-policy.js"',`from "${policyUrl}"`)
   .replace(/import\.meta\.glob<ModelCalibrationProfile>\([^;]+\);/,"{};");
  const javascript=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText;
@@ -776,7 +777,7 @@ test("model audit surface exposes historical baseline comparison and guarded imp
  assert.match(panel,/模型与数据健康/);
  assert.match(panel,/模型暂未超越基线/);
  assert.match(panel,/AI 情报采用证据时效 \+ 未来增益双重门控/);
- assert.match(model,/dixonColesTau/);
+ assert.match(model,/predictFromSnapshot/);
  assert.match(model,/低比分修正处于影子验证/);
  assert.match(model,/input\.matches\.slice\(0, 120\)/);
  assert.match(model,/unavailableOfficialMatches/);

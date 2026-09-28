@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {applyAiReviewVersion} from "../../../prediction-version";
-import {getPublishedCalibration} from "../../../calibration-service";
 export async function POST(request: Request):Promise<Response> {
   const providerName = "DeepSeek";
   const apiKey = process.env.DEEPSEEK_API_KEY;
@@ -9,7 +8,8 @@ export async function POST(request: Request):Promise<Response> {
   if (!Array.isArray(body?.reports) || body.reports.length>120 || !body?.version?.predictionId || body.reports.some((report:any)=>report.predictionId!==body.version.predictionId) || JSON.stringify(body).length > 3_000_000) return Response.json({error: "预测版本无效、赛事超过120场或已混入其他版本数据，请刷新后重试。"}, {status: 400});
   const researchOnly=body.reports.length>0&&body.reports.every((report:any)=>report.researchOnly===true&&report.officialMappingStatus==="unmatched"&&!report.officialMatchId);
   if(body.reports.some((report:any)=>report.researchOnly===true)&&!researchOnly)return Response.json({error:"外围研究赛事不能混入官方预测版本。"}, {status:400});
-  const calibration=await getPublishedCalibration(),intelligenceWeightMultiplier=calibration?.status==="validated"?Number(calibration.intelligenceWeightMultiplier)||0:0;
+  // Text/evidence review remains available. Numeric AI fusion is shadow-only until full-market replay validates it.
+  const intelligenceWeightMultiplier=0;
   const batchSize = 6;
   if(body.reports.length>batchSize){
     const reviews:any[]=[];const evidenceById:Record<string,any>={};let model="";

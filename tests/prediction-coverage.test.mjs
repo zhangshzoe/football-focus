@@ -69,12 +69,13 @@ async function loadRoute(){
  const source=(await readFile(new URL("../app/api/predictions/route.ts",import.meta.url),"utf8"))
   .replace('from "../../prediction-version"',`from ${JSON.stringify(version)}`)
   .replace('import {getPublishedCalibration,MIN_TEMPERATURE_CALIBRATION_MATCHES} from "../../calibration-service";','const getPublishedCalibration=async()=>null; const MIN_TEMPERATURE_CALIBRATION_MATCHES=30;')
+  .replace(/from "(\.\.\/\.\.\/(?:prediction-model|prediction-input|asian-market)\.js)"/g,(_,path)=>`from ${JSON.stringify(new URL(path.replace("../../","../app/"),import.meta.url).href)}`)
   .replace('from "../../team-identity.js"',`from ${JSON.stringify(aliases)}`);
  return import(compile(source));
 }
 
 test("prediction API recovers every confirmed alias and explains the reversed fixture instead of dropping it",async()=>{
- const official=fixtures.map(([id,home,away,,,league,kickoff])=>({id:`周一${id}`,officialMatchId:`test-${id}`,salesDate:"2026-09-14",matchDate:kickoff.slice(0,10),time:kickoff.slice(11),kickoffAt:kickoff.replace(" ","T")+"+08:00",home,away,league,odds:[2.1,3.2,3.4],marketEligibility:{}}));
+ const official=fixtures.map(([id,home,away,,,league,kickoff])=>({id:`周一${id}`,officialMatchId:`test-${id}`,salesDate:"2026-09-14",matchDate:kickoff.slice(0,10),time:kickoff.slice(11),kickoffAt:kickoff.replace(" ","T")+"+08:00",home,away,league,odds:[2.1,3.2,3.4],marketOdds:{"总进球数":[16,8,3.2,4,8,16,32,32]},sourceFetchedAt:new Date().toISOString(),marketEligibility:{}}));
  const external=fixtures.map(([id,,,home,away,league,kickoff])=>({ID:`test-feed-${id}`,CC_ID:`周一${id}`,HOST_NAME:home,GUEST_NAME:away,LEAGUE_NAME_SIMPLY:league,MATCH_TIME:kickoff,listOdds:[2,3,22].map(company=>({SOURCE_COMPANY_ID:company,COMPANY_NAME:`测试公司${company}`,WIN:2.1,SAME:3.2,LOST:3.4,HANDICAP:-.25,HOST:.9,GUEST:.9,DW_HANDICAP:2.5,BIG:.9,SMALL:.9,FIRST_WIN:2.2,FIRST_SAME:3.2,FIRST_LOST:3.3,FIRST_HANDICAP:-.25,FIRST_HOST:.9,FIRST_GUEST:.9,DW_FIRST_HANDICAP:2.5,FIRST_BIG:.9,FIRST_SMALL:.9}))}));
  const {POST}=await loadRoute(),originalFetch=globalThis.fetch;
  globalThis.fetch=async(url)=>{assert.equal(url,"https://plzx.zgzcw.com/odds/oyzs_ajax.action");return Response.json(external)};
@@ -89,6 +90,9 @@ test("prediction API recovers every confirmed alias and explains the reversed fi
    assert.ok(report,match.id);
    assert.equal(report.home,match.home);assert.equal(report.away,match.away);
    assert.equal(report.officialMappingStatus,"verified");
+   assert.deepEqual(report.modelInput.official.totalOdds,[16,8,3.2,4,8,16,32,32]);
+   assert.equal(report.marketTotalGoalProbabilities.length,8);
+   assert.ok(Math.abs(report.marketTotalGoalProbabilities.reduce((a,b)=>a+b,0)-100)<1e-9);
    assert.equal(report.predictionId,result.predictionId);
    assert.equal(report.companies.length,3);
    assert.ok(report.scores.length>0);

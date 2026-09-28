@@ -20,9 +20,12 @@ npm test
 - **每日组合票快照**：`data/purchase-plan-snapshots/` 中的只追加 JSON。结算与订正另行关联，不能改写当时的推荐。
 - **线上读取索引**：`data/generated-prediction-snapshot-index.json` 是从已跟踪的原始快照生成的紧凑副本，供 Site 读取；它不是新的权威来源。更新快照后运行 `npm run sync:decision-index`，并与原始快照一起提交、发布。
 - **浏览器数据**：`app/browser-storage.ts` 的 IndexedDB 保存设备本地交互、缓存与旧记录迁移。它不是跨设备共享的正式复盘数据库。
-- **D1/R2**：当前 Site 的绑定为空，`db/schema.ts` 只是预留入口；正式生产数据并未写入 D1/R2。迁移前不得把它们当成数据源。
+- **D1**：Site 绑定 `DB`，`db/schema.ts` 的 `saved_purchase_trials` 保存按用户隔离的手动试算；它不是正式17:00/21:00快照的替代来源。
+- **R2**：尚未绑定，原始快照仍以只追加 JSON 为权威来源；迁移前不得忽略或删除这些文件。
 
 定时采集及发布流程见 [release-and-scheduled-publishing.md](docs/release-and-scheduled-publishing.md)。
+
+预测链路、返奖约束、验证边界与下一步迁移方案见 [架构优化与验证说明](docs/architecture-and-validation.md)。只读回放检查：`npm run audit:model-replay`。
 
 ## 开发约束
 
@@ -33,6 +36,6 @@ npm run audit:data-footprint
 npm run lint
 ```
 
-Prettier 当前先约束三个高密度核心文件，后续可按模块逐步扩大覆盖，避免一次全库格式化掩盖逻辑变更。校准温度至少需要 30 场独立校准比赛，小样本时保持温度 1；未来测试成绩不得参与自身参数选择。
+Prettier 覆盖官方解析、校准、组合票及新拆出的输入/盘口/预测/验证核心模块，后续按模块扩大覆盖，避免一次全库格式化掩盖逻辑变更。校准温度至少需要 30 场独立校准比赛，小样本时保持温度 1；未来测试成绩不得参与自身参数选择。
 
 历史 JSON 仍需跟随 Git 与 Site 版本同步。现阶段直接 `gitignore` 或删除旧快照会导致线上复盘缺失；体积超过 100 MiB 或紧凑索引超过 8 MiB 时，应先设计 R2 原始文件迁移、索引分片及完整性校验，再切换权威来源。可用 `npm run audit:data-footprint` 监控，不会修改数据。

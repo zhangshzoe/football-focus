@@ -83,7 +83,7 @@ function evaluateWindow(rows){
 export function buildModelEvaluation(input){
  const rows=[...(input||[])].map(row=>{const goals=scoreParts(row.fullScore);return{...row,actualHad:goals.length===2?outcome(goals[0],goals[1]):""}}).filter(row=>row.key&&row.actualHad);
  const grouped=new Map();rows.forEach(row=>{const key=row.officialMatchId||row.key;grouped.set(key,[...(grouped.get(key)||[]),row]);});
- const unique=Array.from(grouped.values()).map(items=>[...items].filter(row=>!finite(Date.parse(row.kickoffAt||""))||Date.parse(row.capturedAt||"")<=Date.parse(row.kickoffAt)).sort((a,b)=>Date.parse(b.capturedAt||"")-Date.parse(a.capturedAt||""))[0]||items[0]).sort((a,b)=>String(a.kickoffAt||a.salesDate).localeCompare(String(b.kickoffAt||b.salesDate)));
+ const unique=Array.from(grouped.values()).map(items=>[...items].filter(row=>finite(Date.parse(row.kickoffAt||""))&&finite(Date.parse(row.capturedAt||""))&&Date.parse(row.capturedAt)<Date.parse(row.kickoffAt)).sort((a,b)=>Date.parse(b.capturedAt||"")-Date.parse(a.capturedAt||""))[0]).filter(Boolean).sort((a,b)=>String(a.kickoffAt||a.salesDate).localeCompare(String(b.kickoffAt||b.salesDate)));
  const windows={all:evaluateWindow(unique),recent100:evaluateWindow(unique.slice(-100)),recent50:evaluateWindow(unique.slice(-50))};
  const segmentNames=new Map();
  unique.forEach(row=>segmentNames.set(row.league||"其他联赛",[...(segmentNames.get(row.league||"其他联赛")||[]),row]));

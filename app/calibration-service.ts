@@ -2,6 +2,11 @@ import { createHash } from "node:crypto";
 import { readFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import type { CalibrationBucket, ModelCalibrationProfile, ScorePoint } from "./prediction-config";
+import {
+  temperatureCalibrate as tempered,
+  compatibleCalibration,
+  CALIBRATION_STAGE,
+} from "./prediction-model.js";
 import { decisionTargetAt } from "./snapshot-decision-policy.js";
 
 export type CalibrationObservation = {
@@ -49,11 +54,6 @@ const normalized = (points: ScorePoint[]) => {
     ),
     sum = values.reduce((a, b) => a + b, 0);
   return values.map((value) => value / sum);
-};
-const tempered = (values: number[], temperature: number) => {
-  const scaled = values.map((value) => Math.pow(Math.max(0.000001, value), 1 / temperature)),
-    sum = scaled.reduce((a, b) => a + b, 0);
-  return scaled.map((value) => value / sum);
 };
 const scoreRows = (
   rows: CalibrationObservation[],
@@ -128,13 +128,18 @@ const bucket = (rows: CalibrationObservation[]): CalibrationBucket => {
       totals.length > 1
         ? totals.reduce((sum, value) => sum + (value - mean) ** 2, 0) / (totals.length - 1)
         : mean,
-    half = rows
-      .map((row) => row.halfGoals)
-      .filter((value): value is number => Number.isFinite(value)),
-    fullTotal = totals.reduce((a, b) => a + b, 0),
-    halfTotal = half.reduce((a, b) => a + b, 0);
+    paired = rows.filter(
+      (row) =>
+        Number.isFinite(row.halfGoals) &&
+        Number.isFinite(row.totalGoals) &&
+        row.halfGoals! >= 0 &&
+        row.halfGoals! <= row.totalGoals,
+    ),
+    fullTotal = paired.reduce((sum, row) => sum + row.totalGoals, 0),
+    halfTotal = paired.reduce((sum, row) => sum + row.halfGoals!, 0);
   return {
     sampleSize: rows.length,
+    halfTimePairedSampleSize: paired.length,
     meanTotalGoals: mean,
     goalDispersion: mean ? clamp(variance / mean, 0.85, 1.6) : 1,
     firstHalfGoalShare: fullTotal ? clamp(halfTotal / fullTotal, 0.35, 0.55) : 0.45,
@@ -314,7 +319,8 @@ export function buildCalibrationEvaluation(
         : intelligenceDelta <= -0.005
           ? "validated_gain"
           : "no_gain",
-    intelligenceWeightMultiplier = intelligenceStatus === "validated_gain" ? 1 : 0;
+    // Holdout evidence is diagnostic only. It must never select a runtime parameter.
+    intelligenceWeightMultiplier = 0;
   const lowScoreRho = fitLowScoreRho(training);
   const deterministic = {
     decisionPolicy: "latest_not_after_official_target_v1",
@@ -327,6 +333,12 @@ export function buildCalibrationEvaluation(
     testKeys: test.map((row) => row.matchKey),
   };
   const promotionGates = [
+    {
+      key: "raw-replay",
+      label: "同版本原始输入完整重放（当前为旧概率诊断）",
+      passed: false,
+      value: "not-replayed",
+    },
     {
       key: "sample",
       label: "未来独立样本 ≥ 100",
@@ -369,6 +381,9 @@ export function buildCalibrationEvaluation(
   const global = { ...bucket(training), lowScoreRho };
   return {
     version: 3,
+    schemaVersion: 1,
+    evaluationMode: "legacy-probability-diagnostic",
+    calibrationStage: CALIBRATION_STAGE,
     profileId,
     status,
     generatedAt: new Date().toISOString(),
@@ -425,7 +440,7 @@ export async function getPublishedCalibration() {
   }
   runtimeProfile =
     profiles
-      .filter((profile) => profile.status === "validated")
+      .filter((profile) => compatibleCalibration(profile))
       .sort((a, b) => String(b.generatedAt).localeCompare(String(a.generatedAt)))[0] || null;
   return runtimeProfile;
 }
