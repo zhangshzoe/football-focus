@@ -1,6 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import PurchaseDoublingSummary from "./PurchaseDoublingSummary";
 import {readBrowserData} from "../browser-storage";
 import {fetchOfficialSporttery} from "../sporttery-official";
 import {PROMOTED_PURCHASE_TRIAL,promoteSavedPurchaseTrial} from "../purchase-trial-promotion.js";
@@ -120,7 +121,7 @@ function confidenceLabel(value: number) {
         : "偏低";
 }
 
-type PurchaseItem = {
+export type PurchaseItem = {
   matchId: string;
   officialMatchId?: string;
   salesDate?: string;
@@ -356,6 +357,7 @@ function DailyPurchasePlans({
         )
       : data?.matches || [],[data,lotteryDate]);
   const [planSet, setPlanSet] = useState<PurchasePlanSet | null>(null),
+    [summaryView, setSummaryView] = useState<"original" | "doubling">("original"),
     [activeSlot,setActiveSlot]=useState<"1700"|"2100">("1700"),
     [planSets, setPlanSets] = useState<PurchasePlanSet[]>([]),
     [savedTrials, setSavedTrials] = useState<PurchasePlanSet[]>([]),
@@ -610,9 +612,30 @@ function DailyPurchasePlans({
           {planSet?.snapshotId?.startsWith("manual-trial-") && !savedTrials.some(item=>item.snapshotId===planSet.snapshotId) && <button type="button" disabled={busy} onClick={()=>void saveTrial()}>保存本次试算</button>}
         </div>
       </header>
+      <div className="purchase-slot-tabs purchase-summary-tabs" role="tablist" aria-label="推荐汇总视图">
+        {(["original", "doubling"] as const).map((view, index) => <button
+          key={view} id={`purchase-view-${view}`} type="button" role="tab"
+          aria-selected={summaryView === view} aria-controls={`purchase-panel-${view}`}
+          tabIndex={summaryView === view ? 0 : -1}
+          onClick={() => setSummaryView(view)}
+          onKeyDown={event => {
+            if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+            event.preventDefault();
+            const target = event.key === "Home" ? 0 : event.key === "End" ? 1 : 1 - index;
+            setSummaryView(target === 0 ? "original" : "doubling");
+            (event.currentTarget.parentElement?.children[target] as HTMLButtonElement)?.focus();
+          }}
+        >{view === "original" ? "推荐与原始汇总" : "倍投计算"}</button>)}
+      </div>
       <div className="purchase-slot-tabs" role="tablist" aria-label="选择固定组合票批次">
         {(["1700","2100"] as const).map(slot=><button key={slot} type="button" role="tab" aria-selected={activeSlot===slot} onClick={()=>{setPlanSet(null);setStatus("正在读取该批次快照…");setActiveSlot(slot)}}>{slot==="1700"?"17:00 场次":"21:00 场次"}</button>)}
       </div>
+      <div id="purchase-panel-doubling" role="tabpanel" aria-labelledby="purchase-view-doubling" hidden={summaryView !== "doubling"}>
+        {resultSyncError && <p role="alert" className="purchase-notice">{resultSyncError}</p>}
+        {promotionError && <p role="alert" className="purchase-notice">{promotionError}</p>}
+        <PurchaseDoublingSummary history={definitionHistory} slot={activeSlot} loading={busy} />
+      </div>
+      <div id="purchase-panel-original" role="tabpanel" aria-labelledby="purchase-view-original" hidden={summaryView !== "original"}>
       {!data && <p className="purchase-notice">当前浏览器没有今日预测版本，请先到 AI 预测页生成预测；没有预测时无法试算。</p>}
       {liveOfficial.error && <p className="purchase-notice">官方盘口获取失败：{liveOfficial.error}。可点击“按当前盘口试算”重试；过期赔率不会参与试算。</p>}
       {previewError && <p role="alert" className="purchase-notice">{previewError}</p>}
@@ -753,6 +776,7 @@ function DailyPurchasePlans({
       <p className="purchase-risk">
         命中后最低盈利非负只是返奖约束，不代表长期期望收益为正，也不保证中奖。模型预期返奖按整个购买组合计算：展开为每注2元的单注后，将各注命中概率×该注返奖求和，跨场概率按独立假设相乘，未命中计零返奖。双选2串1共4注、投入8元；最低/最高盈利已扣除组合全部投入。以上均为生成时固定奖金的模拟值，不代表收益或命中保证；最终以实际出票和官方计奖为准。
       </p>
+      </div>
     </section>
   );
 }

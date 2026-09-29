@@ -168,9 +168,29 @@ test("today recommendations refresh official SP on generation, show net ranges a
   assert.equal(container.querySelectorAll(".recommendation-return-panel").length,0,"Incomplete odds must not produce a recommended ticket");
   await act(async()=>container.querySelector('input[name="score-count"]').click());
   assert.equal(container.querySelectorAll(".combination-card").length,0,"Changing filters must clear old financial estimates");
+  await act(async()=>container.querySelector('#purchase-view-doubling').click());
+  assert.equal(container.querySelector('#purchase-panel-original').hidden,true);
+  assert.equal(container.querySelector('#purchase-panel-doubling').hidden,false);
+  assert.match(container.querySelector('#purchase-panel-doubling').textContent,/每种方式独立从1倍开始/);
+  await act(async()=>container.querySelector('#purchase-view-doubling').dispatchEvent(new dom.window.KeyboardEvent('keydown',{key:'ArrowLeft',bubbles:true})));
+  assert.equal(container.querySelector('#purchase-panel-original').hidden,false);
+  assert.equal(container.querySelector('#purchase-view-original').getAttribute('aria-selected'),'true');
   await act(async()=>root.unmount());
   assert.deepEqual(errors.map(error=>error.message),[]);
  }finally{await act(async()=>root.unmount());restore()}
+});
+
+test("doubling summary renders scaled historical money and tolerates missing stakes",async()=>{
+ const Summary=await load("../app/components/PurchaseDoublingSummary.tsx");
+ const rows=["lost","lost","won","pending"].map((status,index)=>({snapshotId:`test-${index}`,date:`2026-09-${20+index}`,generatedAt:`2026-09-${20+index}T17:00:00+08:00`,plan:{id:"total-double-2",status,stake:index===3?undefined:8,simulatedReturn:status==="won"?20:0,items:[{matchId:"周日001",home:"主队",away:"客队",pick:"2球",marketName:"总进球"}]}}));
+ const html=renderToString(h(Summary,{history:{"total-double-2":{rows}},slot:"1700",loading:false}));
+ const doc=new JSDOM(html).window.document;
+ assert.match(doc.body.textContent,/8元 → 16元 → 32元/);
+ assert.match(doc.body.textContent,/-¥56\.00/);
+ assert.match(doc.body.textContent,/\+¥80\.00/);
+ assert.match(doc.body.textContent,/\+¥24\.00/);
+ assert.match(doc.body.textContent,/金额待补/);
+ assert.equal(doc.querySelectorAll('tbody tr').length>3,true);
 });
 
 test("prediction and market views can refresh all matches, filter, clear and unmount without DOM errors",async()=>{
