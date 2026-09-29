@@ -54,7 +54,7 @@ function cashResult(plan) {
   return { stake, returned, outcome: won ? "won" : "lost" };
 }
 
-/** Replay one method and one time slot; caller supplies the existing formal history rows. */
+/** Replay one method and time slot: add one unit after a loss, reset to one after a win. */
 export function simulatePurchaseDoubling(historyRows = []) {
   const ordered = [...historyRows].sort((a, b) => {
     const aTime = Date.parse(a.generatedAt),
@@ -139,7 +139,7 @@ export function simulatePurchaseDoubling(historyRows = []) {
       multiplier = 1n;
       losingStreak = 0;
     } else if (results.some((result) => result.outcome === "lost")) {
-      multiplier *= 2n;
+      multiplier += 1n;
       losingStreak++;
       maxLosingStreak = Math.max(maxLosingStreak, losingStreak);
     }

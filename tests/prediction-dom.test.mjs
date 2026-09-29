@@ -185,10 +185,12 @@ test("doubling summary renders scaled historical money and tolerates missing sta
  const rows=["lost","lost","won","pending"].map((status,index)=>({snapshotId:`test-${index}`,date:`2026-09-${20+index}`,generatedAt:`2026-09-${20+index}T17:00:00+08:00`,plan:{id:"total-double-2",status,stake:index===3?undefined:8,simulatedReturn:status==="won"?20:0,items:[{matchId:"周日001",home:"主队",away:"客队",pick:"2球",marketName:"总进球"}]}}));
  const html=renderToString(h(Summary,{history:{"total-double-2":{rows}},slot:"1700",loading:false}));
  const doc=new JSDOM(html).window.document;
- assert.match(doc.body.textContent,/8元 → 16元 → 32元/);
- assert.match(doc.body.textContent,/-¥56\.00/);
- assert.match(doc.body.textContent,/\+¥80\.00/);
- assert.match(doc.body.textContent,/\+¥24\.00/);
+ assert.match(doc.body.textContent,/8元 → 16元 → 24元 → 32元/);
+ assert.match(doc.body.textContent,/按1、2、3、4倍依次递增/);
+ assert.doesNotMatch(doc.body.textContent,/翻倍/);
+ assert.match(doc.body.textContent,/-¥48\.00/);
+ assert.match(doc.body.textContent,/\+¥60\.00/);
+ assert.match(doc.body.textContent,/\+¥12\.00/);
  assert.match(doc.body.textContent,/金额待补/);
  assert.equal(doc.querySelectorAll('tbody tr').length>3,true);
 });

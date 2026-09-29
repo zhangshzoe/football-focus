@@ -25,24 +25,24 @@ const row = (day, status, extra = {}) => ({
   },
 });
 
-test("doubling replays chronologically, resets on a win and never alters source", () => {
+test("linear staking replays chronologically, resets on a win and never alters source", () => {
   const source = [row(4, "lost"), row(3, "won"), row(1, "lost"), row(2, "lost")];
   const copy = structuredClone(source);
   const result = simulatePurchaseDoubling(source);
   assert.deepEqual(
     result.rows.map((item) => item.multiplier),
-    [1n, 2n, 4n, 1n],
+    [1n, 2n, 3n, 1n],
   );
   assert.deepEqual(
     result.rows.map((item) => item.stake),
-    [800n, 1600n, 3200n, 800n],
+    [800n, 1600n, 2400n, 800n],
   );
-  assert.equal(result.stake, 6400n);
-  assert.equal(result.returned, 8000n);
-  assert.equal(result.net, 1600n);
+  assert.equal(result.stake, 5600n);
+  assert.equal(result.returned, 6000n);
+  assert.equal(result.net, 400n);
   assert.equal(result.rate, 25);
   assert.equal(result.nextMultiplier, 2n);
-  assert.equal(result.peakStake, 3200n);
+  assert.equal(result.peakStake, 2400n);
   assert.deepEqual(source, copy);
 });
 
@@ -60,7 +60,7 @@ test("pending and missing money never become losses; corrections replay the full
   );
   assert.equal(result.settled, 2);
   assert.equal(result.pending, 2);
-  assert.equal(result.nextMultiplier, 4n);
+  assert.equal(result.nextMultiplier, 3n);
   source[0].plan = { ...source[0].plan, status: "corrected_won", simulatedReturn: 20 };
   assert.equal(simulatePurchaseDoubling(source).rows[3].multiplier, 1n);
 });
@@ -148,8 +148,16 @@ test("base stake follows the whole saved ticket; long loss chains stay exact", (
   const long = simulatePurchaseDoubling(
     Array.from({ length: 80 }, (_, index) => row(index + 1, "lost")),
   );
-  assert.equal(long.stake, 800n * (2n ** 80n - 1n));
-  assert.equal(long.nextMultiplier, 2n ** 80n);
+  assert.deepEqual(
+    long.rows.slice(0, 4).map((item) => item.multiplier),
+    [1n, 2n, 3n, 4n],
+  );
+  assert.deepEqual(
+    long.rows.slice(0, 4).map((item) => item.stake),
+    [800n, 1600n, 2400n, 3200n],
+  );
+  assert.equal(long.stake, (800n * 80n * 81n) / 2n);
+  assert.equal(long.nextMultiplier, 81n);
   assert.equal(formatDoublingMoney(-123456n, true), "-¥1,234.56");
 });
 
