@@ -7,6 +7,169 @@
   },
   "days": [
     {
+      "date": "2026-09-29",
+      "snapshotId": "2026-09-29-official-decision-v1",
+      "matchCount": 13,
+      "matches": [
+        {
+          "officialMatchId": "2041776",
+          "id": "周二002",
+          "home": "澳大利亚",
+          "away": "巴西",
+          "kickoffAt": "2026-09-29T18:00:00+08:00",
+          "decisionTargetAt": "2026-09-29T09:30:00.000Z",
+          "selectedSnapshotId": "2026-09-29-1730",
+          "selectedScheduledAt": "2026-09-29T17:30:00+08:00",
+          "selectedCapturedAt": "2026-09-29T09:33:11.064Z",
+          "decisionPolicy": "latest_not_after_official_target_v1"
+        },
+        {
+          "officialMatchId": "2041777",
+          "id": "周二003",
+          "home": "藤枝MYFC",
+          "away": "大阪樱花",
+          "kickoffAt": "2026-09-29T18:00:00+08:00",
+          "decisionTargetAt": "2026-09-29T09:30:00.000Z",
+          "selectedSnapshotId": "2026-09-29-1730",
+          "selectedScheduledAt": "2026-09-29T17:30:00+08:00",
+          "selectedCapturedAt": "2026-09-29T09:33:11.064Z",
+          "decisionPolicy": "latest_not_after_official_target_v1"
+        },
+        {
+          "officialMatchId": "2041779",
+          "id": "周二005",
+          "home": "富山胜利",
+          "away": "浦和红钻",
+          "kickoffAt": "2026-09-29T18:00:00+08:00",
+          "decisionTargetAt": "2026-09-29T09:30:00.000Z",
+          "selectedSnapshotId": "2026-09-29-1730",
+          "selectedScheduledAt": "2026-09-29T17:30:00+08:00",
+          "selectedCapturedAt": "2026-09-29T09:33:11.064Z",
+          "decisionPolicy": "latest_not_after_official_target_v1"
+        },
+        {
+          "officialMatchId": "2041791",
+          "id": "周二006",
+          "home": "山形山神",
+          "away": "横滨水手",
+          "kickoffAt": "2026-09-29T18:00:00+08:00",
+          "decisionTargetAt": "2026-09-29T09:30:00.000Z",
+          "selectedSnapshotId": "2026-09-29-1730",
+          "selectedScheduledAt": "2026-09-29T17:30:00+08:00",
+          "selectedCapturedAt": "2026-09-29T09:33:11.064Z",
+          "decisionPolicy": "latest_not_after_official_target_v1"
+        },
+        {
+          "officialMatchId": "2041780",
+          "id": "周二007",
+          "home": "日本女",
+          "away": "韩国女",
+          "kickoffAt": "2026-09-29T18:30:00+08:00",
+          "decisionTargetAt": "2026-09-29T10:00:00.000Z",
+          "selectedSnapshotId": "2026-09-29-1730",
+          "selectedScheduledAt": "2026-09-29T17:30:00+08:00",
+          "selectedCapturedAt": "2026-09-29T09:33:11.064Z",
+          "decisionPolicy": "latest_not_after_official_target_v1"
+        },
+        {
+          "officialMatchId": "2041781",
+          "id": "周二008",
+          "home": "苏格兰",
+          "away": "瑞士",
+          "kickoffAt": "2026-09-30T02:45:00+08:00",
+          "decisionTargetAt": "2026-09-29T13:30:00.000Z",
+          "selectedSnapshotId": "2026-09-29-1730",
+          "selectedScheduledAt": "2026-09-29T17:30:00+08:00",
+          "selectedCapturedAt": "2026-09-29T09:33:11.064Z",
+          "decisionPolicy": "latest_not_after_official_target_v1"
+        },
+        {
+          "officialMatchId": "2041782",
+          "id": "周二009",
+          "home": "捷克",
+          "away": "英格兰",
+          "kickoffAt": "2026-09-30T02:45:00+08:00",
+          "decisionTargetAt": "2026-09-29T13:30:00.000Z",
+          "selectedSnapshotId": "2026-09-29-1730",
+          "selectedScheduledAt": "2026-09-29T17:30:00+08:00",
+          "selectedCapturedAt": "2026-09-29T09:33:11.064Z",
+          "decisionPolicy": "latest_not_after_official_target_v1"
+        },
+        {
+          "officialMatchId": "2041783",
+          "id": "周二010",
+          "home": "斯洛文尼",
+          "away": "北马其顿",
+          "kickoffAt": "2026-09-30T02:45:00+08:00",
+          "decisionTargetAt": "2026-09-29T13:30:00.000Z",
+          "selectedSnapshotId": "2026-09-29-1730",
+          "selectedScheduledAt": "2026-09-29T17:30:00+08:00",
+          "selectedCapturedAt": "2026-09-29T09:33:11.064Z",
+          "decisionPolicy": "latest_not_after_official_target_v1"
+        },
+        {
+          "officialMatchId": "2041784",
+          "id": "周二011",
+          "home": "斯洛伐克",
+          "away": "哈萨克",
+          "kickoffAt": "2026-09-30T02:45:00+08:00",
+          "decisionTargetAt": "2026-09-29T13:30:00.000Z",
+          "selectedSnapshotId": "2026-09-29-1730",
+          "selectedScheduledAt": "2026-09-29T17:30:00+08:00",
+          "selectedCapturedAt": "2026-09-29T09:33:11.064Z",
+          "decisionPolicy": "latest_not_after_official_target_v1"
+        },
+        {
+          "officialMatchId": "2041785",
+          "id": "周二012",
+          "home": "卢森堡",
+          "away": "冰岛",
+          "kickoffAt": "2026-09-30T02:45:00+08:00",
+          "decisionTargetAt": "2026-09-29T13:30:00.000Z",
+          "selectedSnapshotId": "2026-09-29-1730",
+          "selectedScheduledAt": "2026-09-29T17:30:00+08:00",
+          "selectedCapturedAt": "2026-09-29T09:33:11.064Z",
+          "decisionPolicy": "latest_not_after_official_target_v1"
+        },
+        {
+          "officialMatchId": "2041786",
+          "id": "周二013",
+          "home": "西班牙",
+          "away": "克罗地亚",
+          "kickoffAt": "2026-09-30T02:45:00+08:00",
+          "decisionTargetAt": "2026-09-29T13:30:00.000Z",
+          "selectedSnapshotId": "2026-09-29-1730",
+          "selectedScheduledAt": "2026-09-29T17:30:00+08:00",
+          "selectedCapturedAt": "2026-09-29T09:33:11.064Z",
+          "decisionPolicy": "latest_not_after_official_target_v1"
+        },
+        {
+          "officialMatchId": "2041787",
+          "id": "周二014",
+          "home": "保加利亚",
+          "away": "爱沙尼亚",
+          "kickoffAt": "2026-09-30T02:45:00+08:00",
+          "decisionTargetAt": "2026-09-29T13:30:00.000Z",
+          "selectedSnapshotId": "2026-09-29-1730",
+          "selectedScheduledAt": "2026-09-29T17:30:00+08:00",
+          "selectedCapturedAt": "2026-09-29T09:33:11.064Z",
+          "decisionPolicy": "latest_not_after_official_target_v1"
+        },
+        {
+          "officialMatchId": "2041788",
+          "id": "周二015",
+          "home": "美国",
+          "away": "智利",
+          "kickoffAt": "2026-09-30T08:00:00+08:00",
+          "decisionTargetAt": "2026-09-29T13:30:00.000Z",
+          "selectedSnapshotId": "2026-09-29-1730",
+          "selectedScheduledAt": "2026-09-29T17:30:00+08:00",
+          "selectedCapturedAt": "2026-09-29T09:33:11.064Z",
+          "decisionPolicy": "latest_not_after_official_target_v1"
+        }
+      ]
+    },
+    {
       "date": "2026-09-27",
       "snapshotId": "2026-09-27-official-decision-v1",
       "matchCount": 9,
@@ -2732,5 +2895,5 @@
       ]
     }
   ],
-  "generatedAt": "2026-09-27T14:33:46.107Z"
+  "generatedAt": "2026-09-29T09:35:45.974Z"
 }
