@@ -3,6 +3,7 @@ import {useState} from "react";
 import {buildModelEvaluation} from "../model-evaluation.js";
 import ForwardValidationPanel from "./ForwardValidationPanel";
 import PredictionSlotComparison from "./PredictionSlotComparison";
+import TotalGoalsValidationPanel from "./TotalGoalsValidationPanel";
 type Report=ReturnType<typeof buildModelEvaluation>;
 const pct=(v:number|null)=>v===null?"—":(v*100).toFixed(1)+"%";
 const number=(v:number|null)=>v===null?"—":v.toFixed(3);
@@ -20,6 +21,7 @@ export default function ModelExperimentCenter({report}:{report:Report}){
  <details className="experiment-detail-block"><summary>结果模式（原因未核验，不直接调参）</summary>{report.errors.summary.map(v=><p key={v.code}>{v.label} {v.count} 场 · {pct(v.rate)}</p>)}<p>次选命中不代表排序错误；未进入TopK不证明尾部偏窄；需要独立、批量概率验证。</p></details>
  {report.rollback.triggered&&<p className="rollback-alert">近期配对Brier劣于基线 {number(report.rollback.recentDelta)}，提示人工核查，不自动重写预测。</p>}
  <PredictionSlotComparison report={report.slotComparison}/>
+ <TotalGoalsValidationPanel/>
  <ForwardValidationPanel/>
  </section>;
 }

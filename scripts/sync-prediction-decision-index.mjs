@@ -8,6 +8,7 @@ import {readCaptureAttempts} from "./read-capture-attempts.mjs";
 import {syncForwardValidationIndex} from "./sync-forward-validation-index.mjs";
 import {projectSnapshotOddsLayers} from "../app/snapshot-probability-layers.js";
 import {retainsPurchaseSnapshot} from "../app/purchase-snapshot-retention.js";
+import {syncTotalGoalsValidation} from "./sync-total-goals-validation.mjs";
 
 const baseUrl=process.env.FOOTBALL_FOCUS_URL||"http://localhost:3000";
 const response=await fetch(`${baseUrl}/api/prediction-snapshots`,{cache:"no-store"});
@@ -73,4 +74,5 @@ const researchResponse=await fetch(`${baseUrl}/api/research-validation?view=even
 const researchData=await researchResponse.json().catch(()=>({}));
 if(!researchResponse.ok||!Array.isArray(researchData.resultEvents))throw new Error(researchData.resultStoreError||"首次观测赛果读取失败，未完成未来验证索引同步");
 const forwardValidation=await syncForwardValidationIndex({fixtureUniverse:captureAttempts.flatMap(attempt=>attempt.officialManifest||[]),resultEvents:researchData.resultEvents,resultEventErrors:researchData.invalidResultEvents||[]});
-console.log(JSON.stringify({status:"saved",path,bundlePath,days:days.length,matches:days.reduce((sum,day)=>sum+day.matchCount,0),bundleBytes:Buffer.byteLength(JSON.stringify(bundle)),forwardValidation}));
+const totalGoalsValidation=await syncTotalGoalsValidation({tracked,today,resultEvents:researchData.resultEvents,fixtureUniverse:captureAttempts.flatMap(attempt=>attempt.officialManifest||[]),sourceAttempts:captureAttempts});
+console.log(JSON.stringify({status:"saved",path,bundlePath,days:days.length,matches:days.reduce((sum,day)=>sum+day.matchCount,0),bundleBytes:Buffer.byteLength(JSON.stringify(bundle)),forwardValidation,totalGoalsValidation}));

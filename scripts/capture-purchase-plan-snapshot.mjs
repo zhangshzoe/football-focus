@@ -7,6 +7,7 @@ import {runCapture} from "./capture-attempts.mjs";
 import {purchaseCaptureWindow} from "../app/capture-window.js";
 import {captureForwardCandidates} from "./capture-forward-candidates.mjs";
 import {resolveServerOfficialMatches,assertCompletePurchaseEvaluation} from "../app/server-official-evidence.js";
+import {appendLocalCaptureReceipt} from "./local-capture-receipts.mjs";
 
 const baseUrl=process.env.FOOTBALL_FOCUS_URL||"http://localhost:3000";
 const directory=join(process.cwd(),"data","purchase-plan-snapshots");
@@ -79,6 +80,7 @@ audit.stage="immutable-write";
 const record={decisionKind:planSet.decisionSummary.noBet?"no-bet-decision":"selected-tickets",schemaVersion:1,recordType:"purchase-plan-snapshot",snapshotId,immutable:true,scheduledAt,capturedAt,inputDecisionAt,completedAt:capturedAt,decisionTiming:Date.parse(capturedAt)>Date.parse(scheduledAt)?"delayed-batch":"on-time",sourceFetchedAt:fetchedAt,officialSource:predictionData.officialSource,officialMatches:verifiedOfficialMatches,upstreamUpdatedAt:predictionData.officialSource.upstreamUpdatedAt||null,predictionId:predictionData.predictionId||predictionData.version?.predictionId||"",predictionVersion:predictionData.version||null,inputHash:predictionData.version?.inputSnapshotId||"",contentHash,previousSnapshotId:previous?.snapshotId||null,reviewAfter:`${date}T23:59:59+08:00`,forecasts:reports,predictionInputs:reports.map(report=>({officialMatchId:report.officialMatchId,modelInput:report.modelInput,modelParameters:report.modelParameters,predictionId:report.predictionId})),planSet};
 const output=join(directory,`${date}_${clock}_${contentHash.slice(0,12)}.json`);
 await writeFile(output,`${JSON.stringify(record,null,2)}\n`,{encoding:"utf8",flag:"wx"});
+audit.completionReceipt=await appendLocalCaptureReceipt(record,output);
 audit.forwardResearch=await captureForwardCandidates({...record,reports:record.forecasts}).catch(error=>({status:"failed",reason:error.message}));
 return {status:"saved",outcome:planSet.decisionSummary.noBet?"no_ticket":"saved",sourceMatchCount:matches.length,evaluatedFixtureCount:reports.length,slot,output,snapshotId,contentHash,capturedAt,plans:planSet.plans.filter(plan=>plan.status!=="unavailable").length};
 });

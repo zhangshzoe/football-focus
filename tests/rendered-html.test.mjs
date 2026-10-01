@@ -46,10 +46,11 @@ const cloudReadTypes=[];
 const workerEnv={
  ASSETS:{fetch:async()=>new Response("Not found",{status:404})},
  DB:{prepare(sql){
+  if(sql==="SELECT id FROM research_capture_records WHERE record_type = ? ORDER BY observed_at DESC, id DESC LIMIT 1")return {bind(type){assert.ok(["replay-index","source-attempt"].includes(type));return {async first(){return null;}};}};
   assert.match(sql,/^SELECT id, observed_at FROM research_capture_records /);
   return {
    bind(type){
-    assert.ok(["raw","purchase","source-attempt"].includes(type));
+    assert.ok(["raw","purchase","source-attempt","replay-index"].includes(type));
     return {async all(){cloudReadTypes.push(type);return {results:[]};}};
    },
   };
@@ -70,6 +71,46 @@ async function render(path="/"){
  const {default:worker}=await import(workerUrl.href);
  return worker.fetch(new Request(`http://localhost${path}`,{headers:{accept:"text/html"}}),workerEnv,{waitUntil(){},passThroughOnException(){}});
 }
+
+test("production total-goals API serves precomputed diagnostic summary without raw replay inputs",async()=>{
+ const response=await render("/api/total-goals-validation"),data=await response.json();
+ assert.equal(response.status,200);
+ assert.equal(data.report.schemaVersion,1);
+ assert.equal(data.report.promotionEligible,false);
+ assert.ok(Array.isArray(data.report.cohorts));
+ assert.ok(Array.isArray(data.report.tickets.rows));
+ assert.equal(data.storageOrigin,"bundled-offline-index");
+ assert.equal(data.indexReadStatus,"cloud-report-missing");
+ assert.equal(Object.hasOwn(data,"observations"),false);
+ assert.equal(Object.hasOwn(data,"purchases"),false);
+ assert.match(response.headers.get("cache-control"),/no-store/);
+});
+
+test("total-goals API marks missing cloud reports and rejects corrupt or retired pipeline summaries",async()=>{
+ const index=JSON.parse(await readFile(new URL("../data/generated-total-goals-validation-index.json",import.meta.url),"utf8"));
+ const routeSource=await readFile(new URL("../app/api/total-goals-validation/route.ts",import.meta.url),"utf8");
+ const previous=process.env.NODE_ENV;process.env.NODE_ENV="production";
+ try{
+  for(const scenario of ["missing","corrupt","retired","valid","cloud-valid-bundle-retired"]){
+   const cloudReport=structuredClone(index.report);
+   if(scenario==="retired")cloudReport.pipelineVersion="retired-pipeline";
+   const payload=scenario==="missing"?{}:{totalGoalsValidation:scenario==="corrupt"?{schemaVersion:1,cohorts:[],tickets:{rows:[]}}:cloudReport};
+   const storeUrl=moduleUrl(`export function getCloudResearchStore(){return {async latest(type){return {payload:type==="replay-index"?${JSON.stringify(payload)}:{status:"failed"}}}}}`);
+   const bundledReport=structuredClone(index.report);if(scenario==="cloud-valid-bundle-retired")bundledReport.pipelineVersion="retired-pipeline";
+   const source=routeSource.replace('import { NextResponse } from "next/server";','const NextResponse={json:(body,init={})=>new Response(JSON.stringify(body),{...init,headers:{"Content-Type":"application/json",...(init.headers||{})}})};')
+    .replace('import index from "../../../data/generated-total-goals-validation-index.json";',`const index=${JSON.stringify({report:bundledReport})};`)
+    .replace('from "../../cloud-research-binding"',`from ${JSON.stringify(storeUrl)}`)
+    .replace('from "../../total-goals-validation-contract.js"',`from ${JSON.stringify(new URL("../app/total-goals-validation-contract.js",import.meta.url).href)}`)
+    .replace('from "../../prediction-model.js"',`from ${JSON.stringify(new URL("../app/prediction-model.js",import.meta.url).href)}`);
+   const {GET}=await import(moduleUrl(ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText)+`#${scenario}`);
+   const response=await GET(),body=await response.json();
+   assert.deepEqual(body.report,index.report);
+   if(scenario==="valid"||scenario==="cloud-valid-bundle-retired"){assert.equal(response.status,200);assert.equal(body.storageOrigin,"cloud-background-index");}
+   else if(scenario==="missing"){assert.equal(response.status,200);assert.equal(body.indexReadStatus,"cloud-report-missing");}
+   else{assert.equal(response.status,503);assert.equal(body.storageOrigin,"bundled-offline-index");assert.equal(body.indexReadStatus,"cloud-unavailable");}
+  }
+ }finally{if(previous===undefined)delete process.env.NODE_ENV;else process.env.NODE_ENV=previous;}
+});
 
 test("official outage research stays separate from purchasable and archived forecasts",async()=>{
  const [route,page,report,review]=await Promise.all([

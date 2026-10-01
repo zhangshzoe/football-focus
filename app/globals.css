@@ -4,3 +4,19 @@
 .view-matches .match-repair-toolbar{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:6px 16px;margin:0 38px 16px;padding:14px 18px;border:1px solid #cfe2f0;border-radius:12px;background:rgba(255,255,255,.88);box-shadow:0 5px 18px rgba(37,104,145,.06)}
 .match-repair-toolbar div{display:flex;flex-direction:column;gap:3px;color:#20445f}.match-repair-toolbar span{font-size:12px;color:#6a8192}.match-repair-toolbar button{grid-row:1/3;grid-column:2;padding:9px 16px;border:1px solid #1688ef;border-radius:8px;background:#1688ef;color:#fff;font-weight:700;cursor:pointer}.match-repair-toolbar button:disabled{cursor:wait;opacity:.6}.match-repair-toolbar em{grid-column:1/-1;font-style:normal;font-size:12px}.match-repair-toolbar em.success{color:#168450}.match-repair-toolbar em.failed{color:#c33b3b}
 @media(max-width:720px){.view-matches .match-repair-toolbar{grid-template-columns:1fr;margin:0 16px 12px}.match-repair-toolbar button{grid-row:auto;grid-column:auto}.match-repair-toolbar em{grid-column:auto}}
+/* Total-goals replay is a server-backed diagnostic, with readable mobile cards. */
+.total-goals-validation{font-size:1rem;line-height:1.6;min-width:0}
+.total-goals-validation p,.total-goals-validation li{overflow-wrap:anywhere}
+.ttg-validation-counts,.ttg-validation-controls{display:flex;flex-wrap:wrap;gap:1rem;align-items:center;margin:1rem 0}
+.ttg-validation-counts span{padding:.6rem .8rem;border:1px solid #bfd8ec;border-radius:.5rem;background:#f4faff}
+.ttg-validation-controls label{display:grid;gap:.4rem;font-size:.875rem}
+.ttg-validation-controls select{min-height:2.75rem;max-width:100%;padding:.5rem;border:1px solid #bfd8ec;border-radius:.4rem;background:white}
+.ttg-validation-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;margin:1rem 0}
+.ttg-validation-metrics article,.ttg-validation-ticket{padding:1rem;border:1px solid #bfd8ec;border-radius:.6rem;background:#f8fcff;margin:.75rem 0}
+.ttg-validation-metrics h4,.ttg-validation-ticket h4{margin:0 0 .5rem}.ttg-validation-metrics strong{font-size:1.8rem;color:#125a91}
+.ttg-validation-metrics dl{margin:0}.ttg-validation-metrics dl>div{display:flex;justify-content:space-between;gap:.8rem}.ttg-validation-metrics dd{margin:0;font-variant-numeric:tabular-nums}
+.ttg-validation-warning{padding:.75rem;background:#fff5da;color:#795300;border-radius:.4rem}
+.ttg-validation-empty{padding:1rem;background:#eef6fc;border-left:3px solid #2686ca}
+.ttg-validation-list{padding-left:1.4rem}.ttg-validation-list li{margin:.4rem 0}
+.ttg-validation-meta{font-size:.875rem;color:#506b82}.ttg-cash-positive{color:#c92c3a}.ttg-cash-negative{color:#088253}
+@media(max-width:560px){.ttg-validation-metrics{grid-template-columns:1fr}.ttg-validation-counts{gap:.5rem}.ttg-validation-counts span{flex:1;min-width:5.5rem}.ttg-validation-controls{align-items:stretch}.ttg-validation-controls>label{width:100%}.total-goals-validation>summary{white-space:normal;line-height:1.6}}

@@ -6,6 +6,7 @@ import {runCapture} from "./capture-attempts.mjs";
 import {captureForwardCandidates} from "./capture-forward-candidates.mjs";
 import {buildSnapshotOddsLayer} from "../app/snapshot-probability-layers.js";
 import {resolveServerOfficialMatches} from "../app/server-official-evidence.js";
+import {appendLocalCaptureReceipt} from "./local-capture-receipts.mjs";
 
 const slot = process.argv[2];
 if (!/^([01]\d|2[0-3])[0-5]\d$/.test(slot || "")) throw new Error("快照时段必须是 HHmm，例如 2130 或 2230。");
@@ -84,6 +85,7 @@ audit.outcome=late?"late":"saved";audit.stage="immutable-write";
 const immutableReports = reports.map(report => ({ ...report, sourceFetchedAt:report.sourceFetchedAt||sourceFetchedAt, layers: { oddsBaseline: buildSnapshotOddsLayer(report), intelligenceOutput: { scores: report.intelligenceScores || [], coverage: report.intelligenceCoverage || 0, summary: report.aiSummary || "", risk: report.aiRisk || "", evidence: report.intelligenceEvidence?.records || [] }, fusionOutput: { fullScoreDistribution: report.fullScoreDistribution, probabilities: report.probabilities, hhad: report.marketSignal?.modeledHhad || [], totalGoals: report.marketSignal?.modeledTotalGoals || [], halfFull: report.marketSignal?.modeledHalfFull || [] } }, inputHash: report.inputSnapshotId || predictionData.version?.inputSnapshotId || "", parameters: { baseModelVersion: report.baseModelVersion, calibrationVersion: report.calibrationVersion, predictionId: report.predictionId } }));
 const raw = { schemaVersion: 2, recordType: "raw-prediction-snapshot", snapshotId, immutable: true, predictionId: predictionData.predictionId, version: predictionData.version, scheduledAt, scheduledTime: slot, capturedAt, upstreamUpdatedAt, sourceFetchedAt, officialSource:predictionData.officialSource, captureTiming:late?"late":"on-time", decisionTiming: timingAt(capturedAt, immutableReports), source: { sporttery: predictionData.officialSource.source || "中国体育彩票竞彩网", market: predictionData.sourceUrl || "" }, sourceMatchCount: verifiedOfficialMatches.length, inputHash: predictionData.version?.inputSnapshotId || digest(verifiedOfficialMatches), modelVersion: predictionData.methodology || "多盘口交叉校准模型", officialMatches: verifiedOfficialMatches, reports: immutableReports };
 await writeOnce(rawOutput, raw);
+audit.completionReceipt=await appendLocalCaptureReceipt(raw,rawOutput);
 // Research failures never replace or block the official immutable snapshot.
 const forwardResearch=await captureForwardCandidates(raw).catch(error=>({status:"failed",reason:error.message}));
 audit.forwardResearch=forwardResearch;

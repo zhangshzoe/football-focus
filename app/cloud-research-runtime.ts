@@ -7,12 +7,13 @@ import { appendResearchResult, readResearchResults, type ResultObservation, type
 import forwardIndex from "../data/generated-forward-validation-index.json";
 import snapshotIndex from "../data/generated-prediction-snapshot-index.json";
 import teamHistory from "../data/generated-team-history-index.json";
+import totalGoalsIndex from "../data/generated-total-goals-validation-index.json";
 
 export { getCloudResearchStore } from "./cloud-research-binding";
 export function getCloudCaptureEngine() {
   return cloudCaptureEngine({
     store: getCloudResearchStore(), codeHashes: __FF_FORWARD_CODE_HASHES__,
-    bundled: { ...forwardIndex, teamHistory, purchaseSnapshots: snapshotIndex.purchasePlanSnapshots },
+    bundled: { ...forwardIndex, teamHistory, purchaseSnapshots: snapshotIndex.purchasePlanSnapshots, totalGoalsIndex },
     fetchOfficial: () => fetchOfficialSporttery({ serverHeaders: true }),
     predict: async (fixtureIds: string[]) => {
       // Invoke the same trusted handler; it performs its own official re-read.

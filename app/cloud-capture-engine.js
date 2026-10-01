@@ -11,6 +11,7 @@ import { completeDistribution, EXACT_SCORE_LABELS, HAD_LABELS } from "./probabil
 import { validateCloudCaptureJob } from "./cloud-capture-auth.js";
 import { expectedHalfFullDistribution } from "./half-full-validation.js";
 import { appendCloudCaptureReceipt, recoverCloudCaptureReceipts, verifyCloudCaptureReceiptRecord, verifyCloudRawRecord } from "./cloud-capture-receipt.js";
+import { buildTotalGoalsValidation, projectTotalGoalRawSnapshot, projectTotalGoalPurchase } from "./total-goals-validation.js";
 
 const sourcePage = "https://cp.zgzcw.com/dc/getKaijiangFootBall.action";
 const dateAt = (at) => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Shanghai", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(at));
@@ -114,10 +115,21 @@ export function cloudCaptureEngine(deps) {
     // 100% coverage. Unknown days suspend eligibility, with no invented count.
     if (missingSourceDates.length) Object.assign(evaluation, { status: "official-coverage-unknown", eligible: false,
       missingSourceDates, officialCoverageKnown: false, reason: "部分销售日缺少成功读取的完整官方清单，真实总场数未知" });
+    const totalObservations = [...(bundled.totalGoalsIndex?.observations || [])], totalPurchases = [...(bundled.totalGoalsIndex?.purchases || [])];
+    for (const type of ["raw", "purchase"]) for await (const record of store.scan(type)) {
+      await writer.assertLease();
+      const raw = verifyCloudRawRecord(record), receiptRecord = await store.read(`raw-receipt-${raw.snapshotId}`);
+      const receipt = receiptRecord ? verifyCloudCaptureReceiptRecord(raw, receiptRecord) : null;
+      totalObservations.push(...projectTotalGoalRawSnapshot(raw, receipt));
+      if (type === "purchase") totalPurchases.push(projectTotalGoalPurchase(raw, receipt));
+    }
+    const sourceAttempts = [...(await store.list("source-attempt"))].map((record) => record.payload);
+    const totalGoalsValidation = buildTotalGoalsValidation({ observations: totalObservations, purchases: totalPurchases,
+      resultEvents: merged.records, fixtureUniverse: universe, sourceAttempts, now: Date.parse(evaluatedAt) });
     const data = { schemaVersion: 1, manifest, captureCount: captures.length,
       captureReceipts: captures.map(({captureId,contentHash,persistedAt})=>({captureId,contentHash,persistedAt})),
       fixtureUniverse: universe, resultEvents: merged.records,
-      invalidResultEvents, implementationHashes: codeHashes, evaluation, evaluatedAt };
+      invalidResultEvents, implementationHashes: codeHashes, evaluation, totalGoalsValidation, evaluatedAt };
     const id = `replay-${researchHash(data)}`;
     await writer.append({ id, type: "replay-index", observedAt: evaluatedAt, payload: data });
     return { status: "replayed", replayId: id, sampleSize: evaluation.sampleSize, eligible: evaluation.eligible };
