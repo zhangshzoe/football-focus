@@ -71,6 +71,7 @@ async function loadRoute(){
  const context=compile((await readFile(new URL("../app/match-context-service.ts",import.meta.url),"utf8")).replace('from "./team-identity.js"',`from ${JSON.stringify(aliases)}`));
  const history=compile(`export default ${await readFile(new URL("../data/generated-team-history-index.json",import.meta.url),"utf8")};`);
  const source=(await readFile(new URL("../app/api/predictions/route.ts",import.meta.url),"utf8"))
+  .replace('const predictionComputeCache = createPredictionComputeCache({compute:predictFromSnapshot});','const predictionComputeCache = createPredictionComputeCache({compute:(input,parameters)=>{globalThis.__footballCoverageModelCalls=(globalThis.__footballCoverageModelCalls||0)+1;return predictFromSnapshot(input,parameters);}});')
   .replace('import {fetchOfficialSporttery,OfficialSportteryError} from "../../sporttery-official";',`import {OfficialSportteryError} from ${JSON.stringify(officialModule)};const fetchOfficialSporttery=options=>globalThis.__footballCoverageOfficialFetch(options);`)
   .replace('from "../../prediction-version"',`from ${JSON.stringify(version)}`)
   .replace('import {getPublishedCalibration,MIN_TEMPERATURE_CALIBRATION_MATCHES} from "../../calibration-service";','const getPublishedCalibration=async()=>null; const MIN_TEMPERATURE_CALIBRATION_MATCHES=30;')
@@ -84,7 +85,8 @@ async function loadRoute(){
 test("prediction API recovers every confirmed alias and explains the reversed fixture instead of dropping it",async()=>{
  const official=fixtures.map(([id,home,away,,,league,kickoff])=>({id:`周一${id}`,officialMatchId:`test-${id}`,salesDate:"2026-09-14",matchDate:kickoff.slice(0,10),time:kickoff.slice(11),kickoffAt:kickoff.replace(" ","T")+"+08:00",home,away,league,odds:[2.1,3.2,3.4],marketOdds:{"总进球数":[16,8,3.2,4,8,16,32,32]},sourceFetchedAt:new Date().toISOString(),marketEligibility:{}}));
  const external=fixtures.map(([id,,,home,away,league,kickoff])=>({ID:`test-feed-${id}`,CC_ID:`周一${id}`,HOST_NAME:home,GUEST_NAME:away,LEAGUE_NAME_SIMPLY:league,MATCH_TIME:kickoff,listOdds:[2,3,22].map(company=>({SOURCE_COMPANY_ID:company,COMPANY_NAME:`测试公司${company}`,WIN:2.1,SAME:3.2,LOST:3.4,HANDICAP:-.25,HOST:.9,GUEST:.9,DW_HANDICAP:2.5,BIG:.9,SMALL:.9,FIRST_WIN:2.2,FIRST_SAME:3.2,FIRST_LOST:3.3,FIRST_HANDICAP:-.25,FIRST_HOST:.9,FIRST_GUEST:.9,DW_FIRST_HANDICAP:2.5,FIRST_BIG:.9,FIRST_SMALL:.9}))}));
- const {POST}=await loadRoute(),originalFetch=globalThis.fetch,originalOfficialFetch=globalThis.__footballCoverageOfficialFetch;
+ const {POST}=await loadRoute(),originalFetch=globalThis.fetch,originalOfficialFetch=globalThis.__footballCoverageOfficialFetch,originalModelCalls=globalThis.__footballCoverageModelCalls;
+ globalThis.__footballCoverageModelCalls=0;
  let serverMatches=official;
  globalThis.__footballCoverageOfficialFetch=async()=>({matches:serverMatches,fetchedAt:new Date().toISOString(),source:"官方测试源",sourcePage:"https://www.sporttery.cn/"});
  globalThis.fetch=async(url)=>{assert.equal(url,"https://plzx.zgzcw.com/odds/oyzs_ajax.action");return Response.json(external)};
@@ -94,6 +96,7 @@ test("prediction API recovers every confirmed alias and explains the reversed fi
   assert.equal(response.status,200);
   assert.deepEqual(result.coverage,{officialMatches:fixtures.length,predictedMatches:fixtures.length-1,unavailableMatches:1,pendingExternalMappings:1});
   assert.equal(result.reports.length,fixtures.length-1);
+  assert.equal(globalThis.__footballCoverageModelCalls,result.reports.length);
   for(const match of official.slice(0,-1)){
    const report=result.reports.find(item=>item.officialMatchId===match.officialMatchId);
    assert.ok(report,match.id);
@@ -119,6 +122,22 @@ test("prediction API recovers every confirmed alias and explains the reversed fi
   assert.deepEqual(protectedResult.reports[0].modelInput.official.hadOdds,official[0].odds);
   assert.deepEqual(protectedResult.reports[0].modelInput.official.totalOdds,official[0].marketOdds["总进球数"]);
   assert.deepEqual(protectedResult.reports[0].marketEligibility,{});
+  assert.equal(globalThis.__footballCoverageModelCalls,result.reports.length,"A fresh reread with unchanged numerical inputs must reuse only pure model output");
+  assert.notEqual(protectedResult.officialSource.fetchedAt,result.officialSource.fetchedAt);
+  assert.equal(protectedResult.reports[0].modelInput.official.fetchedAt,protectedResult.officialSource.fetchedAt);
+  assert.equal(protectedResult.reports[0].officialVerification.fetchedAt,protectedResult.officialSource.fetchedAt);
+  assert.notEqual(protectedResult.predictionId,result.predictionId,"New current inputs receive a new report identity, not a recycled old report");
+  const latestOfficialFetch=globalThis.__footballCoverageOfficialFetch;
+  for(const fetchedAt of ["bad-time",new Date(Date.now()-300001).toISOString(),new Date(Date.now()+60000).toISOString()]){
+   globalThis.__footballCoverageOfficialFetch=async()=>({matches:official,fetchedAt});
+   assert.equal((await predict([official[0]])).status,502,"Warm numerical cache must not bless stale or invalid official proof");
+  }
+  globalThis.__footballCoverageOfficialFetch=async()=>({matches:[],fetchedAt:new Date().toISOString()});
+  assert.equal((await predict([official[0]])).status,409,"A fixture removed by the current official source cannot use its warm cache");
+  globalThis.__footballCoverageOfficialFetch=async()=>{throw new Error("官方拒绝访问 HTTP 567")};
+  assert.equal((await predict([official[0]])).status,502,"Upstream failure must still stop predictions when the cache is warm");
+  assert.equal(globalThis.__footballCoverageModelCalls,result.reports.length);
+  globalThis.__footballCoverageOfficialFetch=latestOfficialFetch;
 
   // A changed official quote may change the model, but cannot fabricate a
   // movement in an unchanged pair of external initial/current quotes.
@@ -146,7 +165,7 @@ test("prediction API recovers every confirmed alias and explains the reversed fi
   const ambiguous=await (await predict([...official,{...official[0],officialMatchId:"duplicate-match"}])).json();
   assert.equal(ambiguous.reports.some(row=>row.id==="周一002"),false);
   assert.match(ambiguous.pendingVerification.find(row=>row.displayId==="周一002").reason,/无法唯一确认/);
- }finally{globalThis.fetch=originalFetch;globalThis.__footballCoverageOfficialFetch=originalOfficialFetch}
+ }finally{globalThis.fetch=originalFetch;globalThis.__footballCoverageOfficialFetch=originalOfficialFetch;globalThis.__footballCoverageModelCalls=originalModelCalls}
 });
 
 test("formal prediction fails closed on missing official identities, stale reads and upstream rejection",async()=>{

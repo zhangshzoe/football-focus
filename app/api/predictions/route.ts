@@ -2,6 +2,7 @@
 import {createBasePredictionVersion,deriveMarkets,predictionHash} from "../../prediction-version";
 import {getPublishedCalibration,MIN_TEMPERATURE_CALIBRATION_MATCHES} from "../../calibration-service";
 import {PREDICTION_PIPELINE_VERSION,predictFromSnapshot,compatibleCalibration} from "../../prediction-model.js";
+import {createPredictionComputeCache} from "../../prediction-compute-cache.js";
 import {normalizeCompany,assessPredictionInput,createOddsBatchLoader} from "../../prediction-input.js";
 import {deVig,asianMarketTarget,validAsianLine} from "../../asian-market.js";
 import {TEAM_ALIAS_VERSION,teamIdentity,teamNamesCompatible} from "../../team-identity.js";
@@ -37,6 +38,7 @@ type CalibrationBucket={sampleSize:number;meanTotalGoals:number;goalDispersion:n
 type ModelCalibrationProfile={version:number;profileId?:string;status?:string;forecastSampleSize:number;uniqueMatchCount:number;trainingSampleSize?:number;calibrationSampleSize?:number;probabilityTemperature:number;intelligenceWeightMultiplier?:number;global:CalibrationBucket;leagues:Record<string,CalibrationBucket>};
 
 const COMPANY_IDS = [2, 3, 22];
+const predictionComputeCache = createPredictionComputeCache({compute:predictFromSnapshot});
 const SOURCE_URL = "https://plzx.zgzcw.com/";
 const DATA_URL = "https://plzx.zgzcw.com/odds/oyzs_ajax.action";
 const EV_THRESHOLD = 0.05;
@@ -234,7 +236,7 @@ export async function POST(request: Request) {
         : null;
       const activeCalibration = leagueCalibration || globalCalibration;
       const modelParameters={...(activeCalibration||{}),temperature:probabilityTemperature};
-      const modeled = predictFromSnapshot(modelInput,modelParameters),rawProbabilities:number[]=modeled.marketProbabilities,probabilities=rawProbabilities;
+      const modeled = predictionComputeCache.predict(modelInput,modelParameters,{mode:"official",calibrationId:String(calibrationProfile?.profileId||"cal-none")}),rawProbabilities:number[]=modeled.marketProbabilities,probabilities=rawProbabilities;
       const derived=deriveMarkets(modeled.fullScoreDistribution,officialHandicap),finalProbabilities=derived.hadProbabilities.map(point=>point.probability/100),finalHhad=derived.hhadProbabilities?.map(point=>point.probability)||[],finalGoals=derived.totalGoalProbabilities.map(point=>point.probability);
       const initialProbabilities = normalized1x2(companies.map(row=>({...row,win:row.firstWin,draw:row.firstDraw,lose:row.firstLose})), []);
       const currentExternalProbabilities = normalized1x2(companies, []);
@@ -313,7 +315,7 @@ export async function GET() {
       const sourceCompanies=parsedCompanies(match,fetchedAt),companies=displayCompanies(sourceCompanies);
       const modelInput=inputSnapshot(sourceCompanies,decisionAt),dataQuality=assessPredictionInput(sourceCompanies,decisionAt);
       if(dataQuality.status!=="ready")return reject(dataQuality.reasons.join("；"));
-      const modeled=predictFromSnapshot(modelInput),rawProbabilities:number[]=modeled.marketProbabilities;
+      const modeled=predictionComputeCache.predict(modelInput,{}, {mode:"research",scope:`${issue}:${externalMatchId}`}),rawProbabilities:number[]=modeled.marketProbabilities;
       const totalRows=sourceCompanies.filter(row=>validAsianLine(row.total)&&row.total>0&&asianMarketTarget(row.overPrice,row.underPrice)!==null);
       const asianRows=sourceCompanies.filter(row=>validAsianLine(row.handicap)&&asianMarketTarget(row.homePrice,row.awayPrice)!==null);
       const totalLine=median(totalRows.map(row=>row.total));
