@@ -11,6 +11,13 @@ export function resolveServerOfficialMatches(prediction, selected, salesDate, no
   if (source?.method !== "server-refetch" || !Number.isFinite(fetchedAt) ||
       fetchedAt > now || now - fetchedAt > 300000)
     throw new Error("正式留档缺少服务器新鲜官方读取证明");
+  if (source.manifestState !== "complete" || !source.poolStatus ||
+      ["HAD", "HHAD", "CRS", "TTG", "HAFU"].some(pool => source.poolStatus[pool]?.status !== "success"))
+    throw new Error("正式留档缺少完整五玩法官方清单读取证明，覆盖范围未知");
+  if (["HAD", "HHAD", "CRS", "TTG", "HAFU"].some(pool => {
+    const observed=Date.parse(source.poolStatus[pool]?.observedAt||"");
+    return !Number.isFinite(observed)||observed>fetchedAt||observed>now||now-observed>300000;
+  })) throw new Error("正式留档缺少逐玩法新鲜读取证明，不能以全局新时刻替代旧玩法读取");
   const requested = new Set(selected.map(match => String(match.officialMatchId || match.matchId || "")));
   const matches = prediction.officialMatches;
   if (!requested.size || requested.has("") || !Array.isArray(matches) || matches.length !== requested.size)

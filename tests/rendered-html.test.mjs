@@ -91,7 +91,7 @@ test("official outage research stays separate from purchasable and archived fore
 
 async function loadSportteryRoute(){
  const sharedSource=await readFile(new URL("../app/sporttery-official.ts",import.meta.url),"utf8"),sharedJavascript=ts.transpileModule(sharedSource,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText,sharedUrl=`data:text/javascript;base64,${Buffer.from(sharedJavascript).toString("base64")}#${Date.now()}-${Math.random()}`;
- const source=(await readFile(new URL("../app/api/sporttery/route.ts",import.meta.url),"utf8")).replace('import {NextResponse} from "next/server";','const NextResponse={json:(body,init={})=>new Response(JSON.stringify(body),{...init,headers:{"Content-Type":"application/json",...(init.headers||{})}})};').replace('from "../../sporttery-official"',`from "${sharedUrl}"`);
+ const source=(await readFile(new URL("../app/api/sporttery/route.ts",import.meta.url),"utf8")).replace(/import\s*\{\s*NextResponse\s*\}\s*from "next\/server";/,'const NextResponse={json:(body,init={})=>new Response(JSON.stringify(body),{...init,headers:{"Content-Type":"application/json",...(init.headers||{})}})};').replace('from "../../sporttery-official"',`from "${sharedUrl}"`);
  const javascript=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText;
  return import(`data:text/javascript;base64,${Buffer.from(javascript).toString("base64")}#${Date.now()}-${Math.random()}`);
 }
@@ -213,6 +213,68 @@ test("official markets never fall back to demo odds and tolerate independent poo
  }finally{globalThis.fetch=originalFetch}
 });
 
+test("control-only official payloads are unknown manifests, not stopped sales or zero fixtures",async()=>{
+ const originalFetch=globalThis.fetch,{GET}=await loadSportteryRoute();
+ try{
+  globalThis.fetch=async()=>Response.json({success:true,errorCode:"0",value:{vtoolsConfig:{offLineSaleStatus:1,offLineStopMessage:"抱歉，本彩种已停止销售"}}});
+  const response=await GET(new Request("http://localhost/api/sporttery")),data=await response.json();
+  assert.equal(response.status,502);assert.equal(data.code,"OFFICIAL_MANIFEST_UNAVAILABLE");
+  assert.equal(data.sourceState.manifestState,"unknown");assert.equal(data.matches,undefined);
+  assert.match(data.error,/不能据此认定停售或今日无比赛/);
+  for(const pool of ["HAD","HHAD","CRS","TTG","HAFU"]){
+   const state=data.sourceState.poolStatus[pool];assert.equal(state.status,"failed");assert.equal(state.matchCount,null);
+   assert.deepEqual(state.issues.map(issue=>[issue.source,issue.kind]),[["primary","manifest-unavailable"],["mobile","manifest-unavailable"]]);
+  }
+ }finally{globalThis.fetch=originalFetch;}
+});
+
+test("partial empty lists and error text alone cannot establish empty coverage or HTTP blocking",async()=>{
+ const originalFetch=globalThis.fetch,{GET}=await loadSportteryRoute();
+ try{
+  globalThis.fetch=async url=>new URL(String(url)).searchParams.get("poolCode")==="CRS"?Promise.reject(new Error("message says 返回 567 but no HTTP response")):Response.json(poolPayload());
+  let response=await GET(new Request("http://localhost/api/sporttery")),data=await response.json();
+  assert.equal(response.status,502);assert.equal(data.code,"OFFICIAL_FETCH_FAILED");assert.equal(data.sourceState.manifestState,"unknown");
+  assert.equal(data.sourceState.poolStatus.CRS.issues[0].kind,"unknown");
+  assert.match(data.detail,/官方赛事清单无法完整核验/);assert.doesNotMatch(data.detail,/五个玩法均读取失败/);
+  globalThis.fetch=async()=>Response.json(poolPayload());
+  response=await GET(new Request("http://localhost/api/sporttery"));data=await response.json();
+  assert.equal(response.status,200);assert.equal(data.manifestState,"complete");assert.deepEqual(data.matches,[]);
+ }finally{globalThis.fetch=originalFetch;}
+});
+
+test("official diagnostics distinguish network, timeout, unknown and schema failures",async()=>{
+ const originalFetch=globalThis.fetch,{GET}=await loadSportteryRoute();
+ try{
+  for(const [error,kind] of [[new TypeError("fetch failed"),"network-error"],[Object.assign(new Error("aborted"),{name:"AbortError"}),"timeout"],[new Error("unexpected"),"unknown"],["unexpected rejection","unknown"]]){
+   globalThis.fetch=async()=>{throw error};
+   const response=await GET(new Request("http://localhost/api/sporttery")),data=await response.json();
+   assert.equal(response.status,502);assert.equal(data.code,"OFFICIAL_FETCH_FAILED");
+   assert.equal(data.sourceState.poolStatus.HAD.issues[0].kind,kind);
+  }
+  globalThis.fetch=async url=>{
+   const pool=new URL(String(url)).searchParams.get("poolCode")||"HAD",row=officialRow(pool);
+   delete row.homeTeamAbbName;
+   return Response.json(poolPayload([row]));
+  };
+  const response=await GET(new Request("http://localhost/api/sporttery")),data=await response.json();
+  assert.equal(response.status,502);assert.equal(data.sourceState.manifestState,"unknown");
+  for(const state of Object.values(data.sourceState.poolStatus)){assert.equal(state.matchCount,null);assert.equal(state.issues[0].kind,"schema-invalid");}
+ }finally{globalThis.fetch=originalFetch;}
+});
+
+test("primary HTTP blocks and mobile configuration failures retain independent diagnostics",async()=>{
+ const originalFetch=globalThis.fetch,{GET}=await loadSportteryRoute();
+ try{
+  globalThis.fetch=async url=>new URL(String(url)).searchParams.has("poolCode")?new Response("blocked",{status:567}):Response.json({success:true,value:{vtoolsConfig:{}}});
+  const response=await GET(new Request("http://localhost/api/sporttery")),data=await response.json();
+  assert.equal(response.status,503);assert.equal(data.code,"OFFICIAL_ACCESS_BLOCKED");
+  for(const state of Object.values(data.sourceState.poolStatus)){
+   assert.equal(state.issues[0].httpStatus,567);assert.equal(state.issues[0].kind,"access-blocked");
+   assert.equal(state.issues[1].source,"mobile");assert.equal(state.issues[1].kind,"manifest-unavailable");
+  }
+ }finally{globalThis.fetch=originalFetch;}
+});
+
 test("mobile prediction summaries swipe while forecast rows become readable cards",async()=>{
  const [report,table,styles,mobileStyles,page,archiveNav]=await Promise.all([
   readFile(new URL("../app/components/AiPredictionReport.tsx",import.meta.url),"utf8"),
@@ -237,11 +299,51 @@ test("mobile prediction summaries swipe while forecast rows become readable card
  assert.match(archiveNav,/<span aria-hidden="true">▤<\/span><b>盘后回溯<\/b>/);
 });
 
+test("repair uses each latest official list instead of reviving removed fixtures",async()=>{
+ const originalFetch=globalThis.fetch,{GET}=await loadSportteryRoute(),counts=new Map();
+ try{
+  globalThis.fetch=async url=>{
+   const pool=new URL(String(url)).searchParams.get("poolCode");assert.ok(pool,"valid empty official lists must not trigger another source");
+   const count=(counts.get(pool)||0)+1;counts.set(pool,count);
+   return Response.json(poolPayload(count===1?[officialRow(pool)]:[]));
+  };
+  const response=await GET(new Request("http://localhost/api/sporttery?repairMissing=1")),data=await response.json();
+  assert.equal(response.status,200);assert.equal(data.manifestState,"complete");assert.deepEqual(data.matches,[]);
+  for(const state of Object.values(data.poolStatus)){assert.equal(state.matchCount,0);assert.ok(Number.isFinite(Date.parse(state.observedAt)));assert.ok(Date.parse(state.observedAt)<=Date.parse(data.fetchedAt));}
+  assert.deepEqual([...counts.values()],[2,2,2,2,2]);
+ }finally{globalThis.fetch=originalFetch;}
+});
+
 test("mobile prediction fallback derives a traceable baseline only from official markets",async()=>{
  const source=await readFile(new URL("../app/official-prediction-fallback.ts",import.meta.url),"utf8"),javascript=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText,{buildOfficialPredictionFallback}=await import(`data:text/javascript;base64,${Buffer.from(javascript).toString("base64")}#${Date.now()}-${Math.random()}`);
- const match={id:"周六001",matchId:"m1",officialMatchId:"m1",salesDate:"2026-09-19",matchDate:"2026-09-19",time:"20:00:00",home:"主队",away:"客队",league:"测试联赛",handicap:"-1",marketEligibility:{"让球胜平负":{qualification:"qualified"}},marketOdds:{"胜平负":[2.1,3.2,3.4],"让球胜平负":[3.1,3.4,1.9],"比分":[7.2],"总进球数":[20,8,3.3,3.2,5,10,18,25],"半全场":[3,12,30,5,6,10,20,11,8]}};
- const fallback=buildOfficialPredictionFallback([match],"2026-09-19T05:00:00.000Z"),report=fallback.reports[0];
+ const keys=["胜平负","让球胜平负","比分","总进球数","半全场"],match={id:"周六001",matchId:"m1",officialMatchId:"m1",salesDate:"2026-09-19",matchDate:"2026-09-19",time:"20:00:00",home:"主队",away:"客队",league:"测试联赛",handicap:"-1",quoteState:"fresh",marketStatus:Object.fromEntries(keys.map(key=>[key,"available"])),marketEligibility:Object.fromEntries(keys.map(key=>[key,{qualification:"qualified"}])),marketOdds:{"胜平负":[2.1,3.2,3.4],"让球胜平负":[3.1,3.4,1.9],"比分":[7.2],"总进球数":[20,8,3.3,3.2,5,10,18,25],"半全场":[3,12,30,5,6,10,20,11,8]}};
+ const now=new Date().toISOString();match.marketSource=Object.fromEntries(keys.map(key=>[key,{observedAt:now}]));
+ const fallback=buildOfficialPredictionFallback([match],now),report=fallback.reports[0];
  assert.equal(fallback.reports.length,1);assert.match(fallback.version.predictionId,/^official-browser-/);assert.equal(report.companies.length,0);assert.equal(report.marketSignal.hhadAvailable,true);assert.equal(report.marketSignal.officialHandicap,"-1");assert.equal(report.marketSignal.officialOdds[0],2.1);assert.ok(report.scores.length>0);assert.ok(Math.abs(report.marketProbabilities.reduce((sum,value)=>sum+value,0)-100)<0.001);
+ for(const [row,time,error] of [[{...match,quoteState:"stale"},now],[match,new Date(Date.now()-300001).toISOString()],[match,""],[match,new Date(Date.now()+60000).toISOString()],[{...match,marketEligibility:{}},now],...["OFFICIAL_ACCESS_BLOCKED","OFFICIAL_MANIFEST_UNAVAILABLE","OFFICIAL_FETCH_FAILED"].map(code=>[match,now,{code}]),[match,now,{status:409}]]){
+  const blocked=buildOfficialPredictionFallback([row],time,error);assert.equal(blocked.reports.length,0);assert.equal(blocked.coverage.unavailableMatches,1);
+ }
+ const partial=buildOfficialPredictionFallback([{...match,marketStatus:{...match.marketStatus,"总进球数":"failed","让球胜平负":"failed","半全场":"failed"}}],now).reports[0];
+ assert.equal(partial.totalGoalProbabilities,undefined);assert.equal(partial.hhadProbabilities,undefined);assert.equal(partial.halfFullProbabilities,undefined);assert.deepEqual(partial.marketSignal.modeledTotalGoals,[]);assert.deepEqual(partial.marketSignal.officialHhadOdds,[]);
+ const invalid=buildOfficialPredictionFallback([{...match,marketOdds:{...match.marketOdds,"总进球数":[0,8,3.3,3.2,5,10,18,25]}}],now).reports[0];assert.equal(invalid.totalGoalProbabilities,undefined);
+ for(const observedAt of [undefined,"bad-time",new Date(Date.now()-300001).toISOString(),new Date(Date.now()+60000).toISOString()]){
+  const partial=buildOfficialPredictionFallback([{...match,marketSource:{...match.marketSource,"总进球数":{observedAt}}}],now).reports[0];
+  assert.equal(partial.totalGoalProbabilities,undefined);assert.deepEqual(partial.marketSignal.modeledTotalGoals,[]);
+ }
+ const short=buildOfficialPredictionFallback([{...match,marketOdds:{...match.marketOdds,"总进球数":[2,3],"半全场":[2,3]}}],now).reports[0];assert.deepEqual(short.marketSignal.modeledTotalGoals,[]);assert.deepEqual(short.marketSignal.modeledHalfFull,[]);
+});
+
+test("match-board merge keeps omitted or failed quotes unavailable for selection",async()=>{
+ const page=await readFile(new URL("../app/page.tsx",import.meta.url),"utf8"),snippet=page.slice(page.indexOf("const matchCacheKey="),page.indexOf("const fairMarketPoints=")),javascript=ts.transpileModule(snippet,{compilerOptions:{target:ts.ScriptTarget.ES2022}}).outputText;
+ const {mergeOfficialMatches,oddsFor}=new Function(`${javascript};return {mergeOfficialMatches,oddsFor};`)();
+ const match={id:"周六001",officialMatchId:"m1",salesDate:"2026-09-19",marketOdds:{"胜平负":[2,3,4]},marketStatus:{"胜平负":"available"},marketEligibility:{"胜平负":{qualification:"qualified"}}};
+ assert.equal(oddsFor(mergeOfficialMatches([match],[])[0],"胜平负"),null);
+ assert.equal(oddsFor(mergeOfficialMatches([match],[{...match,marketOdds:{"胜平负":null},marketStatus:{"胜平负":"failed"}}])[0],"胜平负"),null);
+ assert.equal(oddsFor(mergeOfficialMatches([match],[{...match,marketEligibility:{"胜平负":{qualification:"unknown"}}}])[0],"胜平负"),null);
+ assert.deepEqual(oddsFor(mergeOfficialMatches([match],[match])[0],"胜平负"),[2,3,4]);
+ assert.equal(mergeOfficialMatches([],[match])[0].quoteState,"fresh");
+ assert.match(page,/buildOfficialPredictionFallback\(predictionMatches,dataMeta\.fetchedAt\|\|"",error\)/);
+ assert.match(page,/setPredictionVersion\(available\?fallback\.version:null\)/);
 });
 
 test("production match board has explicit official-data states and no demo fallback",async()=>{

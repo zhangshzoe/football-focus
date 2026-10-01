@@ -20,7 +20,7 @@ export function getCloudCaptureEngine() {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fixtureIds }),
       }));
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "服务器预测读取失败");
+      if (!response.ok) throw Object.assign(new Error(data.error || "服务器预测读取失败"), {code:data.code,sourceState:data.sourceState});
       return data;
     },
     readResults: fetchPublishedResults,

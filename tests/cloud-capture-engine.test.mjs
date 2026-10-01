@@ -22,7 +22,7 @@ function memoryStore(onAppend = () => {}) {
   };
   return store;
 }
-function harness({ at = "2026-10-02T12:50:00+08:00", sourceError, malformed, duringWrite, bundled = {}, storeOverride, beforeSource } = {}) {
+function harness({ at = "2026-10-02T12:50:00+08:00", sourceError, malformed, duringWrite, bundled = {}, storeOverride, beforeSource, changePredictionSource } = {}) {
   let clock = at, calls = 0;
   const store = storeOverride || memoryStore((record) => { if (record.type === "raw" && duringWrite) clock = duringWrite; });
   const match = { id: "周五001", officialMatchId: "12345", matchId: "12345", salesDate: "2026-10-02", kickoffAt: "2026-10-02T13:30:00+08:00", matchStatus: "Selling", home: "Test home", away: "Test away", league: "Test league", odds: [2, 3, 4], marketOdds: { "总进球数": Array(8).fill(8), "比分": Array(31).fill(31), "半全场": Array(9).fill(9) }, marketEligibility: { "胜平负": { qualification: "qualified", salesStatus: "Selling", cutoffAt: "2026-10-02T13:30:00+08:00" }, "让球胜平负": { qualification: "unavailable" } } };
@@ -40,8 +40,8 @@ function harness({ at = "2026-10-02T12:50:00+08:00", sourceError, malformed, dur
   if (malformed) malformed(report);
   const codeHashes = Object.fromEntries(["one", "two", "three", "four", "five"].map((key) => [key, "a".repeat(64)]));
   const engine = cloudCaptureEngine({ store, codeHashes, bundled, clock: () => clock,
-    async fetchOfficial() { calls++; if (beforeSource) await beforeSource(); if (sourceError) throw new Error(sourceError); return { matches: [match], fetchedAt: at, poolStatus: Object.fromEntries(["HAD", "HHAD", "CRS", "TTG", "HAFU"].map((pool) => [pool, { status: "success" }])) }; },
-    async predict() { return { officialMatches: [match], reports: [report], officialSource: { method: "server-refetch", fetchedAt: at }, version: { inputSnapshotId: "test-input" } }; },
+    async fetchOfficial() { calls++; if (beforeSource) await beforeSource(); if (sourceError) throw sourceError instanceof Error?sourceError:new Error(sourceError); return { matches: [match], fetchedAt: at, poolStatus: Object.fromEntries(["HAD", "HHAD", "CRS", "TTG", "HAFU"].map((pool) => [pool, { status: "success",observedAt:at }])) }; },
+    async predict() { const prediction={ officialMatches: [match], reports: [report], officialSource: { method: "server-refetch", fetchedAt: at, manifestState: "complete", poolStatus: Object.fromEntries(["HAD", "HHAD", "CRS", "TTG", "HAFU"].map(pool => [pool, { status: "success",observedAt:at }])) }, version: { inputSnapshotId: "test-input" } };if(changePredictionSource)changePredictionSource(prediction.officialSource);return prediction; },
     async readResults() { return { results: [], fetchedAt: clock }; }, async readResultEvents() { return []; }, async appendResult() { throw new Error("unexpected result append"); },
   });
   return { engine, store, setClock(value) { clock = value; }, get calls() { return calls; }, codeHashes };
@@ -85,6 +85,21 @@ test("real source failure is persisted with unknown universe and idempotent retr
   assert.equal(attempt.officialManifest, null); assert.equal(attempt.stage, "official-source");
   assert.equal((await h.engine.execute(job())).status, "failed"); assert.equal(h.calls, 1);
   assert.equal((await h.store.list("raw")).length, 0);
+});
+
+test("cloud attempts preserve structured unknown-manifest failures without saved forecasts",async()=>{
+ const sourceState={manifestState:"unknown",poolStatus:{HAD:{status:"failed",matchCount:null,issues:[{source:"primary",kind:"manifest-unavailable"}]}}};
+ const h=harness({sourceError:Object.assign(new Error("configuration only"),{code:"OFFICIAL_MANIFEST_UNAVAILABLE",sourceState})});
+ assert.equal((await h.engine.execute(job())).status,"failed");
+ const attempt=(await h.store.list("source-attempt"))[0].payload;
+ assert.equal(attempt.sourceCode,"OFFICIAL_MANIFEST_UNAVAILABLE");assert.deepEqual(attempt.sourceState,sourceState);assert.equal(attempt.officialManifest,null);
+ assert.equal((await h.store.list("raw")).length,0);
+});
+
+test("a complete initial list cannot bless a later partial official prediction reread",async()=>{
+ const h=harness({changePredictionSource:source=>{source.manifestState="partial";source.poolStatus.CRS.status="failed";}});
+ const result=await h.engine.execute(job());assert.equal(result.status,"failed");assert.match(result.reason,/完整五玩法/);
+ assert.equal((await h.store.list("raw")).length,0);assert.equal((await h.store.list("purchase")).length,0);
 });
 test("only actual pre-target window can append complete raw and verified persistence receipt", async () => {
   const h = harness(), result = await h.engine.execute(job());

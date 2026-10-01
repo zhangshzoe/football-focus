@@ -64,13 +64,14 @@ test("confirmed aliases match in context without weakening team or home/away ide
 });
 
 async function loadRoute(){
+ const officialModule=compile(await readFile(new URL("../app/sporttery-official.ts",import.meta.url),"utf8"));
  const version=compile(await readFile(new URL("../app/prediction-version.ts",import.meta.url),"utf8"));
  const aliases=new URL("../app/team-identity.js",import.meta.url).href;
  // data: modules have no relative-import base; keep the real context/model helpers.
  const context=compile((await readFile(new URL("../app/match-context-service.ts",import.meta.url),"utf8")).replace('from "./team-identity.js"',`from ${JSON.stringify(aliases)}`));
  const history=compile(`export default ${await readFile(new URL("../data/generated-team-history-index.json",import.meta.url),"utf8")};`);
  const source=(await readFile(new URL("../app/api/predictions/route.ts",import.meta.url),"utf8"))
-  .replace('import {fetchOfficialSporttery} from "../../sporttery-official";','const fetchOfficialSporttery=options=>globalThis.__footballCoverageOfficialFetch(options);')
+  .replace('import {fetchOfficialSporttery,OfficialSportteryError} from "../../sporttery-official";',`import {OfficialSportteryError} from ${JSON.stringify(officialModule)};const fetchOfficialSporttery=options=>globalThis.__footballCoverageOfficialFetch(options);`)
   .replace('from "../../prediction-version"',`from ${JSON.stringify(version)}`)
   .replace('import {getPublishedCalibration,MIN_TEMPERATURE_CALIBRATION_MATCHES} from "../../calibration-service";','const getPublishedCalibration=async()=>null; const MIN_TEMPERATURE_CALIBRATION_MATCHES=30;')
   .replace('from "../../match-context-service"',`from ${JSON.stringify(context)}`)

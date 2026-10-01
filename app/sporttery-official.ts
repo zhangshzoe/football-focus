@@ -1,3 +1,51 @@
+export type OfficialSourceIssueKind =
+  | "access-blocked"
+  | "manifest-unavailable"
+  | "schema-invalid"
+  | "upstream-error"
+  | "http-error"
+  | "non-json"
+  | "timeout"
+  | "network-error"
+  | "stale-data"
+  | "empty-list"
+  | "missing-market"
+  | "unknown";
+export type OfficialSourceIssue = {
+  source: "primary" | "mobile";
+  kind: OfficialSourceIssueKind;
+  detail: string;
+  httpStatus?: number;
+};
+class OfficialResponseError extends Error {
+  constructor(
+    readonly kind: OfficialSourceIssueKind,
+    message: string,
+    readonly httpStatus?: number,
+  ) {
+    super(message);
+  }
+}
+export class OfficialSportteryError extends Error {
+  readonly code:
+    "OFFICIAL_ACCESS_BLOCKED" | "OFFICIAL_MANIFEST_UNAVAILABLE" | "OFFICIAL_FETCH_FAILED";
+  readonly sourceState: { manifestState: "unknown"; poolStatus: SportteryData["poolStatus"] };
+  constructor(poolStatus: SportteryData["poolStatus"]) {
+    super(
+      `${SPORTTERY_POOLS.every((pool) => poolStatus[pool].status === "failed") ? "竞彩网五个玩法均读取失败" : "官方赛事清单无法完整核验"}：${SPORTTERY_POOLS.map((pool) => `${pool} ${poolStatus[pool].status === "success" ? `已读取 ${poolStatus[pool].matchCount} 场` : poolStatus[pool].error || "失败"}`).join("；")}`,
+    );
+    const primary = SPORTTERY_POOLS.map((pool) =>
+      poolStatus[pool].issues?.filter((issue) => issue.source === "primary").at(-1),
+    );
+    this.code = primary.every((issue) => issue?.kind === "access-blocked")
+      ? "OFFICIAL_ACCESS_BLOCKED"
+      : primary.every((issue) => issue?.kind === "manifest-unavailable")
+        ? "OFFICIAL_MANIFEST_UNAVAILABLE"
+        : "OFFICIAL_FETCH_FAILED";
+    this.sourceState = { manifestState: "unknown", poolStatus };
+  }
+}
+
 type OfficialField = string | number | null;
 type OfficialOdds = Record<string, OfficialField | undefined>;
 
@@ -44,6 +92,7 @@ interface OfficialMatchRow {
 
 interface OfficialPayload {
   success: true;
+  observedAt?: string;
   value: {
     lastUpdateTime?: string;
     matchInfoList: Array<{ subMatchList: OfficialMatchRow[] }>;
@@ -55,16 +104,22 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 
 function parsePayload(value: unknown): OfficialPayload {
   if (!isRecord(value) || value.success !== true) {
-    throw new Error(
+    throw new OfficialResponseError(
+      "upstream-error",
       isRecord(value) && typeof value.errorMessage === "string" ? value.errorMessage : "数据不可用",
     );
   }
   const body = value.value;
+  if (isRecord(body) && !Object.hasOwn(body, "matchInfoList") && isRecord(body.vtoolsConfig))
+    throw new OfficialResponseError(
+      "manifest-unavailable",
+      "官方仅返回销售控制配置，未提供赛事清单；不能据此确认停售或今日无比赛",
+    );
   if (!isRecord(body) || !Array.isArray(body.matchInfoList))
-    throw new Error("官方赛事列表结构不完整");
+    throw new OfficialResponseError("schema-invalid", "官方赛事列表结构不完整");
   const groups = body.matchInfoList.map((group) => {
     if (!isRecord(group) || !Array.isArray(group.subMatchList))
-      throw new Error("官方赛事分组结构不完整");
+      throw new OfficialResponseError("schema-invalid", "官方赛事分组结构不完整");
     const rows = group.subMatchList.map((entry): OfficialMatchRow => {
       if (
         !isRecord(entry) ||
@@ -74,9 +129,15 @@ function parsePayload(value: unknown): OfficialPayload {
         ) ||
         !["matchNumStr", "matchDate", "matchTime"].every(
           (key) => typeof entry[key] === "string" && String(entry[key]).trim(),
+        ) ||
+        ![entry.homeTeamAbbName, entry.homeTeamAllName].some(
+          (name) => typeof name === "string" && name.trim(),
+        ) ||
+        ![entry.awayTeamAbbName, entry.awayTeamAllName].some(
+          (name) => typeof name === "string" && name.trim(),
         )
       )
-        throw new Error("官方赛事关键字段缺失");
+        throw new OfficialResponseError("schema-invalid", "官方赛事关键字段缺失");
       const row = entry as Record<string, unknown>;
       return {
         matchId: String(row.matchId),
@@ -236,6 +297,24 @@ const poolRule = (row: OfficialMatchRow | undefined, pool: SportteryPool, hasOdd
 
 const errorMessage = (error: unknown) =>
   error instanceof Error ? (error.name === "AbortError" ? "请求超时" : error.message) : "读取失败";
+const sourceIssue = (
+  error: unknown,
+  source: OfficialSourceIssue["source"],
+): OfficialSourceIssue => ({
+  source,
+  kind:
+    error instanceof OfficialResponseError
+      ? error.kind
+      : error instanceof Error && ["AbortError", "TimeoutError"].includes(error.name)
+        ? "timeout"
+        : error instanceof TypeError
+          ? "network-error"
+          : "unknown",
+  detail: errorMessage(error),
+  ...(error instanceof OfficialResponseError && error.httpStatus
+    ? { httpStatus: error.httpStatus }
+    : {}),
+});
 
 async function fetchPool(pool: SportteryPool, timeoutMs: number, serverHeaders: boolean) {
   const controller = new AbortController(),
@@ -257,10 +336,12 @@ async function fetchPool(pool: SportteryPool, timeoutMs: number, serverHeaders: 
       mode: "cors",
     });
     if (!response.ok)
-      throw new Error(
+      throw new OfficialResponseError(
+        response.status === 567 ? "access-blocked" : "http-error",
         response.status === 567
           ? "返回 567（官方站点防护拦截；需核验数据源授权或放行策略）"
           : `返回 ${response.status}`,
+        response.status,
       );
     const contentType = response.headers.get("content-type") || "",
       raw = await response.text();
@@ -268,9 +349,12 @@ async function fetchPool(pool: SportteryPool, timeoutMs: number, serverHeaders: 
     try {
       json = JSON.parse(raw);
     } catch {
-      throw new Error(`返回了非 JSON 数据${contentType ? `（${contentType}）` : ""}`);
+      throw new OfficialResponseError(
+        "non-json",
+        `返回了非 JSON 数据${contentType ? `（${contentType}）` : ""}`,
+      );
     }
-    return parsePayload(json);
+    return { ...parsePayload(json), observedAt: new Date().toISOString() };
   } finally {
     clearTimeout(timer);
   }
@@ -291,17 +375,31 @@ async function fetchMobileCalculator(timeoutMs: number): Promise<OfficialPayload
       mode: "cors",
     });
     if (!response.ok)
-      throw new Error(response.status === 567 ? "返回 567（官方站点防护拦截）" : `返回 ${response.status}`);
+      throw new OfficialResponseError(
+        response.status === 567 ? "access-blocked" : "http-error",
+        response.status === 567 ? "返回 567（官方站点防护拦截）" : `返回 ${response.status}`,
+        response.status,
+      );
     const raw = await response.text();
     let json: unknown;
-    try { json = JSON.parse(raw); }
-    catch { throw new Error("手机计算器接口返回了非 JSON 数据"); }
+    try {
+      json = JSON.parse(raw);
+    } catch {
+      throw new OfficialResponseError("non-json", "手机计算器接口返回了非 JSON 数据");
+    }
     const payload = parsePayload(json);
-    const updatedAt = Date.parse(String(payload.value.lastUpdateTime || "").replace(" ", "T") + "+08:00");
-    if (!Number.isFinite(updatedAt) || updatedAt > Date.now() + 5 * 60_000 || Date.now() - updatedAt > 60 * 60_000)
-      throw new Error("手机计算器数据更新时间缺失或超过 60 分钟");
-    if (!rowsOf(payload).length) throw new Error("手机计算器未返回比赛");
-    return payload;
+    const updatedAt = Date.parse(
+      String(payload.value.lastUpdateTime || "").replace(" ", "T") + "+08:00",
+    );
+    if (
+      !Number.isFinite(updatedAt) ||
+      updatedAt > Date.now() + 5 * 60_000 ||
+      Date.now() - updatedAt > 60 * 60_000
+    )
+      throw new OfficialResponseError("stale-data", "手机计算器数据更新时间缺失或超过 60 分钟");
+    if (!rowsOf(payload).length)
+      throw new OfficialResponseError("empty-list", "手机计算器未返回比赛");
+    return { ...payload, observedAt: new Date().toISOString() };
   } finally {
     clearTimeout(timer);
   }
@@ -314,12 +412,20 @@ export type SportteryData = {
   upstreamUpdatedAt: string;
   poolStatus: Record<
     SportteryPool,
-    { status: "success" | "failed"; matchCount: number; error?: string }
+    {
+      status: "success" | "failed";
+      matchCount: number | null;
+      observedAt?: string;
+      error?: string;
+      issues?: OfficialSourceIssue[];
+    }
   >;
   matches: SportteryMatch[];
+  manifestState: "complete" | "partial";
   repairMode: boolean;
   attempts: number;
-  deliveryMode: "server" | "browser-direct" | "server-mobile-calculator" | "browser-mobile-calculator";
+  deliveryMode:
+    "server" | "browser-direct" | "server-mobile-calculator" | "browser-mobile-calculator";
 };
 
 export type SportteryMatch = {
@@ -347,6 +453,14 @@ export type SportteryMatch = {
   marketOdds: Record<(typeof marketByPool)[SportteryPool], number[] | null>;
   marketStatus: Record<string, MarketState>;
   marketEligibility: Record<string, ReturnType<typeof poolRule>>;
+  marketSource: Record<
+    string,
+    {
+      observedAt: string | null;
+      providerReportedUpdatedAt: string | null;
+      quoteChangedAt: string | null;
+    }
+  >;
   ruleVersion: string;
   updatedAt: string;
   form: unknown[];
@@ -366,6 +480,9 @@ export async function fetchOfficialSporttery(
   const errors = Object.fromEntries(
     SPORTTERY_POOLS.map((pool) => [pool, [] as string[]]),
   ) as unknown as Record<SportteryPool, string[]>;
+  const issues = Object.fromEntries(
+    SPORTTERY_POOLS.map((pool) => [pool, [] as OfficialSourceIssue[]]),
+  ) as Record<SportteryPool, OfficialSourceIssue[]>;
   for (let attempt = 0; attempt < attempts; attempt++) {
     // Keep request bursts modest: five simultaneous uncached requests can
     // trigger the official gateway's rate/Bot protection.
@@ -377,53 +494,84 @@ export async function fetchOfficialSporttery(
       pools.forEach((pool, offset) => {
         const result = settled[offset];
         if (result.status === "fulfilled") collected[pool].push(result.value);
-        else errors[pool].push(errorMessage(result.reason));
+        else {
+          errors[pool].push(errorMessage(result.reason));
+          issues[pool].push(sourceIssue(result.reason, "primary"));
+        }
       });
     }
   }
   let mobileCalculatorUsed = false;
-  const missingPools = SPORTTERY_POOLS.filter((pool) => !collected[pool].some((payload) => rowsOf(payload).length));
+  // A successfully read empty list is authoritative, not a reason to revive
+  // fixtures from an earlier attempt or the calculator endpoint.
+  const missingPools = SPORTTERY_POOLS.filter((pool) => !collected[pool].length);
   if (missingPools.length) {
     try {
       const mobile = await fetchMobileCalculator(timeoutMs);
       const mobileRows = rowsOf(mobile);
       missingPools.forEach((pool) => {
-        const rows = mobileRows.filter((row) => row.poolList?.some((rule) => String(rule.poolCode).toUpperCase() === pool));
+        const rows = mobileRows.filter((row) =>
+          row.poolList?.some((rule) => String(rule.poolCode).toUpperCase() === pool),
+        );
         if (!rows.length) {
-          errors[pool].push(`${errors[pool].at(-1) || "主接口无赛事"}；手机计算器未返回 ${pool} 玩法`);
+          issues[pool].push({
+            source: "mobile",
+            kind: "missing-market",
+            detail: `手机计算器未返回 ${pool} 玩法`,
+          });
+          errors[pool].push(
+            `${errors[pool].at(-1) || "主接口无赛事"}；手机计算器未返回 ${pool} 玩法`,
+          );
           return;
         }
-        collected[pool].push({ ...mobile, value: { ...mobile.value, matchInfoList: [{ subMatchList: rows }] } });
+        collected[pool].push({
+          ...mobile,
+          value: { ...mobile.value, matchInfoList: [{ subMatchList: rows }] },
+        });
         mobileCalculatorUsed = true;
       });
     } catch (error) {
-      missingPools.forEach((pool) => errors[pool].push(`${errors[pool].at(-1) || "主接口无赛事"}；手机计算器：${errorMessage(error)}`));
+      missingPools.forEach((pool) => {
+        issues[pool].push(sourceIssue(error, "mobile"));
+        errors[pool].push(
+          `${errors[pool].at(-1) || "主接口无赛事"}；手机计算器：${errorMessage(error)}`,
+        );
+      });
     }
   }
   const byPool = {} as Partial<Record<SportteryPool, OfficialPayload>>;
   const poolStatus = {} as SportteryData["poolStatus"];
   SPORTTERY_POOLS.forEach((pool) => {
     const payloads = collected[pool],
-      rows = new Map<string, OfficialMatchRow>();
-    payloads.forEach((payload) => rowsOf(payload).forEach((row) => rows.set(row.matchId, row)));
+      latest = payloads.at(-1),
+      rows = new Map(rowsOf(latest).map((row) => [row.matchId, row]));
     if (payloads.length) {
       const latest = payloads[payloads.length - 1]!;
       byPool[pool] = {
         ...latest,
         value: { ...latest.value, matchInfoList: [{ subMatchList: Array.from(rows.values()) }] },
       };
-      poolStatus[pool] = { status: "success", matchCount: rows.size };
+      poolStatus[pool] = {
+        status: "success",
+        matchCount: rows.size,
+        observedAt: latest.observedAt,
+        issues: issues[pool],
+      };
     } else
       poolStatus[pool] = {
         status: "failed",
-        matchCount: 0,
+        matchCount: null,
         error: errors[pool].at(-1) || "读取失败",
+        issues: issues[pool],
       };
   });
   if (!SPORTTERY_POOLS.some((pool) => poolStatus[pool].status === "success"))
-    throw new Error(
-      `竞彩网五个玩法均读取失败：${SPORTTERY_POOLS.map((pool) => `${pool} ${poolStatus[pool].error || "失败"}`).join("；")}`,
-    );
+    throw new OfficialSportteryError(poolStatus);
+  if (
+    SPORTTERY_POOLS.every((pool) => !poolStatus[pool].matchCount) &&
+    SPORTTERY_POOLS.some((pool) => poolStatus[pool].status === "failed")
+  )
+    throw new OfficialSportteryError(poolStatus);
   const maps = Object.fromEntries(
     SPORTTERY_POOLS.map((pool) => [
       pool,
@@ -447,7 +595,8 @@ export async function fetchOfficialSporttery(
         总进球数: oddsOrNull(ttg?.ttg, ["s0", "s1", "s2", "s3", "s4", "s5", "s6", "s7"]),
         半全场: oddsOrNull(hafu?.hafu, halfFullKeys),
       };
-      const marketStatus = {} as Record<string, MarketState>,
+      const marketSource = {} as SportteryMatch["marketSource"],
+        marketStatus = {} as Record<string, MarketState>,
         marketEligibility = {} as Record<string, ReturnType<typeof poolRule>>;
       SPORTTERY_POOLS.forEach((pool) => {
         const market = marketByPool[pool];
@@ -462,6 +611,14 @@ export async function fetchOfficialSporttery(
         const market = marketByPool[pool],
           marketRow = maps[pool].get(matchId);
         marketEligibility[market] = poolRule(marketRow || row, pool, Boolean(values[market]));
+        const quote = marketRow?.[pool.toLowerCase() as "had" | "hhad" | "crs" | "ttg" | "hafu"];
+        marketSource[market] = {
+          observedAt: marketRow ? byPool[pool]?.observedAt || null : null,
+          providerReportedUpdatedAt: String(byPool[pool]?.value.lastUpdateTime || "") || null,
+          quoteChangedAt: quote
+            ? `${quote.updateDate || ""} ${quote.updateTime || ""}`.trim() || null
+            : null,
+        };
         if (poolStatus[pool].status === "failed")
           marketEligibility[market] = {
             ...marketEligibility[market],
@@ -503,6 +660,7 @@ export async function fetchOfficialSporttery(
         marketOdds: values,
         marketStatus,
         marketEligibility,
+        marketSource,
         ruleVersion: SPORTTERY_RULE_VERSION,
         updatedAt: updates.at(-1) || "",
         form: [] as unknown[],
@@ -518,17 +676,27 @@ export async function fetchOfficialSporttery(
       .filter(Boolean)
       .sort()
       .at(-1) || "";
+  if (matches.length !== ids.size) throw new OfficialSportteryError(poolStatus);
   return {
     source: "中国体育彩票·竞彩网",
-    sourcePage: mobileCalculatorUsed ? SPORTTERY_MOBILE_CALCULATOR_URL : "https://www.sporttery.cn/",
+    sourcePage: mobileCalculatorUsed
+      ? SPORTTERY_MOBILE_CALCULATOR_URL
+      : "https://www.sporttery.cn/",
     fetchedAt: new Date().toISOString(),
     upstreamUpdatedAt,
     poolStatus,
     matches,
+    manifestState: SPORTTERY_POOLS.every((pool) => poolStatus[pool].status === "success")
+      ? "complete"
+      : "partial",
     repairMode: repair,
     attempts,
     deliveryMode: mobileCalculatorUsed
-      ? options.serverHeaders ? "server-mobile-calculator" : "browser-mobile-calculator"
-      : options.serverHeaders ? "server" : "browser-direct",
+      ? options.serverHeaders
+        ? "server-mobile-calculator"
+        : "browser-mobile-calculator"
+      : options.serverHeaders
+        ? "server"
+        : "browser-direct",
   };
 }

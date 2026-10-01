@@ -38,7 +38,8 @@ export async function runCapture(meta,run,{root=process.cwd()}={}){
   });
   if(acquired.busy){const result={status:"skipped",reason:"capture-already-running"};await save(result);return result;}
   const result=await run(audit);await save(result||{status:"skipped",reason:"no-change"});return result;
- }catch(error){await save({status:"failed",outcome:error.code==="CAPTURE_LATE"?"late":"failed",reason:error.message||String(error)});throw error;}
+ }catch(error){await save({status:"failed",outcome:error.code==="CAPTURE_LATE"?"late":"failed",reason:error.message||String(error),
+  ...(["OFFICIAL_ACCESS_BLOCKED","OFFICIAL_MANIFEST_UNAVAILABLE","OFFICIAL_FETCH_FAILED"].includes(error.code)?{sourceCode:error.code,sourceState:error.sourceState||{manifestState:"unknown"}}:{})});throw error;}
  finally{if(ownsLock){
   let released=false;
   for(let attempt=0;attempt<20&&!released;attempt++){

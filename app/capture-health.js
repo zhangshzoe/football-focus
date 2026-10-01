@@ -20,7 +20,7 @@ export function compactCaptureAttempts(input) {
     const success = records.filter(r => ["saved","no_ticket","existing"].includes(r.outcome) && r.snapshotId).at(-1);
     return {recordType:"capture-attempt-summary",salesDate:latest.salesDate,kind:latest.kind,slot:latest.slot,
       scheduledAt:latest.scheduledAt,startedAt:latest.startedAt,completedAt:latest.completedAt,outcome:latest.outcome,
-      stage:latest.stage,reason:latest.reason,coverage:latest.coverage,attemptCount:records.length,outcomes,
+      stage:latest.stage,reason:latest.reason,sourceCode:latest.sourceCode,sourceState:latest.sourceState,coverage:latest.coverage,attemptCount:records.length,outcomes,
       snapshotId:success?.snapshotId,successfulOutcome:success?.outcome,successfulCompletedAt:success?.completedAt,
       officialManifest:[...manifests.values()],unknownManifestAttempts:records.filter(r=>r.officialManifest===null).length};
   }).sort((a,b)=>b.completedAt.localeCompare(a.completedAt));

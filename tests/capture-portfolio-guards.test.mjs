@@ -106,10 +106,12 @@ test("capture lock and append-only journal distinguish concurrent skip, failure 
   const first=runCapture({kind:"purchase",slot:"1700"},async()=>{started();await hold;return {status:"saved",outcome:"no_ticket",snapshotId:"real-test"};},{root});
   await running;const second=await runCapture({kind:"purchase",slot:"1700"},()=>{throw Error("must not run");},{root});
   assert.equal(second.reason,"capture-already-running");release();await first;
-  await assert.rejects(runCapture({kind:"purchase",slot:"1700"},()=>{throw Error("source failed");},{root}),/source failed/);
+  await assert.rejects(runCapture({kind:"purchase",slot:"1700"},()=>{throw Object.assign(Error("source failed"),{code:"OFFICIAL_MANIFEST_UNAVAILABLE",sourceState:{manifestState:"unknown"}});},{root}),/source failed/);
   const files=await readdir(join(root,"data/capture-attempts")),events=await Promise.all(files.map(n=>readFile(join(root,"data/capture-attempts",n),"utf8").then(JSON.parse)));
   assert.equal(events.length,3);assert.equal(new Set(events.map(e=>e.attemptId)).size,3);
+  const failure=events.find(e=>e.status==="failed");assert.equal(failure.sourceCode,"OFFICIAL_MANIFEST_UNAVAILABLE");assert.equal(failure.sourceState.manifestState,"unknown");assert.equal(failure.officialManifest,null);
   const summary=compactCaptureAttempts(events)[0];assert.equal(summary.attemptCount,3);assert.equal(summary.outcomes.failed,1);assert.equal(summary.successfulOutcome,"no_ticket");
+  assert.equal(summary.sourceCode,"OFFICIAL_MANIFEST_UNAVAILABLE");assert.equal(summary.sourceState.manifestState,"unknown");
   assert.equal((await readdir(join(root,"work/capture-locks"))).length,0);
  }finally{await rm(root,{recursive:true,force:true});}
 });

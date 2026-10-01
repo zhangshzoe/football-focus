@@ -259,7 +259,11 @@ export function cloudCaptureEngine(deps) {
           }
         }
       }
-    } catch (error) { if (error.code === "CLOUD_LEASE_LOST") throw error; outcome = { status: "failed", reason: error.message }; }
+    } catch (error) { if (error.code === "CLOUD_LEASE_LOST") throw error;
+      if (["OFFICIAL_ACCESS_BLOCKED", "OFFICIAL_MANIFEST_UNAVAILABLE", "OFFICIAL_FETCH_FAILED"].includes(error.code))
+        Object.assign(audit, { sourceCode: error.code, sourceState: error.sourceState || { manifestState: "unknown" } });
+      outcome = { status: "failed", reason: error.message };
+    }
     if (outcome.status !== "failed" && job.action !== "replay" && (audit.officialManifest || job.action === "results")) {
       try { outcome.index = await replay(writer); }
       catch (error) { if (error.code === "CLOUD_LEASE_LOST") throw error; outcome.index = { status: "failed", reason: error.message }; }

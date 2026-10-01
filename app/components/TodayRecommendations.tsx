@@ -291,7 +291,7 @@ const formatMatchDay = (value: string) => {
   return month && day ? `${weekday}场次（${month}月${day}日）` : value;
 };
 
-type OfficialSnapshot = { matches: OfficialMatch[]; fetchedAt: string; error: string };
+type OfficialSnapshot = { matches: OfficialMatch[]; fetchedAt: string; error: string; manifestState?:string; poolStatus?:unknown; sourceState?:unknown; sourceCode?:string };
 let officialSnapshot: OfficialSnapshot = {
     matches: [],
     fetchedAt: "",
@@ -311,22 +311,25 @@ function refreshOfficialMarkets(): Promise<OfficialSnapshot | null> {
       try {
         const response = await fetch("/api/sporttery", { cache: "no-store", signal: controller.signal });
         payload = await response.json();
-        if (!response.ok || !Array.isArray(payload.matches)) throw new Error(payload.error || "体彩赔率读取失败");
+        if (!response.ok || !Array.isArray(payload.matches)) throw Object.assign(new Error(payload.error || "体彩赔率读取失败"),{code:payload.code,sourceState:payload.sourceState});
       } catch (siteError) {
         try { payload = await fetchOfficialSporttery({serverHeaders:false,timeoutMs:12000}); }
         catch (directError) {
-          throw new Error(`站点读取失败：${siteError instanceof Error?siteError.message:"未知错误"}；浏览器直连失败：${directError instanceof Error?directError.message:"未知错误"}`);
+          const siteState=siteError as {code?:string;sourceState?:unknown},directState=directError as {code?:string;sourceState?:unknown};
+          throw Object.assign(new Error(`站点读取失败：${siteError instanceof Error?siteError.message:"未知错误"}；浏览器直连失败：${directError instanceof Error?directError.message:"未知错误"}`),{code:siteState?.code||directState?.code,sourceState:siteState?.sourceState||directState?.sourceState});
         }
       }
       officialSnapshot = {
         matches: payload.matches,
         fetchedAt: payload.fetchedAt || new Date().toISOString(),
         error: "",
+        manifestState:payload.manifestState,poolStatus:payload.poolStatus,
       };
       officialListeners.forEach((listener) => listener(officialSnapshot));
       return officialSnapshot;
     } catch (error) {
-      officialSnapshot = {...officialSnapshot, error: error instanceof Error ? error.message : "体彩赔率读取失败"};
+      officialSnapshot = {...officialSnapshot, error: error instanceof Error ? error.message : "体彩赔率读取失败",
+        sourceCode:(error as {code?:string})?.code,sourceState:(error as {sourceState?:unknown})?.sourceState,manifestState:"unknown"};
       officialListeners.forEach(listener => listener(officialSnapshot));
       return null;
     } finally {

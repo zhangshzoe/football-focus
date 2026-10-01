@@ -58,7 +58,7 @@ if (await exists(rawOutput) || await exists(legacyOutput)) {
 
 audit.stage="official-source";
 const matchesResponse = await fetch(`${baseUrl}/api/sporttery`, { cache: "no-store" }), matchesData = await matchesResponse.json();
-if (!matchesResponse.ok) throw new Error(matchesData.error || "体彩比赛数据读取失败");
+if (!matchesResponse.ok) throw Object.assign(new Error(matchesData.error || "体彩比赛数据读取失败"), {code:matchesData.code,sourceState:matchesData.sourceState});
 const matches = (Array.isArray(matchesData.matches) ? matchesData.matches : []).filter(match => String(match.salesDate || match.matchDate || "").slice(0, 10) === date);
 if (!matches.length) throw new Error("当前没有可保存的真实比赛数据");
 if (matches.some(match => !match.matchId || match.isMock)) throw new Error("存在缺少官方 matchId 或 mock 标记的比赛，拒绝保存快照");
@@ -67,7 +67,7 @@ audit.officialManifest=matches.map(match=>({officialMatchId:String(match.officia
 audit.sourceFetchedAt=matchesData.fetchedAt||null;
 audit.stage="prediction-validation";
 const predictionResponse = await fetch(`${baseUrl}/api/predictions`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fixtureIds: matches.map(match => String(match.officialMatchId || match.matchId || "")) }) }), predictionData = await predictionResponse.json();
-if (!predictionResponse.ok) throw new Error(predictionData.error || "盘口预测读取失败");
+if (!predictionResponse.ok) throw Object.assign(new Error(predictionData.error || "盘口预测读取失败"), {code:predictionData.code,sourceState:predictionData.sourceState});
 const verifiedOfficialMatches = resolveServerOfficialMatches(predictionData, matches, date);
 audit.officialManifest=verifiedOfficialMatches.map(match=>({officialMatchId:String(match.officialMatchId||match.matchId),salesDate:match.salesDate,kickoffAt:match.kickoffAt,home:match.home,away:match.away,league:match.league}));
 audit.sourceFetchedAt=predictionData.officialSource.fetchedAt;

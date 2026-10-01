@@ -8,7 +8,9 @@ const result=await runCapture({kind:"dispatcher",slot:"poll"},async audit=>{
 audit.stage="official-source";
 const response=await fetch(`${baseUrl}/api/sporttery`,{cache:"no-store",signal:AbortSignal.timeout(30000)});
 const data=await response.json().catch(()=>({}));
-if(!response.ok)throw new Error(data.error||"体彩比赛数据读取失败");
+if(!response.ok)throw Object.assign(new Error(data.error||"体彩比赛数据读取失败"),{code:data.code,sourceState:data.sourceState});
+if(!data.poolStatus||["HAD","HHAD","CRS","TTG","HAFU"].some(pool=>data.poolStatus[pool]?.status!=="success"))
+ throw new Error("官方五玩法清单未全部读取成功，覆盖范围未知");
 const due=new Map();
 const now=Date.now();
 audit.sourceFetchedAt=data.fetchedAt||null;
