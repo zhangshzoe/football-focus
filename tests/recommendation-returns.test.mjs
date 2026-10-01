@@ -4,16 +4,20 @@ import {readFile} from 'node:fs/promises';
 import ts from 'typescript';
 import {MARKET_META} from '../app/purchase-plan-engine.js';
 const source=(await readFile(new URL('../app/recommendation-returns.ts',import.meta.url),'utf8'))
-  .replace('"./purchase-plan-engine"',JSON.stringify(new URL('../app/purchase-plan-engine.js',import.meta.url).href));
+  .replace('"./purchase-plan-engine"',JSON.stringify(new URL('../app/purchase-plan-engine.js',import.meta.url).href))
+  .replace('"./ticket-economics.js"',JSON.stringify(new URL('../app/ticket-economics.js',import.meta.url).href))
+  .replace('"./recommendation-policy.js"',JSON.stringify(new URL('../app/recommendation-policy.js',import.meta.url).href));
 const output=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText;
 const {priceRecommendationSelections:price,calculateRecommendationReturns:calculate}=await import(`data:text/javascript;base64,${Buffer.from(output).toString('base64')}`);
 const leg=(key,odds,market='had')=>({matchKey:key,market,scores:odds.map((odd,i)=>({score:MARKET_META[market].labels[i],probability:20,odd}))});
 
-test('all five markets quote exact current official labels, never model probabilities',()=>{
+test('four formal markets quote current official labels; new half-full quotes remain research-only',()=>{
   for(const [market,meta] of Object.entries(MARKET_META)){
     const odds=meta.labels.map((_,i)=>1.1+i/10);
     const points=meta.labels.map(score=>({score,probability:99}));
-    assert.deepEqual(price(points,market,{marketOdds:{[meta.name]:odds}}).map(p=>p.odd),odds);
+    const priced=price(points,market,{marketOdds:{[meta.name]:odds}});
+    assert.deepEqual(priced.map(p=>p.odd),market==='halfFull'?odds.map(()=>null):odds);
+    if(market==='halfFull')assert.ok(priced.every(p=>p.oddsReason));
   }
   assert.equal(price([{score:'7球',probability:20}],'total',{marketOdds:{'总进球数':[1,2,3,4,5,6,7,8]}})[0].odd,8);
   assert.equal(price([{score:'1：0',probability:20}],'score',{marketOdds:{'比分':[7.2]}})[0].odd,7.2);

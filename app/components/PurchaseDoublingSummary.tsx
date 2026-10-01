@@ -63,7 +63,7 @@ export default function PurchaseDoublingSummary({
             中奖即重置，不要求本轮回本。全票无效按本金退款，不计中奖或连败；部分无效按该腿每个选项赔率1.00重算。
           </li>
           <li>
-            1倍返还先四舍五入到分，再按倍数计算；金额汇总含已确认退款。未记录赛果当时的可知时间，同日多批可能有赛程重叠，不据此推断可实现收益。
+            完整票据与历史结算共用逐注舍入、封顶和退款规则，再按倍数计算；缺少逐场依据的旧金额保留并标为未重算。未记录赛果当时的可知时间，同日多批可能有赛程重叠，不据此推断可实现收益。
           </li>
         </ul>
       </details>
@@ -98,6 +98,9 @@ export default function PurchaseDoublingSummary({
                 <span>
                   回放下一期倍数<b>{summary.nextMultiplier.toString()}倍</b>
                 </span>
+                <span>结算时点最大回撤<Money value={summary.maxDrawdown} debit /></span>
+                <span>顺序回放资金需求<Money value={summary.capitalRequired} /></span>
+                <span>盈利票 / 旧金额未重算<b>{summary.profitable} / {summary.legacyCashRows}</b></span>
               </summary>
               <div className="purchase-doubling-metrics">
                 <span>

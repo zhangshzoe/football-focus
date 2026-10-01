@@ -3,12 +3,13 @@
 import PredictionMarketSignals from "./PredictionMarketSignals";
 import ModelHealthPanel from "./ModelHealthPanel";
 import PredictionCoverage,{type PredictionCoverageSummary,type UnavailablePredictionMatch} from "./PredictionCoverage";
-import {predictionKickoffParts} from "../prediction-config";
+import {predictionKickoffParts,type AiEvidenceSummary} from "../prediction-config";
+import AiEvidencePanel from "./AiEvidencePanel";
 
 type CompanyPredictionOdds={companyId:number;company:string;win:number;draw:number;lose:number;handicap:number;homePrice:number;awayPrice:number;total:number;overPrice:number;underPrice:number;firstWin:number;firstDraw:number;firstLose:number;firstHandicap:number;firstHomePrice:number;firstAwayPrice:number;firstTotal:number;firstOverPrice:number;firstUnderPrice:number};
 type ScorePrediction={score:string;probability:number};
 type MarketSignal={direction:string;strength:number;probabilityShifts:number[];fairOdds:number[];hadEv?:number[];hhadEv?:number[];evThreshold?:number;institutionAction?:string;handicapExpectation?:string;firstHandicap:number;handicapChange:number;narrative:string;officialOdds:number[];officialHandicap:string;officialHhadOdds:number[];officialHhadFair:number[];modeledHhad:number[];hhadAvailable?:boolean;modeledTotalGoals?:number[];modeledHalfFull?:number[];asianHomeProbability:number;asianAwayProbability:number;asianMovement:number;overProbability:number;fitAgreement:string;handicapMeaning:string};
-export type AiPredictionRow={id:string;externalDisplayId?:string;league:string;time:string;matchDate?:string;kickoffAt?:string;home:string;away:string;matchStatus?:string;isMock?:boolean;sourceUpdatedAt?:string;companies:CompanyPredictionOdds[];probabilities:{home:number;draw:number;away:number};consensus:{handicap:number;totalLine:number;agreement:string};marketSignal?:MarketSignal;expectedGoals:{home:number;away:number};scores:ScorePrediction[];oddsScores?:ScorePrediction[];intelligenceScores?:ScorePrediction[];missingCompanies:number[];aiSummary?:string;aiRisk?:string};
+export type AiPredictionRow={aiEvidenceSummary?:AiEvidenceSummary;matchContext?:any;teamStrengthCandidate?:any;id:string;externalDisplayId?:string;league:string;time:string;matchDate?:string;kickoffAt?:string;home:string;away:string;matchStatus?:string;isMock?:boolean;sourceUpdatedAt?:string;companies:CompanyPredictionOdds[];probabilities:{home:number;draw:number;away:number};consensus:{handicap:number;totalLine:number;agreement:string};marketSignal?:MarketSignal;expectedGoals:{home:number;away:number};scores:ScorePrediction[];oddsScores?:ScorePrediction[];intelligenceScores?:ScorePrediction[];missingCompanies:number[];aiSummary?:string;aiRisk?:string};
 
 type ProbabilityItem={label:string;probability:number};
 type Props={
@@ -45,6 +46,12 @@ function ProbabilitySummary({title,items,note,className="",emptyLabel="数据待
     <header><small>{title}</small>{note&&<span>{note}</span>}</header>
     <div>{items.length?items.map((item,index)=><span className={index===0?"top":""} key={item.label}><b>{item.label}</b><em>{fixed(item.probability)}%</em></span>):<span className="empty-value">{emptyLabel}</span>}</div>
   </section>;
+}
+
+function MatchContext({row}:{row:AiPredictionRow}){
+ const context=row.matchContext,candidate=row.teamStrengthCandidate;
+ if(!context)return <p>比赛背景资料尚未采集；不使用AI补造。</p>;
+ return <section className="market-signal-panel"><h4>冻结赛事资料与球队候选</h4><p>同一来源的多个接口不构成独立证据共识；球队候选仅作影子研究。</p><p>{context.observedAt?`读取 ${new Date(context.observedAt).toLocaleString("zh-CN")}；来源发布时间未知。`:"赛事资料未取得。"}</p>{["home","away"].map(side=>{const value=context.recent?.[side];return <p key={side}>{side==="home"?row.home:row.away}：{value?.matches?`近 ${value.matches} 场进 ${value.goalsFor} / 失 ${value.goalsAgainst}；同主客场 ${value.venue.matches} 场；休息 ${value.restCalendarDays??"未知"} 日历天`:"真实赛果不足"}</p>})}<p>伤停来源记录：{context.injuries?.length?context.injuries.map((r:any)=>`${r.player}（${r.position||"位置未知"}）`).join("；"):"未取得可核验球员记录，不代表无人伤停"}</p><p>后续赛程：{context.schedule?.length?context.schedule.map((r:any)=>`${r.side==="home"?row.home:row.away} ${r.date}`).join("；"):"未取得"}</p><p>首发：{context.lineup?`来源已公布（${context.lineup.observedAt}），主队 ${context.lineup.home.map((p:any)=>p.name).join("、")}；客队 ${context.lineup.away.map((p:any)=>p.name).join("、")}`:"未取得确认首发，不预测替代"}</p><details><summary>官方赔率时间序列（变更时间与读取时间分列）</summary>{context.oddsTimeline?.length?context.oddsTimeline.slice(-24).map((p:any)=><p key={`${p.market}-${p.quoteAt}`}>{p.market} · 变更 {p.quoteAt} · 赔率 {p.prices.join(" / ")} · 读取 {p.observedAt}</p>):<p>尚未取得带时间的官方序列；外围初/即盘无时间不能伪装成完整走势。</p>}</details><p>缺失：{context.missing?.join("、")||"无"}。{context.limitations}</p><p>对手强度调整球队模型：{candidate?.status==="ready"?`真实历史 ${candidate.sampleSize} 场；影子预期进球 ${fixed(candidate.expectedGoals.home,2)} : ${fixed(candidate.expectedGoals.away,2)}（无盘口输入，尚未通过未来验证，不影响推荐）`:"样本不足，未生成球队强度候选"}</p>{context.sources?.map((source:any)=><a key={source.sourceUrl} href={source.sourceUrl} target="_blank" rel="noreferrer">{source.kind} ↗　</a>)}</section>;
 }
 
 export default function AiPredictionReport({rows,researchOnly=false,coverage,unavailableMatches,loading,error,aiError,fetchedAt,sourceUrl,methodology,aiProvider,aiLoading,onAiReview,onRetryUnavailable,retryingUnavailable,retryMessage}:Props){
@@ -86,22 +93,22 @@ export default function AiPredictionReport({rows,researchOnly=false,coverage,una
             <ProbabilitySummary title="胜平负" items={had}/>
             <ProbabilitySummary title="体彩让球" items={hhad} note={row.marketSignal?.officialHandicap||"官方玩法不可用"} emptyLabel="不可执行"/>
             <ProbabilitySummary title="总进球" items={goals}/>
-            <ProbabilitySummary title="半全场" items={halfFull} className="half-full-summary"/>
+            <ProbabilitySummary title="半全场（近似）" items={halfFull} className="half-full-summary"/>
           </div>
           <div className="prediction-evidence compact-evidence">
             <div><small>盘口中位数</small><b>主队 {line(row.consensus.handicap)} · 总球 {row.consensus.totalLine}</b></div>
-            <div><small>模型预期进球</small><b>{fixed(row.expectedGoals.home,2)} : {fixed(row.expectedGoals.away,2)}</b></div>
+            <div><small>盘口隐含进球（非射门 xG）</small><b>{fixed(row.expectedGoals.home,2)} : {fixed(row.expectedGoals.away,2)}</b></div>
             <div><small>方向摘要</small><b>{row.marketSignal?.direction||"等待盘口数据"}</b></div>
           </div>
-          {row.aiSummary&&<p className="ai-review compact-ai-review"><b>AI 联动判断：</b>{row.aiSummary}</p>}
+          <p className="prediction-footnote">五类输出由同一比分分布派生，不是独立模型投票；半全场为条件二项分配近似。</p>
           <details className="prediction-full-details">
             <summary><span>{researchOnly?"外围盘口、三家公司变盘与风险分析":"完整盘口、三家公司变盘与风险分析"}</span><small>点击展开</small></summary>
             <div className="prediction-detail-body">
-              <PredictionMarketSignals row={row}/>
-              <div className="company-odds-table legacy-company-table"><div className="company-odds-row heading"><span>公司</span><span>主胜</span><span>平</span><span>客胜</span><span>让球</span><span>大小</span></div>{row.companies.map(company=><div className="company-odds-row" key={company.companyId}><b>{company.company}</b><span>{company.win.toFixed(2)}</span><span>{company.draw.toFixed(2)}</span><span>{company.lose.toFixed(2)}</span><span>{line(company.handicap)}</span><span>{company.total}</span></div>)}</div>
-              {row.aiSummary&&<p className="ai-review"><b>AI 联动判断：</b>{row.aiSummary}</p>}
-              {row.aiRisk&&<p className="ai-risk"><b>最大风险：</b>{row.aiRisk}</p>}
-              {row.missingCompanies.length>0&&<p className="missing-source">缺少公司编号 {row.missingCompanies.join("、")} 的当前赔率，本场置信度已降低。</p>}
+              <PredictionMarketSignals row={row}/><MatchContext row={row}/>
+              {row.aiEvidenceSummary&&<AiEvidencePanel summary={row.aiEvidenceSummary}/>}
+              {!row.aiEvidenceSummary&&row.aiSummary&&<p className="ai-review"><b>AI 证据摘要：</b>{row.aiSummary}</p>}
+              {!row.aiEvidenceSummary&&row.aiRisk&&<p className="ai-risk"><b>最大风险：</b>{row.aiRisk}</p>}
+              {row.missingCompanies.length>0&&<p className="missing-source">缺少公司编号 {row.missingCompanies.join("、")} 的当前赔率，本场输入覆盖不足，需谨慎评估。</p>}
             </div>
           </details>
         </article>;

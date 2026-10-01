@@ -7,10 +7,12 @@ import {
   compatibleCalibration,
   CALIBRATION_STAGE,
 } from "./prediction-model.js";
-import { decisionTargetAt } from "./snapshot-decision-policy.js";
+import { decisionTargetAt,selectDecisionObservations } from "./snapshot-decision-policy.js";
+import {completeDistribution,scoreProbability,summarizeProbability} from "./probability-evaluation.js";
 
 export type CalibrationObservation = {
   matchKey: string;
+  salesDate?:string;officialMatchId?:string;predictionGeneratedAt?:string;shadowGeneratedAt?:string;modelInput?:unknown;
   league: string;
   kickoffAt: string;
   capturedAt: string;
@@ -28,8 +30,8 @@ export type CalibrationObservation = {
   intelligenceCoverage?: number;
 };
 type ProbabilityMetrics = {
-  brier: number;
-  logLoss: number;
+  brier: number|null;
+  logLoss: number|null;
   sampleSize: number;
   coverage: number;
   buckets: Array<{ range: string; count: number; meanProbability: number; observedRate: number }>;
@@ -46,55 +48,17 @@ export const MIN_TEMPERATURE_CALIBRATION_MATCHES = 30;
 const TEMPERATURE_PRIOR_MATCHES = 30;
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 const normalized = (points: ScorePoint[]) => {
-  const values = labels.map((label) =>
-      Math.max(
-        0.000001,
-        Number(points.find((point) => point.score === label)?.probability || 0) / 100,
-      ),
-    ),
-    sum = values.reduce((a, b) => a + b, 0);
-  return values.map((value) => value / sum);
+  const vector=completeDistribution(points,labels);
+  if(!vector)throw new Error("概率标签或分布不完整，拒绝校准");
+  return vector;
 };
 const scoreRows = (
   rows: CalibrationObservation[],
   selector: (row: CalibrationObservation) => number[],
   coverage: number,
 ): ProbabilityMetrics => {
-  const buckets = Array.from({ length: 5 }, (_, index) => ({
-    range: `${index * 20}–${(index + 1) * 20}%`,
-    count: 0,
-    sumProbability: 0,
-    hits: 0,
-  }));
-  let brier = 0,
-    logLoss = 0;
-  rows.forEach((row) => {
-    const probabilities = selector(row),
-      actualIndex = labels.indexOf(row.actual);
-    brier += probabilities.reduce(
-      (sum, value, index) => sum + (value - (index === actualIndex ? 1 : 0)) ** 2,
-      0,
-    );
-    logLoss -= Math.log(Math.max(0.000001, probabilities[actualIndex]));
-    probabilities.forEach((value, index) => {
-      const bucket = buckets[Math.min(4, Math.floor(value * 5))];
-      bucket.count++;
-      bucket.sumProbability += value;
-      if (index === actualIndex) bucket.hits++;
-    });
-  });
-  return {
-    brier: rows.length ? brier / rows.length : 0,
-    logLoss: rows.length ? logLoss / rows.length : 0,
-    sampleSize: rows.length,
-    coverage,
-    buckets: buckets.map((bucket) => ({
-      range: bucket.range,
-      count: bucket.count,
-      meanProbability: bucket.count ? bucket.sumProbability / bucket.count : 0,
-      observedRate: bucket.count ? bucket.hits / bucket.count : 0,
-    })),
-  };
+  const metrics=summarizeProbability(rows.map(row=>scoreProbability(selector(row),labels.indexOf(row.actual))));
+  return {brier:metrics.brier,logLoss:metrics.logLoss,sampleSize:metrics.sampleSize,coverage,buckets:metrics.reliability};
 };
 const expectedCalibrationError = (metrics: ProbabilityMetrics) => {
   const total = metrics.buckets.reduce((sum, item) => sum + item.count, 0);
@@ -107,7 +71,7 @@ const expectedCalibrationError = (metrics: ProbabilityMetrics) => {
 };
 const temperatureLoss = (rows: CalibrationObservation[], temperature: number, coverage: number) =>
   scoreRows(rows, (row) => tempered(normalized(row.modelProbabilities), temperature), coverage)
-    .brier +
+    .brier! +
   ((0.02 * TEMPERATURE_PRIOR_MATCHES) / (TEMPERATURE_PRIOR_MATCHES + rows.length)) *
     (temperature - 1) ** 2;
 const fitTemperature = (rows: CalibrationObservation[], coverage: number) => {
@@ -211,22 +175,14 @@ export function buildCalibrationEvaluation(
       row.matchKey &&
       Number.isFinite(Date.parse(row.kickoffAt)) &&
       Number.isFinite(Date.parse(row.capturedAt)) &&
-      row.modelProbabilities?.length === 3 &&
-      row.marketProbabilities?.length === 3 &&
+      completeDistribution(row.modelProbabilities,labels) &&
+      completeDistribution(row.marketProbabilities,labels) &&
       labels.includes(row.actual),
   );
   const grouped = new Map<string, CalibrationObservation[]>();
   valid.forEach((row) => grouped.set(row.matchKey, [...(grouped.get(row.matchKey) || []), row]));
   const selected: Array<CalibrationObservation> = [];
-  grouped.forEach((rows) => {
-    const salesDate =
-        rows[0].matchKey.match(/^\d{4}-\d{2}-\d{2}/)?.[0] || rows[0].kickoffAt.slice(0, 10),
-      decisionAt = Date.parse(decisionTargetAt(salesDate, rows[0].kickoffAt) || ""),
-      candidate = rows
-        .filter((row) => Number.isFinite(decisionAt) && Date.parse(row.capturedAt) <= decisionAt)
-        .sort((a, b) => Date.parse(b.capturedAt) - Date.parse(a.capturedAt))[0];
-    if (candidate) selected.push(candidate);
-  });
+  selected.push(...selectDecisionObservations(valid.map(row=>({...row,salesDate:row.salesDate||row.matchKey.match(/^\d{4}-\d{2}-\d{2}/)?.[0]||row.kickoffAt.slice(0,10)}))).rows);
   selected.sort((a, b) => Date.parse(a.kickoffAt) - Date.parse(b.kickoffAt));
   const trainEnd = Math.floor(selected.length * 0.6),
     calibrationEnd = Math.floor(selected.length * 0.8),
@@ -268,7 +224,7 @@ export function buildCalibrationEvaluation(
         coverage,
       ),
       foldMarket = scoreRows(foldTest, (row) => normalized(row.marketProbabilities), coverage);
-    if (foldModel.brier < foldMarket.brier) foldWins++;
+    if (foldModel.brier! < foldMarket.brier!) foldWins++;
     foldTest.forEach((row) => {
       rollingRows.push({
         ...row,
@@ -299,8 +255,8 @@ export function buildCalibrationEvaluation(
   const intelligenceTest = test.filter(
       (row) =>
         (row.intelligenceCoverage || 0) > 0 &&
-        row.baseModelProbabilities?.length === 3 &&
-        row.intelligenceCandidateProbabilities?.length === 3,
+        completeDistribution(row.baseModelProbabilities,labels) &&
+        completeDistribution(row.intelligenceCandidateProbabilities,labels),
     ),
     intelligenceBase = scoreRows(
       intelligenceTest,
@@ -312,18 +268,18 @@ export function buildCalibrationEvaluation(
       (row) => normalized(row.intelligenceCandidateProbabilities || []),
       coverage,
     ),
-    intelligenceDelta = intelligenceFused.brier - intelligenceBase.brier,
+    intelligenceDelta = intelligenceTest.length ? intelligenceFused.brier! - intelligenceBase.brier! : null,
     intelligenceStatus =
       intelligenceTest.length < 20
         ? "insufficient_data"
-        : intelligenceDelta <= -0.005
+        : intelligenceDelta!==null && intelligenceDelta <= -0.005
           ? "validated_gain"
           : "no_gain",
     // Holdout evidence is diagnostic only. It must never select a runtime parameter.
     intelligenceWeightMultiplier = 0;
   const lowScoreRho = fitLowScoreRho(training);
   const deterministic = {
-    decisionPolicy: "latest_not_after_official_target_v1",
+    decisionPolicy: selectDecisionObservations([]).policy,
     splitPolicy: "chronological_60_20_20_v1",
     temperature: Number(temperature.toFixed(2)),
     lowScoreRho,
@@ -354,19 +310,19 @@ export function buildCalibrationEvaluation(
     {
       key: "brier",
       label: "未来测试 Brier 至少优于市场 0.005",
-      passed: testCalibrated.brier <= testMarket.brier - 0.005,
-      value: (testCalibrated.brier - testMarket.brier).toFixed(3),
+      passed: test.length>0 && testCalibrated.brier! <= testMarket.brier! - 0.005,
+      value: test.length ? (testCalibrated.brier! - testMarket.brier!).toFixed(3) : "无样本",
     },
     {
       key: "logloss",
       label: "未来测试 Log Loss 不劣于市场",
-      passed: testCalibrated.logLoss <= testMarket.logLoss,
-      value: `${testCalibrated.logLoss.toFixed(3)} / ${testMarket.logLoss.toFixed(3)}`,
+      passed: test.length>0 && testCalibrated.logLoss! <= testMarket.logLoss!,
+      value: test.length ? `${testCalibrated.logLoss!.toFixed(3)} / ${testMarket.logLoss!.toFixed(3)}` : "无样本",
     },
     {
       key: "calibration",
       label: "未来测试概率校准误差更低",
-      passed: expectedCalibrationError(testCalibrated) < expectedCalibrationError(testMarket),
+      passed: test.length>0 && expectedCalibrationError(testCalibrated) < expectedCalibrationError(testMarket),
       value: `${(expectedCalibrationError(testCalibrated) * 100).toFixed(1)}% / ${(expectedCalibrationError(testMarket) * 100).toFixed(1)}%`,
     },
     {

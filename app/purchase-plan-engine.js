@@ -1,5 +1,11 @@
+import {calculateTicketEconomics,ticketSensitivity,summarizeTicketPortfolio,settleTicket,ticketFixtureKey} from "./ticket-economics.js";
+import {assessRecommendation,selectRecommendationPortfolio,DEFAULT_RECOMMENDATION_POLICY,RESEARCH_MARKETS} from "./recommendation-policy.js";
+import {mergePurchaseBatches,purchaseBatchIdentity} from "./purchase-batch-policy.js";
+import {summarizePurchaseHistorySamples} from "./purchase-history-samples.js";
+import {calculatePortfolioScenarioRisk} from "./portfolio-scenario-risk.js";
 export const PURCHASE_PLAN_STORAGE_KEY = "ff-daily-purchase-plans-v1";
-export const PURCHASE_PLAN_VERSION = 14;
+export const PURCHASE_PLAN_VERSION = 18;
+export const PURCHASE_DECISION_POLICY = "robust-ev-diversified-portfolio-v3";
 export const PURCHASE_PLAN_DEFINITIONS = [
   {
     id: "score-double-3",
@@ -113,36 +119,36 @@ export const PURCHASE_PLAN_DEFINITIONS = [
   },
   {
     id: "tenfold-safe-2",
-    title: "10倍目标 A · 单选2串1",
-    rule: "目标净盈利约20元 · 2串1",
+    title: "命中净利≥10倍 A · 单选2串1",
+    rule: "基础投入2元 · 命中净利至少20元 · 2串1",
     markets: ["had", "hhad", "total", "halfFull"],
     matches: 2,
     selections: 1,
     minLegProbability: 30,
     targetNetProfit: 20,
-    targetProfitTolerance: 5,
+    targetProfitTolerance: 0,
   },
   {
     id: "tenfold-safe-3",
-    title: "10倍目标 B · 单选3串1",
-    rule: "目标净盈利约20元 · 3串1",
+    title: "命中净利≥10倍 B · 单选3串1",
+    rule: "基础投入2元 · 命中净利至少20元 · 3串1",
     markets: ["had", "hhad", "total", "halfFull"],
     matches: 3,
     selections: 1,
     minLegProbability: 30,
     targetNetProfit: 20,
-    targetProfitTolerance: 5,
+    targetProfitTolerance: 0,
   },
   {
     id: "tenfold-safe-4",
-    title: "10倍目标 C · 单选4串1",
-    rule: "目标净盈利约20元 · 4串1",
+    title: "命中净利≥10倍 C · 单选4串1",
+    rule: "基础投入2元 · 命中净利至少20元 · 4串1",
     markets: ["had", "hhad", "total", "halfFull"],
     matches: 4,
     selections: 1,
     minLegProbability: 30,
     targetNetProfit: 20,
-    targetProfitTolerance: 5,
+    targetProfitTolerance: 0,
   },
   {
     id: "half-full-double-3",
@@ -155,14 +161,14 @@ export const PURCHASE_PLAN_DEFINITIONS = [
   },
   ...["A", "B", "C"].map((variant) => ({
     id: `twofold-${variant.toLowerCase()}`,
-    title: `2倍 ${variant} · 单选2串1`,
+    title: `命中净利≥2倍 ${variant} · 单选2串1`,
     rule: "每场单选 · 2串1 · 最低净盈利≥投入2倍",
     markets: ["had", "hhad", "total", "halfFull"],
     matches: 2,
     selections: 1,
     minLegProbability: 30,
     minProfitMultiplier: 2,
-    randomized: true,
+    alternative: true,
   })),
   {
     id: "half-full-double-2",
@@ -184,21 +190,8 @@ export function calculatePurchaseLegReturns(item) {
     picks.some((pick) => !Number.isFinite(Number(pick?.odd)) || Number(pick.odd) <= 1)
   )
     return null;
-  const stake = picks.length * 2;
-  const winningReturns = picks.map((pick) => 2 * Number(pick.odd));
-  return {
-    stake,
-    expectedReturn: picks.reduce(
-      (sum, pick) =>
-        sum +
-        (2 * Number(pick.odd) * Math.max(0, Math.min(100, safeNumber(pick.probability)))) / 100,
-      0,
-    ),
-    minWinningReturn: Math.min(...winningReturns),
-    maxWinningReturn: Math.max(...winningReturns),
-    minWinningProfit: Number((Math.min(...winningReturns) - stake).toFixed(2)),
-    maxWinningProfit: Number((Math.max(...winningReturns) - stake).toFixed(2)),
-  };
+  const economics=calculateTicketEconomics([{...item,picks}]);
+  return {...economics,stake:economics.totalStake};
 }
 
 export const PURCHASE_PLAN_MODULES = [
@@ -206,9 +199,9 @@ export const PURCHASE_PLAN_MODULES = [
   { id: "total", title: "进球数方案", description: "总进球单选与双选组合" },
   { id: "result", title: "赛果方案", description: "胜平负与让球胜平负组合" },
   { id: "draw", title: "平局 / 让平", description: "专门跟踪平与让平组合" },
-  { id: "halfFull", title: "半全场方案", description: "半全场走势覆盖组合" },
-  { id: "tenfold", title: "10倍目标", description: "2～4场、目标净盈利约20元" },
-  { id: "twofold", title: "2倍目标", description: "单选2串1，最低净盈利为投入的2倍" },
+  { id: "halfFull", title: "半全场研究 / 历史", description: "近似分布尚待独立验证，新正式票暂停" },
+  { id: "tenfold", title: "10倍收益约束", description: "同一模型的筛选预设，不是独立预测" },
+  { id: "twofold", title: "2倍收益约束与备选", description: "按稳健性排序，不随机增加可信度" },
 ];
 export const purchasePlanModuleId = (planId) => {
   const id = String(planId || "");
@@ -273,7 +266,7 @@ export const deduplicatePurchasePlans = (plans) => {
 };
 
 export const deduplicatePurchasePlanSets = (planSets) =>
-  (planSets || []).map((set) => ({ ...set, plans: deduplicatePurchasePlans(set?.plans) }));
+  mergePurchaseBatches((planSets || []).map((set) => ({ ...set, plans: deduplicatePurchasePlans(set?.plans) }))).planSets;
 
 const settledPlanStatuses = new Set([
   "won",
@@ -282,15 +275,18 @@ const settledPlanStatuses = new Set([
   "corrected_lost",
   "void_won",
   "void_lost",
+  "refunded",
 ]);
 const wonPlanStatuses = new Set(["won", "corrected_won", "void_won"]);
 export const summarizePurchasePlans = (plans) => {
-  const settled = (plans || []).filter((plan) => settledPlanStatuses.has(plan.status)),
+  const resolved = (plans || []).filter((plan) => settledPlanStatuses.has(plan.status)),
+    settled = resolved.filter(plan=>plan.status!=="refunded"),
     won = settled.filter((plan) => wonPlanStatuses.has(plan.status)).length;
-  const stake = settled.reduce((sum, plan) => sum + safeNumber(plan.stake), 0),
-    returned = settled.reduce((sum, plan) => sum + safeNumber(plan.simulatedReturn), 0);
+  const stake = resolved.reduce((sum, plan) => sum + safeNumber(plan.stake), 0),
+    returned = resolved.reduce((sum, plan) => sum + safeNumber(plan.simulatedReturn), 0);
   return {
     settled: settled.length,
+    refunded:resolved.length-settled.length,
     won,
     rate: settled.length ? (won / settled.length) * 100 : 0,
     stake,
@@ -352,11 +348,17 @@ export const summarizePurchasePlanDefinitions = (planSets) =>
               date: set.date,
               generatedAt: set.generatedAt,
               source: set.source || "",
+              batchIdentity: purchaseBatchIdentity(set),
+              scheduledTime: set.scheduledTime || null,
+              decisionPolicy: set.decisionPolicy || null,
+              baseModelVersion: set.baseModelVersion || null,
+              calibrationVersion: set.calibrationVersion || null,
+              riskPolicy: set.riskSelection?.policy || null,
               plan,
             })),
         )
         .sort((a, b) => String(b.generatedAt).localeCompare(String(a.generatedAt)));
-      return [definition.id, { ...summarizePurchasePlans(rows.map((row) => row.plan)), rows }];
+      return [definition.id, { ...summarizePurchasePlans(rows.map((row) => row.plan)), samples: summarizePurchaseHistorySamples(rows), rows }];
     }),
   );
 
@@ -476,9 +478,10 @@ function matchMarkets(report, official, decisionAt) {
   const hhad = report.hhadProbabilities?.length
     ? report.hhadProbabilities
     : pointList(signal.modeledHhad, MARKET_META.hhad.labels);
-  const score = report.combinedScores?.length
-    ? report.combinedScores
-    : report.scores || report.oddsScores || [];
+  const fullScore=report.fullScoreDistribution;
+  const grid=new Map((fullScore||[]).map(p=>[p.score,p.probability]));
+  const scoreGridComplete=grid.size===169&&(fullScore||[]).length===169&&Array.from({length:169},(_,i)=>`${Math.floor(i/13)}:${i%13}`).every(label=>grid.has(label))&&(fullScore||[]).every(p=>typeof p.probability==="number"&&Number.isFinite(p.probability)&&p.probability>=0)&&Math.abs((fullScore||[]).reduce((sum,p)=>sum+p.probability,0)-100)<=.5;
+  const score=scoreGridComplete?MARKET_META.score.labels.map(label=>({score:label,probability:(fullScore||[]).reduce((sum,p)=>{const [h,a]=p.score.split(":").map(Number),bucket=MARKET_META.score.labels.includes(p.score)?p.score:h>a?"胜其他":h===a?"平其他":"负其他";return sum+(bucket===label?p.probability:0);},0)})):[];
   const total = report.totalGoalProbabilities?.length
     ? report.totalGoalProbabilities
     : pointList(signal.modeledTotalGoals, MARKET_META.total.labels);
@@ -516,6 +519,7 @@ function matchMarkets(report, official, decisionAt) {
     const byLabel = new Map(
       pointList(points, meta.labels).map((point) => [point.score, point.probability]),
     );
+    if(byLabel.size!==meta.labels.length||!meta.labels.every(label=>byLabel.has(label))||[...byLabel.values()].some(p=>!Number.isFinite(p)||p<0||p>100)||Math.abs([...byLabel.values()].reduce((s,p)=>s+p,0)-100)>.5||!Array.isArray(points)||points.length!==meta.labels.length)return [];
     return meta.labels
       .map((pick, index) => ({
         pick,
@@ -608,98 +612,93 @@ const ticketKey = (legs) =>
     )
     .sort()
     .join(";");
-const seededIndex = (seed, length) => {
-  let hash = 2166136261;
-  for (const character of seed) hash = Math.imul(hash ^ character.charCodeAt(0), 16777619);
-  return (hash >>> 0) % length;
-};
-function choosePlan(groups, definition, { excludedTickets = new Set(), randomSeed = "" } = {}) {
+function legVariants(items,count,options){
+ const ranked=[...items].sort((a,b)=>b.probability*b.odd-a.probability*a.odd||b.probability-a.probability);
+ const pool=[...new Map([...ranked.slice(0,6),...[...items].sort((a,b)=>b.probability-a.probability).slice(0,3)].map(p=>[p.pick,p])).values()].slice(0,8);
+ const candidates=combinations(pool,count).map(p=>legFrom(p,count,options)).filter(Boolean);
+ const roi=leg=>{const value=calculateTicketEconomics([leg]);return value.status==="ready"?value.expectedROI??-Infinity:-Infinity;};
+ const choices=[...[...candidates].sort((a,b)=>roi(b)-roi(a)).slice(0,2),...[...candidates].sort((a,b)=>b.probability-a.probability).slice(0,1)];
+ return [...new Map(choices.map(leg=>[leg.picks.map(p=>p.pick).sort().join("|"),leg])).values()];
+}
+function choosePlan(groups, definition, { excludedTickets = new Set(), rejections = {}, policy=DEFAULT_RECOMMENDATION_POLICY } = {}) {
   const allowedPicks = Array.isArray(definition.allowedPicks)
     ? new Set(definition.allowedPicks)
     : null;
   const variants = groups
     .map((group) =>
-      definition.markets.flatMap((market) => {
+      definition.markets.filter(market=>!RESEARCH_MARKETS.has(market)).flatMap((market) => {
         const items = group.filter(
           (item) => item.market === market && (!allowedPicks || allowedPicks.has(item.pick)),
         );
-        const leg = legFrom(items, definition.selections, {
+        const legs = legVariants(items, definition.selections, {
           adjacentPicks: Boolean(definition.adjacentPicks),
           minLegProbability: definition.minLegProbability,
         });
-        return leg ? [leg] : [];
+        return legs;
       }),
     )
-    .filter((group) => group.length);
-  let best = null;
-  const randomCandidates = [];
+    .filter((group) => group.length)
+    .sort((a,b)=>Math.max(...b.map(leg=>leg.picks.reduce((s,p)=>s+p.probability*p.odd/100,0)/leg.picks.length))-Math.max(...a.map(leg=>leg.picks.reduce((s,p)=>s+p.probability*p.odd/100,0)/leg.picks.length)))
+    .slice(0,12);
+  let evaluated=0;
+  const viableCandidates = [];
+  const rank=(a,b)=>b.expectedROI-a.expectedROI||b.expectedProfit-a.expectedProfit||b.probability-a.probability||ticketKey(a.items).localeCompare(ticketKey(b.items));
   for (const fixtureSet of combinations(variants, definition.matches)) {
+    if(evaluated>=6000){rejections.searchTruncated=true;break;}
     const walk = (index, legs) => {
+      if(evaluated>=6000){rejections.searchTruncated=true;return;}
       if (index < fixtureSet.length) {
         for (const leg of fixtureSet[index]) walk(index + 1, [...legs, leg]);
         return;
       }
       if (!legs.every((leg) => leg.allowedPassCounts.includes(definition.matches))) return;
+      if(new Set(legs.map(ticketFixtureKey)).size!==legs.length){rejections.input_invalid=(rejections.input_invalid||0)+1;return;}
       if (definition.mixed && new Set(legs.map((leg) => leg.market)).size < 2) return;
       const probability = legs.reduce((value, leg) => (value * leg.probability) / 100, 1),
         betCount = legs.reduce((value, leg) => value * leg.picks.length, 1),
         stake = betCount * 2;
-      const minWinningReturn =
-          2 *
-          legs.reduce((value, leg) => value * Math.min(...leg.picks.map((item) => item.odd)), 1),
-        maxWinningReturn =
-          2 *
-          legs.reduce((value, leg) => value * Math.max(...leg.picks.map((item) => item.odd)), 1);
+      evaluated++;rejections.evaluated=(rejections.evaluated||0)+1;
+      const economics=calculateTicketEconomics(legs);
       const candidate = {
         items: legs,
         probability,
         betCount,
         stake,
-        minWinningReturn,
-        maxWinningReturn,
-        minWinningProfit: Number((minWinningReturn - stake).toFixed(2)),
-        maxWinningProfit: Number((maxWinningReturn - stake).toFixed(2)),
+        ...economics,
       };
+      if(economics.expectedProfit===null||economics.expectedProfit===undefined){rejections.missingProbability=(rejections.missingProbability||0)+1;return;}
+      if(economics.expectedProfit<=1e-8){rejections.nonPositiveEV=(rejections.nonPositiveEV||0)+1;return;}
+      rejections.positiveEV=(rejections.positiveEV||0)+1;
+      const assessment=assessRecommendation(legs,policy);
+      if(!assessment.eligible){rejections[assessment.reason]=(rejections[assessment.reason]||0)+1;return;}
       if (candidate.minWinningProfit < 0) return;
       if (definition.requirePositiveMinProfit && candidate.minWinningProfit <= 0) return;
       if (candidate.minWinningProfit + 1e-9 < safeNumber(definition.minProfitMultiplier) * stake)
         return;
-      if (definition.randomized) {
+      if (definition.alternative) {
         candidate.ticketKey = ticketKey(legs);
-        if (!excludedTickets.has(candidate.ticketKey)) randomCandidates.push(candidate);
+        if (!excludedTickets.has(candidate.ticketKey)) viableCandidates.push(candidate);
         return;
       }
       const target = Number(definition.targetNetProfit),
         tolerance = Math.max(0, safeNumber(definition.targetProfitTolerance));
       if (Number.isFinite(target)) {
         if (candidate.minWinningProfit <= 0) return;
-        candidate.targetDistance = Math.abs(candidate.minWinningProfit - target);
-        candidate.inTargetRange = candidate.targetDistance <= tolerance;
+        if(candidate.minWinningProfit + tolerance < target){rejections.target_not_met=(rejections.target_not_met||0)+1;return;}
       }
-      const better =
-        !best ||
-        (Number.isFinite(target)
-          ? candidate.inTargetRange !== best.inTargetRange
-            ? candidate.inTargetRange
-            : candidate.inTargetRange
-              ? candidate.probability > best.probability
-              : candidate.targetDistance < best.targetDistance ||
-                (candidate.targetDistance === best.targetDistance &&
-                  candidate.probability > best.probability)
-          : candidate.probability > best.probability);
-      if (better) best = candidate;
+      viableCandidates.push(candidate);
     };
     walk(0, []);
   }
-  if (definition.randomized && randomCandidates.length) {
-    randomCandidates.sort((left, right) => right.probability - left.probability);
-    const shortlist = randomCandidates.slice(
-      0,
-      Math.min(20, Math.max(3, Math.ceil(randomCandidates.length * 0.15))),
-    );
-    return shortlist[seededIndex(randomSeed, shortlist.length)];
-  }
-  return best;
+  viableCandidates.sort(rank);
+  // Retain different fixture sets as well as different picks, so risk rejection
+  // can fall back to a genuinely less concentrated ticket, not just another label.
+  const seenTickets=new Set(),seenFixtures=new Set(),shortlist=[];
+  const add=candidate=>{const key=ticketKey(candidate.items);if(!seenTickets.has(key)){seenTickets.add(key);shortlist.push(candidate);}};
+  for(const candidate of viableCandidates){const fixtures=candidate.items.map(ticketFixtureKey).sort().join(";");if(!seenFixtures.has(fixtures)){seenFixtures.add(fixtures);add(candidate);}if(shortlist.length>=6)break;}
+  for(const candidate of viableCandidates){if(shortlist.length>=8)break;add(candidate);}
+  shortlist.sort(rank);
+  return shortlist.length?{...shortlist[0],alternatives:shortlist.slice(1)}:null;
 }
 
 const dateOnly = (value) => String(value || "").match(/\d{4}-\d{2}-\d{2}/)?.[0] || "";
@@ -711,6 +710,8 @@ export function generatePurchasePlans({
   reports,
   officialMatches,
   generatedAt = new Date().toISOString(),
+  riskPolicy = DEFAULT_RECOMMENDATION_POLICY,
+  priorPlans = /** @type {Array<object>} */ ([]),
 }) {
   const decisionAt = Date.parse(generatedAt);
   if (!Number.isFinite(decisionAt)) throw new Error("方案生成时间无效，拒绝生成可售组合");
@@ -719,11 +720,13 @@ export function generatePurchasePlans({
       .filter((match) => match?.officialMatchId || match?.matchId)
       .map((match) => [officialKey(match), match]),
   );
+  const reportCounts=new Map();for(const report of reports||[])reportCounts.set(officialKey(report),(reportCounts.get(officialKey(report))||0)+1);
   const pairs = (reports || [])
     .map((report) => ({ report, official: officialByKey.get(officialKey(report)) }))
     .filter(
       (pair) =>
         pair.official &&
+        reportCounts.get(officialKey(pair.report))===1 &&
         pair.report?.officialMappingStatus === "verified" &&
         !pair.report.isMock &&
         String(pair.official.matchStatus || "").toLowerCase() === "selling",
@@ -731,12 +734,27 @@ export function generatePurchasePlans({
   const groups = pairs
     .map(({ report, official }) => matchMarkets(report, official, decisionAt))
     .filter((group) => group.length);
+  const evaluatedFixtures=new Set(groups.map(group=>`${group[0].officialMatchId}|${group[0].salesDate}`));
+  const fixtureDecisions=(officialMatches||[]).map(match=>{
+    const key=officialKey(match),kickoff=zonedTime(match.kickoffAt);
+    const expectedMarkets=Object.entries(MARKET_META).filter(([market,meta])=>{const m=match.marketEligibility?.[meta.name];return !RESEARCH_MARKETS.has(market)&&m?.qualification==="qualified"&&String(m.salesStatus).toLowerCase()==="selling"&&m.marketCode===meta.code&&m.allowedPassCounts?.some(n=>n>=2)&&Date.parse(m.cutoffAt||match.kickoffAt)>decisionAt;}).map(([market])=>market);
+    const expected=String(match.matchStatus||"").toLowerCase()==="selling"&&Number.isFinite(kickoff)&&kickoff>decisionAt&&expectedMarkets.length>0;
+    const evaluatedMarkets=[...new Set(groups.find(group=>`${group[0].officialMatchId}|${group[0].salesDate}`===key)?.map(p=>p.market)||[])];
+    const missingMarkets=expected?expectedMarkets.filter(m=>!evaluatedMarkets.includes(m)):[];
+    const evaluated=evaluatedFixtures.has(key)&&missingMarkets.length===0;
+    return {officialMatchId:String(match.officialMatchId||match.matchId||""),salesDate:match.salesDate,kickoffAt:match.kickoffAt,expected,evaluated,
+      expectedMarkets,evaluatedMarkets,missingMarkets,reason:evaluated?"evaluated":!expected?"not-currently-eligible":reportCounts.get(key)>1?"duplicate-prediction":!reportCounts.has(key)?"missing-prediction":"prediction-or-market-validation-failed"};
+  });
+  const coverage={expectedEligibleCount:fixtureDecisions.filter(r=>r.expected).length,evaluatedFixtureCount:fixtureDecisions.filter(r=>r.evaluated).length,missingEligibleCount:fixtureDecisions.filter(r=>r.expected&&!r.evaluated).length,fixtures:fixtureDecisions};
   const plans = [];
+  const rejectionCounts={},perDefinition={};
   const selectedTwofoldTickets = new Set();
   for (const definition of PURCHASE_PLAN_DEFINITIONS) {
+    const localRejections={};perDefinition[definition.id]=localRejections;
     const found = choosePlan(groups, definition, {
       excludedTickets: selectedTwofoldTickets,
-      randomSeed: `${date}|${generatedAt}|${definition.id}`,
+      rejections:localRejections,
+      policy:riskPolicy,
     });
     if (!found) {
       plans.push({
@@ -744,7 +762,8 @@ export function generatePurchasePlans({
         title: definition.title,
         rule: definition.rule,
         status: "unavailable",
-        reason: "当前合规玩法、场次数或官方赔率不足，或最低净盈利为负，暂不能生成该组合。",
+        reasonCode:definition.markets.every(m=>RESEARCH_MARKETS.has(m))?"research_only":localRejections.evaluated>0?"no-robust-plan":"insufficient-data",
+        reason: definition.markets.every(m=>RESEARCH_MARKETS.has(m))?"半全场采用简化时间分配模型，尚未独立验证；保留研究和历史结算，暂停新正式票。":localRejections.evaluated>0?"候选未同时满足模型收益余量、概率下调压力测试及返奖约束，本类型不投注。":"合规玩法、预测、场次数或官方赔率不足；无法评估本类型，不补造方案。",
         items: [],
         combinedOdd: 0,
         estimatedProbability: 0,
@@ -756,8 +775,8 @@ export function generatePurchasePlans({
       });
       continue;
     }
-    if (definition.randomized) selectedTwofoldTickets.add(found.ticketKey);
-    plans.push({
+    if (definition.alternative) selectedTwofoldTickets.add(found.ticketKey);
+    const makePlan=found=>({
       id: definition.id,
       title: definition.title,
       rule: definition.rule,
@@ -771,11 +790,11 @@ export function generatePurchasePlans({
       minWinningReturn: found.minWinningReturn,
       maxWinningReturn: found.maxWinningReturn,
       decision: {
-        objective: definition.randomized
-          ? "高概率候选池内随机"
+        objective: definition.alternative
+          ? "同一模型稳健候选的确定性备选（有界搜索）"
           : Number.isFinite(definition.targetNetProfit)
-            ? "目标命中净盈利优先，再比较模型概率"
-            : "合规约束内模型命中概率优先",
+            ? "目标命中盈利为筛选门槛，稳健正EV后按ROI排序"
+            : "合规约束内正模型EV，按ROI/期望利润排序（有界搜索）",
         targetNetProfit: Number.isFinite(definition.targetNetProfit)
           ? definition.targetNetProfit
           : null,
@@ -783,7 +802,7 @@ export function generatePurchasePlans({
           ? definition.targetProfitTolerance
           : null,
         targetMet: Number.isFinite(definition.targetNetProfit)
-          ? Boolean(found.inTargetRange)
+          ? found.minWinningProfit + safeNumber(definition.targetProfitTolerance) >= definition.targetNetProfit
           : null,
         minWinningProfitConstraint: safeNumber(definition.minProfitMultiplier) * found.stake,
         maximumLoss: found.stake,
@@ -792,17 +811,45 @@ export function generatePurchasePlans({
       },
       minWinningProfit: found.minWinningProfit,
       maxWinningProfit: found.maxWinningProfit,
+      expectedReturn:found.expectedReturn,expectedProfit:found.expectedProfit,expectedROI:found.expectedROI,
+      sensitivity:ticketSensitivity(found.items),
       theoreticalReturn: found.maxWinningReturn,
     });
+    plans.push({...makePlan(found),candidateAlternatives:found.alternatives.map(makePlan)});
   }
+  const selection=selectRecommendationPortfolio(deduplicatePurchasePlans(plans),{policy:riskPolicy,priorPlans});
+  const {portfolio:selectionPortfolio,...riskSelectionWithPlans}=selection;
+  const riskSelection={...riskSelectionWithPlans,plans:undefined};
+  const finalPlans=selection.plans;for(const counts of Object.values(perDefinition))for(const [key,value] of Object.entries(counts))rejectionCounts[key]=key==="searchTruncated"?Boolean(rejectionCounts[key]||value):(rejectionCounts[key]||0)+value;
+  // Shared fixtures use one assessment distribution; frozen ticket prices stay unchanged.
+  const predictionIds=[...new Set(pairs.map(({report})=>report.predictionId).filter(Boolean))];
+  const scenarioInput={plans:finalPlans,fixtureForecasts:pairs.map(({report})=>({officialMatchId:report.officialMatchId,salesDate:report.salesDate,kickoffAt:report.kickoffAt,predictionId:report.predictionId,predictionGeneratedAt:report.predictionGeneratedAt,fullScoreDistribution:report.fullScoreDistribution})),basisPredictionId:predictionIds.length===1?predictionIds[0]:"",assessmentAt:generatedAt,currentBatchId:`${date}|${generatedAt}`};
+  const portfolioScenarios={current:calculatePortfolioScenarioRisk(scenarioInput),day:priorPlans.length?calculatePortfolioScenarioRisk({...scenarioInput,priorPlans}):null};
   return {
+    portfolioScenarios,
+    riskSelection,decisionPolicy:PURCHASE_DECISION_POLICY,decisionSummary:{coverage,evaluated:(Boolean(rejectionCounts.evaluated)||coverage.expectedEligibleCount===0)&&coverage.missingEligibleCount===0&&selection.priorState!=="invalid",noBet:(rejectionCounts.evaluated>0||coverage.expectedEligibleCount===0)&&coverage.missingEligibleCount===0&&selection.priorState!=="invalid"&&!finalPlans.some(p=>p.status==="pending"),modelEligibleCount:selection.modelEligibleCount,selectionStatus:selection.priorState==="invalid"?"data-risk-invalid":coverage.missingEligibleCount&&!selection.selected?"incomplete-evaluation":selection.selected?"selected":selection.modelEligibleCount?"risk-constrained":"no-model-advantage",rejectionCounts,perDefinition,searchScope:"bounded-official-market-candidates-not-global-optimum"},portfolio:selectionPortfolio,
     version: PURCHASE_PLAN_VERSION,
     date,
     generatedAt,
+    baseModelVersion:[...new Set((reports||[]).map(r=>r.baseModelVersion).filter(Boolean))].length===1?(reports||[]).find(r=>r.baseModelVersion)?.baseModelVersion:null,
+    calibrationVersion:[...new Set((reports||[]).map(r=>r.calibrationVersion).filter(Boolean))].length===1?(reports||[]).find(r=>r.calibrationVersion)?.calibrationVersion:null,
     scheduledTime: PURCHASE_PLAN_DAILY_TIME,
     source: "每日17:00预测版本 + 中国体育彩票生成时固定奖金",
-    plans: deduplicatePurchasePlans(plans),
+    plans: finalPlans,
   };
+}
+
+// Recheck frozen selections at the actual completion time, not the start time.
+export function verifyPurchasePlanCompletion(planSet,officialMatches,completedAt){
+  const at=Date.parse(completedAt),officials=new Map((officialMatches||[]).map(m=>[officialKey(m),m]));
+  if(!Number.isFinite(at))throw new Error("实际完成时间无效");
+  for(const plan of planSet.plans||[])for(const leg of plan.status==="unavailable"?[]:plan.items||[]){
+    const match=officials.get(officialKey(leg)),meta=MARKET_META[leg.market],eligibility=match?.marketEligibility?.[meta?.name];
+    if(!match||match.isMock||String(match.matchStatus||"").toLowerCase()!=="selling"||!meta||RESEARCH_MARKETS.has(leg.market)||eligibility?.qualification!=="qualified"||String(eligibility.salesStatus).toLowerCase()!=="selling"||!eligibility.allowedPassCounts?.includes(plan.items.length))throw new Error("实际完成时官方销售资格无法核验");
+    if(!(Date.parse(match.kickoffAt)>at)||!(Date.parse(eligibility.cutoffAt||match.kickoffAt)>at))throw new Error("计算完成时比赛已开赛或停售，未保存正式票");
+    for(const pick of leg.picks||[leg]){const index=meta.labels.indexOf(pick.pick);if(index<0||Number(match.marketOdds?.[meta.name]?.[index])!==pick.odd)throw new Error("冻结投注选项与官方赔率不一致");}
+  }
+  return true;
 }
 
 export function settlePurchasePlan(plan, results, { now = Date.now() } = {}) {
@@ -934,15 +981,10 @@ export function settlePurchasePlan(plan, results, { now = Date.now() } = {}) {
           : won
             ? "won"
             : "lost";
-  const winningSelections = items.map((item) =>
-      item.settlementState === "void_settled"
-        ? { odd: 1 }
-        : (item.picks || []).find((selection) => selection.pick === item.actual) || {
-            odd: item.odd || 0,
-          },
-    ),
-    simulatedReturn = won
-      ? 2 * winningSelections.reduce((value, item) => value * safeNumber(item.odd), 1)
-      : 0;
-  return { ...plan, items, status, simulatedReturn };
+  if (unresolved || hasVoid) return {...plan,items,status,simulatedReturn:0};
+  try {
+    const cash=settleTicket(items);
+    const resolvedStatus=cash.status==="pending"?"field_pending":cash.status==="refund"?"refunded":`${hasCorrection?"corrected_":hasSettledVoid?"void_":""}${cash.status}`;
+    return {...plan,items,status:resolvedStatus,simulatedReturn:cash.returned??0,settlementVersion:cash.version};
+  } catch {return {...plan,items,status:"field_pending",simulatedReturn:0};}
 }

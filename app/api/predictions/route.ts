@@ -5,6 +5,12 @@ import {PREDICTION_PIPELINE_VERSION,predictFromSnapshot,compatibleCalibration} f
 import {normalizeCompany,assessPredictionInput,createOddsBatchLoader} from "../../prediction-input.js";
 import {deVig,asianMarketTarget,validAsianLine} from "../../asian-market.js";
 import {TEAM_ALIAS_VERSION,teamIdentity,teamNamesCompatible} from "../../team-identity.js";
+import {readContextBatch} from "../../match-context-service";
+import {fitTeamStrength} from "../../team-strength-model.js";
+import teamHistoryIndex from "../../../data/generated-team-history-index.json";
+import {selectTeamHistory} from "../../team-history.js";
+import {signContextProof} from "../../context-evidence.js";
+import {fetchOfficialSporttery} from "../../sporttery-official";
 type CompanyOdds = {
   companyId: number;
   company: string;
@@ -58,7 +64,7 @@ const inputSnapshot=(companies:any[],decisionAt:string,official:any={})=>({
   official:{officialMatchId:String(official.officialMatchId||official.matchId||""),salesDate:official.salesDate||"",kickoffAt:official.kickoffAt||"",
     hadOdds:official.odds||[],handicap:official.marketEligibility?.["让球胜平负"]?.qualification==="qualified"?nullableHandicap(official.marketEligibility["让球胜平负"].handicap??official.handicap):null,
     hhadOdds:official.marketEligibility?.["让球胜平负"]?.qualification==="qualified"?(official.hhadOdds||[]):[],
-    totalOdds:official.marketOdds?.["总进球数"]||[],fetchedAt:official.sourceFetchedAt||official.fetchedAt||null,updatedAt:official.updatedAt||null}
+    totalOdds:official.marketOdds?.["总进球数"]||[],scoreOdds:official.marketOdds?.["比分"]||[],halfFullOdds:official.marketOdds?.["半全场"]||[],fetchedAt:official.sourceFetchedAt||official.fetchedAt||null,updatedAt:official.updatedAt||null}
 });
 
 function median(values: number[]) {
@@ -115,22 +121,17 @@ function movementLabel(first: number, current: number) {
 function handicapExpectation(line: number) {
   if (!Number.isFinite(line)) return "盘口深度未知";
   const abs = Math.abs(line);
-  const level = abs <= 0.5 ? "赢1球级" : abs <= 1 ? "赢1～2球级" : abs <= 2 ? "赢2球级" : "赢3球级";
-  if (line < 0) return `主队让${abs}，机构净胜球预期${level}`;
-  if (line > 0) return `主队受让${abs}，机构倾向客队${level}`;
-  return "平手盘，净胜球预期接近";
+  const description = line < 0 ? `主队让${abs}球` : line > 0 ? `主队受让${abs}球` : "平手盘";
+  return `${description}；盘口线是结算条件，不直接代表净胜球预测区间`;
 }
 
 function interpretInstitutionAction(firstLine: number, line: number, firstHome: number, home: number, firstAway: number, away: number) {
-  if (![firstLine,line,firstHome,home,firstAway,away].every(Number.isFinite)) return "初盘或即盘信息不足，不判断机构变盘方向";
+  if (![firstLine,line,firstHome,home,firstAway,away].every(Number.isFinite)) return "初盘或即盘信息不足，不描述报价变化";
   const lineDelta = line - firstLine;
   const homeMove = movementLabel(firstHome, home);
   const awayMove = movementLabel(firstAway, away);
-  if (lineDelta < -0.005 && homeMove === "降赔") return "让球加深+主队降赔，主队获得强支持";
-  if (lineDelta > 0.005 && awayMove === "降赔") return "主队受让加深+客队降赔，客队获得强支持";
-  if (lineDelta < -0.005 && homeMove === "升赔") return "让球加深但主队升赔，盘口与赔付信号分歧";
-  if (lineDelta > 0.005 && awayMove === "升赔") return "受让加深但客队升赔，盘口与赔付信号分歧";
-  return `${lineDelta < -0.005 ? "让球加深" : lineDelta > 0.005 ? "受让加深" : "盘口深度持平"}；主队${homeMove}、客队${awayMove}`;
+  const lineText = Math.abs(lineDelta) < 0.005 ? `主队盘口线保持${line}` : `主队盘口线由${firstLine}变为${line}`;
+  return `${lineText}；主队价格${homeMove}、客队价格${awayMove}。仅描述报价，不推断机构意图`;
 }
 
 function expectedValue(probabilities: number[], odds: number[]) {
@@ -168,8 +169,29 @@ function nullableHandicap(value:unknown){const text=String(value??"").trim();if(
 
 export async function POST(request: Request) {
   const input = await request.json().catch(() => null);
-  const sportteryMatches: any[] = Array.isArray(input?.matches) ? input.matches.slice(0, 120) : [];
+  // The caller selects identities only. Quotes, eligibility and observation times
+  // are always re-read on the server, never certified from request.body.
+  const selectors: unknown[] = Array.isArray(input?.fixtureIds)
+    ? input.fixtureIds
+    : Array.isArray(input?.matches)
+      ? input.matches.map((match:any) => match?.officialMatchId || match?.matchId)
+      : [];
+  if (selectors.length > 120 || selectors.some(id => typeof id !== "string" || !id.trim()))
+    return Response.json({error:"请提供最多120个有效官方比赛ID；不接受客户端赔率作为官方证据。"},{status:400});
+  const requestedIds = new Set(selectors.map(id => String(id).trim()));
   const forceRefresh = input?.forceRefresh === true;
+  if (!requestedIds.size) return Response.json({reports:[],fetchedAt:new Date().toISOString(),sourceUrl:SOURCE_URL,methodology:"没有可确认的官方比赛，未执行赔率模型。"});
+  try {
+  const officialData = await fetchOfficialSporttery({repair:forceRefresh,serverHeaders:true});
+  const officialFetchedAt = Date.parse(officialData.fetchedAt), verificationAt = Date.now();
+  if (!Number.isFinite(officialFetchedAt) || officialFetchedAt > verificationAt || verificationAt - officialFetchedAt > 300000)
+    throw new Error("服务器官方赔率读取时刻无效或已过期，未生成正式预测。");
+  const sportteryMatches: any[] = officialData.matches
+    .filter(match => requestedIds.has(String(match.officialMatchId || match.matchId)))
+    .map(match => ({...match,sourceFetchedAt:officialData.fetchedAt,hhadOdds:match.marketOdds?.["让球胜平负"],isMock:false}));
+  const matchedIds = new Set(sportteryMatches.map(match => String(match.officialMatchId || match.matchId)));
+  const unavailableIds = [...requestedIds].filter(id => !matchedIds.has(id));
+  if (unavailableIds.length) return Response.json({error:"所选比赛已不在服务器最新官方清单中，请刷新比赛后重试。",code:"OFFICIAL_FIXTURE_NOT_CURRENT",unavailableOfficialMatchIds:unavailableIds},{status:409});
   const calibrationProfile = await getPublishedCalibration() as Partial<ModelCalibrationProfile> | null;
   const globalCalibration = compatibleCalibration(calibrationProfile)&&calibrationProfile?.trainingSampleSize&&calibrationProfile.trainingSampleSize>=20
     ? validCalibrationBucket(calibrationProfile.global)
@@ -177,8 +199,6 @@ export async function POST(request: Request) {
   const probabilityTemperature = compatibleCalibration(calibrationProfile)&&calibrationProfile?.calibrationSampleSize&&calibrationProfile.calibrationSampleSize>=MIN_TEMPERATURE_CALIBRATION_MATCHES
     ? Math.max(.7, Math.min(2.5, numeric(calibrationProfile.probabilityTemperature) || 1))
     : 1;
-  if (!sportteryMatches.length) return Response.json({reports:[],fetchedAt:new Date().toISOString(),sourceUrl:SOURCE_URL,methodology:"没有可确认的官方比赛，未执行赔率模型。"});
-  try {
     const issue = new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
     const issues=Array.from(new Set(sportteryMatches.map(match=>datePart(match.salesDate)).filter(Boolean)));if(!issues.length)issues.push(issue);
     const batches=await Promise.allSettled(issues.map(saleIssue=>fetchCompanyOdds(saleIssue,forceRefresh)));
@@ -186,6 +206,7 @@ export async function POST(request: Request) {
     const rawRows:any[]=batches.flatMap(result=>result.status==="fulfilled"?result.value.rows.map((match:any)=>({...match,__issue:result.value.issue,__fetchedAt:result.value.fetchedAt})):[]);
     const raw:any[]=Array.from(new Map(rawRows.map(match=>[`${match.__issue}|${match.CC_ID||""}|${match.MATCH_ID||match.ID||""}`,match])).values());
     if(!raw.length&&sourceFailures.length)throw new Error(sourceFailures.map(row=>row.issue+": "+row.reason).join("；"));
+    const contexts=await readContextBatch(sportteryMatches);
     const generatedAt=new Date().toISOString();
     const pendingVerification:any[]=[];
     const reports = raw.filter((match) => String(match.CC_ID || "").includes("周")).map((match) => {
@@ -193,6 +214,8 @@ export async function POST(request: Request) {
       const saleIssue=String(match.__issue||issue),mapping=verifyOfficialMapping(match,sportteryMatches,saleIssue),official=mapping.official;
       if (!official){pendingVerification.push({externalId:String(match.MATCH_ID||match.ID||""),displayId:String(match.CC_ID||""),matchDate:datePart(match.MATCH_TIME)||saleIssue,time:clockPart(match.MATCH_TIME),home:String(match.HOST_NAME||""),away:String(match.GUEST_NAME||""),mappingStatus:mapping.status,reason:mapping.reason,candidateOfficialMatchIds:mapping.candidateOfficialMatchIds});return null}
       const modelInput=inputSnapshot(sourceCompanies,generatedAt,official),dataQuality=assessPredictionInput(sourceCompanies,generatedAt);
+      const matchContext=contexts.get(String(official.officialMatchId||official.matchId))||{status:"unavailable",missing:["赛事资料读取未完成"],sources:[]};
+      Object.assign(modelInput,{matchContext});
       if(dataQuality.status!=="ready"){pendingVerification.push({reason:dataQuality.reasons.join("；"),candidateOfficialMatchIds:[String(official.officialMatchId||official.matchId)],displayId:match.CC_ID});return null}
       const totalLine = median(sourceCompanies.filter(row=>validAsianLine(row.total)&&row.total>0).map(row=>row.total));
       const handicap = median(sourceCompanies.filter(row=>validAsianLine(row.handicap)).map(row=>row.handicap));
@@ -203,6 +226,8 @@ export async function POST(request: Request) {
       const officialHhadOdds=hhadEligibility?.qualification==="qualified"&&officialHandicap!==null?(official?.hhadOdds||[]):[];
       const officialHhadFair = deVigDecimal(officialHhadOdds);
       const league = String(match.LEAGUE_NAME_SIMPLY || official?.league || "");
+      const teamHistory=selectTeamHistory(teamHistoryIndex,{league,decisionAt:generatedAt});
+      Object.assign(modelInput,{teamHistory});
       const leagueCalibrationCandidate = calibrationProfile?.leagues?.[league];
       const leagueCalibration = compatibleCalibration(calibrationProfile) && leagueCalibrationCandidate && numeric(leagueCalibrationCandidate.sampleSize) >= 8
         ? validCalibrationBucket(leagueCalibrationCandidate)
@@ -212,10 +237,13 @@ export async function POST(request: Request) {
       const modeled = predictFromSnapshot(modelInput,modelParameters),rawProbabilities:number[]=modeled.marketProbabilities,probabilities=rawProbabilities;
       const derived=deriveMarkets(modeled.fullScoreDistribution,officialHandicap),finalProbabilities=derived.hadProbabilities.map(point=>point.probability/100),finalHhad=derived.hhadProbabilities?.map(point=>point.probability)||[],finalGoals=derived.totalGoalProbabilities.map(point=>point.probability);
       const initialProbabilities = normalized1x2(companies.map(row=>({...row,win:row.firstWin,draw:row.firstDraw,lose:row.firstLose})), []);
-      const shifts = probabilities.map((value,index)=>(value-initialProbabilities[index])*100);
+      const currentExternalProbabilities = normalized1x2(companies, []);
+      const shifts = currentExternalProbabilities.map((value,index)=>(value-initialProbabilities[index])*100);
       const movementAvailable=initialProbabilities.every(Number.isFinite)&&Number.isFinite(initialAsianHomeTarget);
       const asianMovement = movementAvailable?(asianHomeTarget - initialAsianHomeTarget) * 100:Number.NaN;
-      const combinedDirectionScores = [shifts[0] + asianMovement * 0.45, shifts[1], shifts[2] - asianMovement * 0.45];
+      // Descriptive movement only: do not add a second, unvalidated Asian-line
+      // confidence weight to an outcome already fitted from these markets.
+      const combinedDirectionScores = shifts;
       const movementDirectionIndex = combinedDirectionScores.indexOf(Math.max(...combinedDirectionScores));
       const directions = ["主队方向","平局方向","客队方向"];
       const directionIndex = finalProbabilities.indexOf(Math.max(...finalProbabilities));
@@ -229,20 +257,21 @@ export async function POST(request: Request) {
       const institutionAction = interpretInstitutionAction(firstHandicap, handicap, median(companies.map(row=>row.firstHomePrice)), median(companies.map(row=>row.homePrice)), median(companies.map(row=>row.firstAwayPrice)), median(companies.map(row=>row.awayPrice)));
       const expectation = handicapExpectation(handicap);
       const calibrationNarrative = activeCalibration ? `已使用 ${leagueCalibration ? league : "全局"} 历史样本 ${activeCalibration.sampleSize} 场，对概率锐度、总进球离散度、低比分相关性和半场进球占比作小幅校准。` : "历史有效样本不足，本场保持盘口模型基线；低比分相关修正保持影子状态，不以短样本强行启用。";
-      const narrative = !movementAvailable?`初盘信息不足，不计算变盘方向。${calibrationNarrative}`:`当前绝对概率最高为${directions[directionIndex]}；变盘相对偏向${directions[movementDirectionIndex]}。${institutionAction}。该变盘信号表示相对强弱变化，不等同于赛果概率最高项；欧赔变化 ${Math.abs(shifts[movementDirectionIndex]).toFixed(1)} 个百分点，亚盘主队侧水位概率变化 ${asianMovement>=0?"+":""}${asianMovement.toFixed(1)} 个百分点。${expectation}；当前结论为“${fitAgreement}”。${calibrationNarrative}`;
+      const narrative = !movementAvailable?`初盘信息不足，不计算变盘方向。${calibrationNarrative}`:`当前模型概率最高为${directions[directionIndex]}；外围欧赔初盘与即盘的相对变化最大为${directions[movementDirectionIndex]}。${institutionAction}。同口径去水概率变化 ${shifts[movementDirectionIndex]>=0?"+":""}${shifts[movementDirectionIndex].toFixed(1)} 个百分点，亚盘主队侧结算权重比变化 ${asianMovement>=0?"+":""}${asianMovement.toFixed(1)} 个百分点。初/即盘未提供变更时间，不视为完整走势或独立预测证据。${expectation}；拟合一致性为“${fitAgreement}”。${calibrationNarrative}`;
       const spread = Math.max(...companies.map((row) => row.win), 0) - Math.min(...companies.map((row) => row.win), Number.POSITIVE_INFINITY);
       return {
         id: String(official.id),externalDisplayId:String(match.CC_ID),officialMatchId:String(official.officialMatchId||official.matchId),salesDate:String(official.salesDate||official.matchDate||""),kickoffAt:String(official.kickoffAt||""),homeTeamId:String(official.homeTeamId||""),awayTeamId:String(official.awayTeamId||""),homeTeamCode:String(official.homeTeamCode||""),awayTeamCode:String(official.awayTeamCode||""),officialMappingStatus:"verified",mappingReason:mapping.reason,marketEligibility:official.marketEligibility||{},league,
         time: String(official?.matchDate&&official?.time?`${official.matchDate} ${official.time}`:official?.kickoffAt||official?.time||match.MATCH_TIME||""), matchDate: String(official?.matchDate || match.MATCH_TIME || ""), home: String(official.home), away: String(official.away), matchStatus: official?.matchStatus || "", isMock: Boolean(official?.isMock), sourceUpdatedAt: official?.updatedAt || "",
-        modelInput,modelParameters,dataQuality,sourceFetchedAt:match.__fetchedAt,officialOddsFresh:modeled.officialFresh,marketTotalGoalProbabilities:modeled.marketTotalGoalProbabilities,priceDiagnostics:modeled.priceDiagnostics,
+        modelInput,modelParameters,dataQuality,sourceFetchedAt:match.__fetchedAt,officialOddsFresh:modeled.officialFresh,officialVerification:{method:"server-refetch",fetchedAt:officialData.fetchedAt,source:officialData.source,sourcePage:officialData.sourcePage},marketTotalGoalProbabilities:modeled.marketTotalGoalProbabilities,priceDiagnostics:modeled.priceDiagnostics,
         companies, marketProbabilities:rawProbabilities.map(value=>value*100),probabilities: {home: finalProbabilities[0] * 100, draw: finalProbabilities[1] * 100, away: finalProbabilities[2] * 100},
         consensus: {handicap, totalLine, agreement: companies.length === 3 && spread < 0.3 && modeled.fitError < 0.03 ? "较一致" : "有分歧"},
         marketSignal: {direction:directions[directionIndex],movementDirection:directions[movementDirectionIndex],strength:directionStrength,probabilityShifts:shifts,fairOdds,hadEv,hhadEv,evThreshold:EV_THRESHOLD,institutionAction,handicapExpectation:expectation,firstHandicap,handicapChange,narrative,officialOdds:official?.odds||[],officialHandicap:officialHandicap===null?"":String(officialHandicap),officialHhadOdds,officialHhadFair:officialHhadFair.map(value=>value*100),modeledHhad:finalHhad,hhadAvailable:officialHandicap!==null&&officialHhadOdds.length===3,modeledTotalGoals:finalGoals,totalGoalLabels:TOTAL_GOAL_LABELS,modeledHalfFull:modeled.halfFullProbabilities,halfFullLabels:HALF_FULL_LABELS,asianHomeProbability:asianHomeTarget*100,asianAwayProbability:(1-asianHomeTarget)*100,asianMovement,overProbability:overTarget*100,fitAgreement,handicapMeaning:handicapMeaning(handicap,officialHandicap),rawProbabilities:rawProbabilities.map(value=>value*100),calibrationSampleSize:activeCalibration?.sampleSize||0,probabilityTemperature,historicalMeanTotalGoals:activeCalibration?.meanTotalGoals,goalDispersion:activeCalibration?.goalDispersion,firstHalfGoalShare:activeCalibration?.firstHalfGoalShare,lowScoreRho:modeled.lowScoreRho},
-        expectedGoals: {home: modeled.expectedGoals[0], away: modeled.expectedGoals[1]}, scores: modeled.scores,fullScoreDistribution:modeled.fullScoreDistribution,
+        matchContext,teamStrengthCandidate:{...fitTeamStrength(teamHistory.rows,{league,homeTeamId:matchContext.homeTeamId,awayTeamId:matchContext.awayTeamId,decisionAt:generatedAt}),history:teamHistory},modelMarketEligibility:{halfFull:{status:"research-only",reason:"条件进球分配近似，尚未独立前瞻验证"}},expectedGoals: {home: modeled.expectedGoals[0], away: modeled.expectedGoals[1]}, scores: modeled.scores,fullScoreDistribution:modeled.fullScoreDistribution,
         missingCompanies: COMPANY_IDS.filter((id) => !companies.some((row) => row.companyId === id)),
       };
     }).filter(Boolean);
-    const calibrationVersion=globalCalibration?String(calibrationProfile?.profileId||`cal-${predictionHash(calibrationProfile)}`):"cal-none",version=createBasePredictionVersion(reports,calibrationVersion,generatedAt),versionedReports=reports.map(report=>({...report,predictionId:version.predictionId,inputSnapshotId:version.inputSnapshotId,baseModelVersion:version.baseModelVersion,calibrationVersion:version.calibrationVersion,predictionGeneratedAt:version.generatedAt}));
+    const calibrationVersion=globalCalibration?String(calibrationProfile?.profileId||`cal-${predictionHash(calibrationProfile)}`):"cal-none",version=createBasePredictionVersion(reports,calibrationVersion,generatedAt);
+    const versionedReports=await Promise.all(reports.map(async report=>{const row={...report,predictionId:version.predictionId,inputSnapshotId:version.inputSnapshotId,baseModelVersion:version.baseModelVersion,calibrationVersion:version.calibrationVersion,predictionGeneratedAt:version.generatedAt};return {...row,contextProof:await signContextProof(row,process.env.MATCH_CONTEXT_SIGNING_KEY||process.env.DEEPSEEK_API_KEY)};}));
     const coveredIds=new Set(reports.map((report:any)=>String(report.officialMatchId||"")));
     const unavailableOfficialMatches=sportteryMatches.filter(match=>!coveredIds.has(String(match.officialMatchId||match.matchId||""))).map(match=>{
       const officialMatchId=String(match.officialMatchId||match.matchId||"");
@@ -252,7 +281,7 @@ export async function POST(request: Request) {
       return{id:match.id,officialMatchId,salesDate:match.salesDate,kickoffAt:match.kickoffAt,matchDate:match.matchDate,time:match.time,league:match.league,home:match.home,away:match.away,reason:reasons.join("；")||sourceFailures.find(source=>source.issue===datePart(match.salesDate))?.reason||"外围盘口尚未提供可核验的本场数据",externalCandidates};
     });
     const coverage={officialMatches:sportteryMatches.length,predictedMatches:versionedReports.length,unavailableMatches:unavailableOfficialMatches.length,pendingExternalMappings:pendingVerification.length};
-    return Response.json({predictionId:version.predictionId,version,reports:versionedReports,pendingVerification,unavailableOfficialMatches,coverage,sourceFailures, fetchedAt: generatedAt, sourceUrl: SOURCE_URL, methodology: `覆盖 ${coverage.predictedMatches}/${coverage.officialMatches} 场官方赛事；${coverage.unavailableMatches} 场因外围盘口缺失或身份未通过校验而不生成概率，另有 ${coverage.pendingExternalMappings} 条外围记录待核验。多盘口交叉校准：三家公司欧赔初盘/即盘、亚洲让球水位、大小球与体彩胜平负/固定让球盘共同约束预期进球；${globalCalibration ? `使用服务端校准版本 ${calibrationProfile?.profileId}，其参数只由训练/校准区间确定，并已保留未来测试区间；低比分相关参数 ${globalCalibration.lowScoreRho||0}` : "尚无通过未来测试门槛的服务端校准版本，保持盘口模型基线，Dixon–Coles 低比分修正处于影子验证"}；外围赛事仅在日期、主客队与开赛时间全部通过官方校验后进入可执行预测，盘口冲突会降低一致度。`});
+    return Response.json({predictionId:version.predictionId,version,reports:versionedReports,officialMatches:sportteryMatches,officialSource:{method:"server-refetch",fetchedAt:officialData.fetchedAt,upstreamUpdatedAt:officialData.upstreamUpdatedAt,source:officialData.source,sourcePage:officialData.sourcePage},pendingVerification,unavailableOfficialMatches,coverage,sourceFailures, fetchedAt: generatedAt, sourceUrl: SOURCE_URL, methodology: `覆盖 ${coverage.predictedMatches}/${coverage.officialMatches} 场官方赛事；${coverage.unavailableMatches} 场因外围盘口缺失或身份未通过校验而不生成概率，另有 ${coverage.pendingExternalMappings} 条外围记录待核验。多盘口交叉校准：三家公司欧赔初盘/即盘、亚洲让球水位、大小球与体彩胜平负/固定让球盘共同约束预期进球；${globalCalibration ? `使用服务端校准版本 ${calibrationProfile?.profileId}，其参数只由训练/校准区间确定，并已保留未来测试区间；低比分相关参数 ${globalCalibration.lowScoreRho||0}` : "尚无通过未来测试门槛的服务端校准版本，保持盘口模型基线，Dixon–Coles 低比分修正处于影子验证"}；外围赛事仅在日期、主客队与开赛时间全部通过官方校验后进入可执行预测，盘口冲突会降低一致度。`});
   } catch (error) {
     return Response.json({error: error instanceof Error ? error.message : "赔率数据读取失败"}, {status: 502});
   }
@@ -300,7 +329,7 @@ export async function GET() {
         id:`external:${issue}:${externalMatchId}`,externalMatchId,externalDisplayId:displayId,
         sourceIssue:issue,researchOnly:true,officialMappingStatus:"unmatched",marketEligibility:{},
         league:String(match.LEAGUE_NAME_SIMPLY||""),kickoffAt,time:timeText,matchDate:timeText.slice(0,10),
-        home,away,matchStatus:"research_only",isMock:false,sourceUpdatedAt:fetchedAt,
+        home,away,matchStatus:"research_only",isMock:false,sourceUpdatedAt:null,
         modelInput,modelParameters:{},dataQuality,sourceFetchedAt:fetchedAt,priceDiagnostics:modeled.priceDiagnostics,
         companies,marketProbabilities:rawProbabilities.map(value=>value*100),
         probabilities:{home:had[0],draw:had[1],away:had[2]},

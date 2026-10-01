@@ -125,7 +125,8 @@ test("today recommendations refresh official SP on generation, show net ranges a
  const {dom,restore}=installDom(),errors=[],container=dom.window.document.getElementById("test-root");
  Object.defineProperty(dom.window,"indexedDB",{value:new IDBFactory()});
  const now=new Date().toISOString(),date=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai"}).format(new Date()),kickoff=new Date(Date.now()+4*3600000).toISOString().replace(/\.\d{3}Z$/,"Z");
- const scores=[{score:"1:0",probability:40},{score:"0:0",probability:30}];
+ const scores=Array.from({length:169},(_,index)=>{const score=`${Math.floor(index/13)}:${index%13}`;return {score,probability:score==="1:0"?40:score==="0:0"?30:30/167};});
+ assert.equal(scores.length,169);assert.ok(Math.abs(scores.reduce((sum,point)=>sum+point.probability,0)-100)<1e-8);
  const matches=[1,2].map(i=>({id:`周一00${i}`,officialMatchId:`returns-${i}`,predictionId:"returns-version",salesDate:date,matchDate:date,kickoffAt:kickoff,time:kickoff,home:`主队${i}`,away:`客队${i}`,league:"测试联赛",officialMappingStatus:"verified",sourceFetchedAt:now,confidence:85,completeness:10,singleModel:false,combinedScores:scores,fullScoreDistribution:scores}));
  dom.window.localStorage.setItem("ff-today-predictions-v3",JSON.stringify({date,predictionId:"returns-version",matches}));
  let calls=0,fail=false,missing=false;
@@ -165,6 +166,7 @@ test("today recommendations refresh official SP on generation, show net ranges a
   fail=false;missing=true;
   await act(async()=>container.querySelector(".generate-row button").click());
   await flush(()=>container.querySelector('[role="alert"]')?.textContent.includes("没有符合返奖约束"));
+  assert.match(container.querySelector('[role="alert"]').textContent,/返奖约束、收益余量与压力检查/);
   assert.equal(container.querySelectorAll(".recommendation-return-panel").length,0,"Incomplete odds must not produce a recommended ticket");
   await act(async()=>container.querySelector('input[name="score-count"]').click());
   assert.equal(container.querySelectorAll(".combination-card").length,0,"Changing filters must clear old financial estimates");
@@ -227,4 +229,173 @@ test("prediction and market views can refresh all matches, filter, clear and unm
   const source=await readFile(new URL("../app/components/MarketPredictionTable.tsx",import.meta.url),"utf8");
   assert.doesNotMatch(source,/replaceChildren|document\.querySelectorAll|document\.createElement/,"Highlight markup must be owned by React, not rewritten after render");
  }finally{restore()}
+});
+
+
+// Exercise real React effects/events with two actual batches for one shared ticket.
+function recommendationArchiveFixture() {
+ const date=new Date(Date.now()+8*3600000-86400000).toISOString().slice(0,10);
+ const items=[1,2].map(index=>({
+  matchId:"周四00"+index,officialMatchId:"dom-archive-"+index,salesDate:date,matchDate:date,
+  kickoffAt:date+"T23:00:00+08:00",home:"留档主队"+index,away:"留档客队"+index,league:"DOM历史联赛",
+  market:"score",marketName:"比分",pick:"1:0",probability:70,odd:3,picks:[{pick:"1:0",probability:70,odd:3}],
+ }));
+ const plan={id:"score-single-2",title:"比分单选2串1",rule:"每场1个比分 · 2串1",status:"pending",passName:"2串1",items,combinedOdd:9,estimatedProbability:.49,stake:2,betCount:1,theoreticalReturn:18,decision:{objective:"DOM历史目标",targetNetProfit:20,targetMet:true,maximumLoss:2}};
+ const set=(slot,generatedAt,snapshotId)=>({
+  version:18,date,scheduledTime:slot,generatedAt,capturedAt:generatedAt,completedAt:generatedAt,source:"DOM测试真实批次",
+  snapshotId,decisionPolicy:"dom-fixed-policy",baseModelVersion:"dom-base-v1",calibrationVersion:"dom-cal-v1",plans:[structuredClone(plan)],
+ });
+ const early=set("17:00",date+"T09:00:00.000Z","purchase-dom-"+date+"-1700");
+ const late=set("21:00",date+"T13:00:00.000Z","purchase-dom-"+date+"-2100");
+ const loadedTrial=set("17:00",date+"T10:00:00.000Z","manual-trial-dom-loaded");
+ loadedTrial.source="DOM测试保存研究试算";
+ const results=items.map(item=>({id:item.matchId,matchId:item.officialMatchId,officialMatchId:item.officialMatchId,date,matchDate:date,fullScore:"1:0",scoreResult:"1:0",hadResult:"胜",status:"settled"}));
+ return {date,early,late,loadedTrial,results};
+}
+
+async function mountRecommendationArchive({savedTrial=false,livePrediction=false}={}) {
+ const Recommendations=await load("../app/components/TodayRecommendations.tsx");
+ const {dom,restore}=installDom(),errors=[],container=dom.window.document.getElementById("test-root");
+ Object.defineProperty(dom.window,"indexedDB",{value:new IDBFactory()});
+ const fixture=recommendationArchiveFixture();
+ const archive={snapshots:[],purchasePlanSnapshots:[{planSet:fixture.early},{planSet:fixture.late}],resultCache:Object.fromEntries(fixture.results.map(result=>[result.matchId+"|"+result.date,result])),captureAttempts:[]};
+ const archiveBefore=JSON.stringify(archive),savedBodies=[],requests=[];
+ let trials=savedTrial?[structuredClone(fixture.loadedTrial)]:[];
+ const now=new Date().toISOString(),date=new Date(Date.now()+8*3600000).toISOString().slice(0,10);
+ const kickoff=new Date(Date.now()+4*3600000).toISOString().replace(/\.\d{3}Z$/,"Z");
+ const scores=Array.from({length:169},(_,index)=>{const score=Math.floor(index/13)+":"+index%13;return {score,probability:score==="1:0"?70:score==="0:0"?20:10/167};});
+ const predictions=[1,2].map(index=>({
+  id:"周四10"+index,officialMatchId:"dom-live-"+index,predictionId:"dom-live-prediction",salesDate:date,matchDate:date,kickoffAt:kickoff,time:kickoff,
+  home:"实时主队"+index,away:"实时客队"+index,league:"DOM实时联赛",officialMappingStatus:"verified",sourceFetchedAt:now,completeness:10,
+  combinedScores:scores,fullScoreDistribution:scores,handicap:"",
+ }));
+ const officials=predictions.map(match=>{
+  const odds=Array(31).fill(9);odds[0]=5;odds[13]=3;
+  return {...match,matchStatus:"Selling",marketOdds:{"比分":odds},marketEligibility:{"比分":{marketCode:"CRS",qualification:"qualified",salesStatus:"Selling",allowedPassCounts:[1,2,3,4],cutoffAt:kickoff}}};
+ });
+ globalThis.fetch=async(url,options={})=>{
+  const requestPath=String(url);requests.push({path:requestPath,method:options.method||"GET"});
+  if(requestPath==="/api/prediction-snapshots?view=recommendations")return Response.json(archive);
+  if(requestPath==="/api/purchase-trials"){
+   if(options.method==="POST"){
+    const trial=JSON.parse(options.body);savedBodies.push(structuredClone(trial));
+    trials=[trial,...trials.filter(row=>row.snapshotId!==trial.snapshotId)];
+    return Response.json({trial});
+   }
+   return Response.json({trials});
+  }
+  if(requestPath.startsWith("/api/sporttery/results?")){
+   const requestedDate=new URL(requestPath,"http://localhost").searchParams.get("date");
+   return Response.json({results:fixture.results.filter(result=>result.date===requestedDate)});
+  }
+  if(requestPath==="/api/sporttery")return Response.json({matches:officials,fetchedAt:new Date().toISOString()});
+  throw new Error("Unexpected request in recommendation archive regression: "+requestPath);
+ };
+ const root=createRoot(container,{onUncaughtError:error=>errors.push(error),onRecoverableError:error=>errors.push(error)});
+ const flush=async(predicate,message="Expected recommendation DOM state")=>{
+  for(let attempt=0;attempt<80&&!predicate();attempt++)await act(async()=>{await new Promise(resolve=>setTimeout(resolve,15))});
+  assert.ok(predicate(),message+": "+container.textContent.slice(0,1000));
+ };
+ try{
+  if(livePrediction){
+   const storage=await import(await componentUrl(new URL("../app/browser-storage.ts",import.meta.url)));
+   await storage.writeBrowserData("ff-today-predictions-v3",{date,predictionId:"dom-live-prediction",matches:predictions});
+  }
+  await act(async()=>root.render(h(Recommendations)));
+  await flush(()=>{const select=container.querySelector('select[aria-label="选择预购买方案快照"]');return select&&!select.disabled&&select.value;});
+ }catch(error){await act(async()=>root.unmount());restore();throw error}
+ const select=()=>container.querySelector('select[aria-label="选择预购买方案快照"]');
+ const button=text=>[...container.querySelectorAll(".daily-purchase-panel button")].find(node=>node.textContent===text);
+ const choose=async id=>{await act(async()=>{select().value=id;select().dispatchEvent(new dom.window.Event("change",{bubbles:true}))});await flush(()=>select()?.value===id&&!select().disabled);};
+ const cash=label=>[...container.querySelectorAll(".purchase-kanban>div")].find(node=>node.querySelector("span").textContent===label)?.textContent;
+ return {dom,container,fixture,select,button,choose,cash,flush,savedBodies,requests,archive,archiveBefore,
+  async dispose(){await act(async()=>root.unmount());restore();assert.deepEqual(errors.map(error=>error.message),[]);}
+ };
+}
+
+test("archived recommendations default to formal snapshots, retain both slot cash rows, and support DOM controls",async()=>{
+ const ui=await mountRecommendationArchive({savedTrial:true});
+ const {container,fixture,dom}=ui;
+ try{
+  assert.equal(ui.select().value,fixture.early.snapshotId,"A newer saved research trial must not replace the default formal snapshot");
+  assert.match(container.querySelector(".daily-purchase-panel header h3").textContent,/每日固定组合票/);
+  assert.equal([...ui.select().options].some(option=>option.value===fixture.loadedTrial.snapshotId),true,"Saved research remains explicitly selectable");
+  assert.match(ui.cash("模拟投入"),/-¥2\.00/);assert.match(ui.cash("模拟返还"),/\+¥18\.00/);assert.match(ui.cash("模拟净收益"),/\+¥16\.00/);
+  assert.match(container.querySelector(".purchase-plan-module-score .purchase-risk").textContent,/旧版本未达目标门槛/);
+  assert.doesNotMatch(container.querySelector(".purchase-plan-module-score .purchase-risk").textContent,/达到目标门槛/,
+    "A frozen targetMet=true cannot claim a 20-yuan target when the displayed minimum profit is 16 yuan");
+  const module=container.querySelector(".purchase-plan-module-score"),toggle=module.querySelector(".purchase-module-toggle");
+  const controlled=()=>container.querySelector("#"+toggle.getAttribute("aria-controls"));
+  assert.equal(toggle.getAttribute("aria-expanded"),"true");assert.equal(controlled().hidden,false);
+  await act(async()=>toggle.click());
+  assert.equal(toggle.getAttribute("aria-expanded"),"false");assert.equal(controlled().hidden,true);
+  await act(async()=>ui.button("全部展开").click());
+  assert.equal(toggle.getAttribute("aria-expanded"),"true");assert.equal(controlled().hidden,false);
+  await act(async()=>ui.button("全部收起").click());
+  assert.equal(controlled().hidden,true);
+  const historyDetails=container.querySelector('details[aria-label="各投注方式历史汇总"]');
+  assert.equal(historyDetails.open,false);
+  await act(async()=>historyDetails.querySelector("summary").click());
+  assert.equal(historyDetails.open,true,"Native history disclosure responds to the actual summary click");
+  await act(async()=>historyDetails.querySelector("summary").click());
+  assert.equal(historyDetails.open,false);
+  const original=container.querySelector("#purchase-view-original"),doubling=container.querySelector("#purchase-view-doubling");
+  await act(async()=>doubling.click());
+  assert.equal(original.getAttribute("aria-selected"),"false");assert.equal(doubling.getAttribute("aria-selected"),"true");
+  assert.equal(container.querySelector("#purchase-panel-original").hidden,true);assert.equal(container.querySelector("#purchase-panel-doubling").hidden,false);
+  await act(async()=>doubling.dispatchEvent(new dom.window.KeyboardEvent("keydown",{key:"Home",bubbles:true})));
+  assert.equal(original.getAttribute("aria-selected"),"true");assert.equal(dom.window.document.activeElement,original);
+  await act(async()=>original.dispatchEvent(new dom.window.KeyboardEvent("keydown",{key:"End",bubbles:true})));
+  assert.equal(doubling.getAttribute("aria-selected"),"true");assert.equal(dom.window.document.activeElement,doubling);
+  const slotTab=slot=>container.querySelector('[aria-label="选择固定组合票批次"] button:nth-child('+(slot==="1700"?1:2)+')');
+  await act(async()=>slotTab("2100").click());
+  await ui.flush(()=>ui.select()?.value===fixture.late.snapshotId&&!ui.select().disabled,"21:00 formal snapshot selection");
+  assert.equal(slotTab("2100").getAttribute("aria-selected"),"true");
+  assert.match(ui.cash("模拟投入"),/-¥2\.00/);assert.match(ui.cash("模拟返还"),/\+¥18\.00/);assert.match(ui.cash("模拟净收益"),/\+¥16\.00/);
+  assert.match(container.querySelector("#purchase-panel-doubling").textContent,/\+¥18\.00/,"21:00 doubling retains that real purchase");
+  const comparison=[...container.querySelectorAll("details")].find(node=>node.querySelector("summary strong")?.textContent==="17点 / 21点批次对照");
+  const comparisonRow=[...comparison.querySelectorAll("tbody tr")].find(row=>row.cells[0].textContent===fixture.date);
+  assert.ok(comparisonRow,"Both actual slots remain in the comparison");
+  assert.match(comparisonRow.cells[2].textContent,/\+¥16\.00/);assert.match(comparisonRow.cells[4].textContent,/\+¥16\.00/);
+  const engine=await import(await componentUrl(new URL("../app/purchase-plan-engine.js",import.meta.url)));
+  const settled=[fixture.early,fixture.late].map(set=>({...set,plans:set.plans.map(plan=>engine.settlePurchasePlan(plan,fixture.results))}));
+  const history=engine.summarizePurchasePlanDefinitions(settled)["score-single-2"];
+  assert.equal(history.rows.length,2);assert.equal(history.stake,4);assert.equal(history.returned,36);assert.equal(history.net,32,"Shared fixtures must not erase a distinct 17/21 purchase");
+  assert.equal(history.samples.uniqueFixtureCount,2);assert.equal(history.samples.ticketCount,2);
+  await act(async()=>slotTab("1700").click());
+  await ui.flush(()=>ui.select()?.value===fixture.early.snapshotId&&!ui.select().disabled);
+  await ui.choose(fixture.loadedTrial.snapshotId);
+  assert.match(container.querySelector(".daily-purchase-panel header h3").textContent,/研究试算（非正式票）/);
+  assert.match(container.querySelector(".daily-purchase-panel").textContent,/历史统计与倍投计算只使用正式快照/);
+  assert.match(ui.cash("模拟投入"),/-¥2\.00/);assert.match(ui.cash("模拟返还"),/\+¥18\.00/);
+  await act(async()=>ui.button("刷新快照").click());
+  await ui.flush(()=>ui.select()?.value===fixture.early.snapshotId&&!ui.select().disabled,"Refresh returns to the formal snapshot");
+  assert.equal(JSON.stringify(ui.archive),ui.archiveBefore,"Research/slot navigation leaves original archive fixtures intact");
+  assert.equal(ui.requests.some(request=>request.method!=="GET"),false,"Archive navigation makes no external writes");
+ }finally{await ui.dispose()}
+});
+
+test("saving a research trial through React DOM preserves formal cash and does not change the default after refresh",async()=>{
+ const ui=await mountRecommendationArchive({livePrediction:true});
+ try{
+  await ui.flush(()=>ui.button("按当前盘口试算")&&!ui.button("按当前盘口试算").disabled,"Current prediction enables trial preview");
+  await act(async()=>ui.button("按当前盘口试算").click());
+  await ui.flush(()=>ui.button("保存本次试算")&&!ui.button("保存本次试算").disabled,"Valid current-odds research trial is ready");
+  assert.match(ui.select().value,/^manual-trial-/);
+  assert.match(ui.container.querySelector(".daily-purchase-panel header h3").textContent,/研究试算（非正式票）/);
+  const before={stake:ui.cash("模拟投入"),returned:ui.cash("模拟返还"),net:ui.cash("模拟净收益")};
+  await act(async()=>ui.button("保存本次试算").click());
+  await ui.flush(()=>ui.savedBodies.length===1&&[...ui.container.querySelectorAll('[role="status"]')].some(node=>node.textContent.includes("已保存")),"Research trial POST confirmation");
+  const saved=ui.savedBodies[0];
+  assert.match(saved.snapshotId,/^manual-trial-/);assert.equal(saved.scheduledTime,"17:00");
+  assert.equal([...ui.select().options].some(option=>option.value===saved.snapshotId),true);
+  assert.equal(ui.cash("模拟投入"),before.stake);assert.equal(ui.cash("模拟返还"),before.returned);assert.equal(ui.cash("模拟净收益"),before.net,"Saving research cannot add formal cash");
+  assert.match(ui.container.textContent,/不计入17:00正式票统计/);
+  await act(async()=>ui.button("刷新快照").click());
+  await ui.flush(()=>ui.select()?.value===ui.fixture.early.snapshotId&&!ui.select().disabled,"Newly saved trial cannot become the refreshed default");
+  assert.equal([...ui.select().options].some(option=>option.value===saved.snapshotId),true,"Refresh keeps saved research explicitly available");
+  assert.match(ui.container.querySelector(".daily-purchase-panel header h3").textContent,/每日固定组合票/);
+  assert.equal(JSON.stringify(ui.archive),ui.archiveBefore);
+  assert.deepEqual(ui.requests.filter(request=>request.method!=="GET").map(request=>request.path),["/api/purchase-trials"],"Only the isolated research-trial fixture is saved");
+ }finally{await ui.dispose()}
 });
