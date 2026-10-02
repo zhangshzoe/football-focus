@@ -7,6 +7,7 @@ import {captureForwardCandidates} from "./capture-forward-candidates.mjs";
 import {buildSnapshotOddsLayer} from "../app/snapshot-probability-layers.js";
 import {resolveServerOfficialMatches} from "../app/server-official-evidence.js";
 import {appendLocalCaptureReceipt} from "./local-capture-receipts.mjs";
+import {requestPredictionResult} from "../app/prediction-compute-client.js";
 
 const slot = process.argv[2];
 if (!/^([01]\d|2[0-3])[0-5]\d$/.test(slot || "")) throw new Error("快照时段必须是 HHmm，例如 2130 或 2230。");
@@ -67,8 +68,7 @@ if (matches.some(match => !match.matchId || match.isMock)) throw new Error("存�
 audit.officialManifest=matches.map(match=>({officialMatchId:String(match.officialMatchId||match.matchId),salesDate:match.salesDate,kickoffAt:match.kickoffAt,home:match.home,away:match.away,league:match.league}));
 audit.sourceFetchedAt=matchesData.fetchedAt||null;
 audit.stage="prediction-validation";
-const predictionResponse = await fetch(`${baseUrl}/api/predictions`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fixtureIds: matches.map(match => String(match.officialMatchId || match.matchId || "")) }) }), predictionData = await predictionResponse.json();
-if (!predictionResponse.ok) throw Object.assign(new Error(predictionData.error || "盘口预测读取失败"), {code:predictionData.code,sourceState:predictionData.sourceState});
+const predictionData = await requestPredictionResult({endpoint:`${baseUrl}/api/predictions`,fixtureIds:matches.map(match => String(match.officialMatchId || match.matchId || ""))});
 const verifiedOfficialMatches = resolveServerOfficialMatches(predictionData, matches, date);
 audit.officialManifest=verifiedOfficialMatches.map(match=>({officialMatchId:String(match.officialMatchId||match.matchId),salesDate:match.salesDate,kickoffAt:match.kickoffAt,home:match.home,away:match.away,league:match.league}));
 audit.sourceFetchedAt=predictionData.officialSource.fetchedAt;

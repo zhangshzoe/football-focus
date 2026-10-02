@@ -8,6 +8,7 @@ import {purchaseCaptureWindow} from "../app/capture-window.js";
 import {captureForwardCandidates} from "./capture-forward-candidates.mjs";
 import {resolveServerOfficialMatches,assertCompletePurchaseEvaluation} from "../app/server-official-evidence.js";
 import {appendLocalCaptureReceipt} from "./local-capture-receipts.mjs";
+import {requestPredictionResult} from "../app/prediction-compute-client.js";
 
 const baseUrl=process.env.FOOTBALL_FOCUS_URL||"http://localhost:3000";
 const directory=join(process.cwd(),"data","purchase-plan-snapshots");
@@ -39,7 +40,7 @@ if(matches.some(match=>!match.matchId||match.isMock))throw new Error("官方比�
 audit.officialManifest=matches.map(match=>({officialMatchId:String(match.officialMatchId||match.matchId),salesDate:match.salesDate,kickoffAt:match.kickoffAt,home:match.home,away:match.away,league:match.league}));
 audit.sourceFetchedAt=matchesData.fetchedAt||null;
 audit.stage="prediction-validation";
-const predictionData=await requestJson(`${baseUrl}/api/predictions`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({fixtureIds:matches.map(match=>String(match.officialMatchId||match.matchId||""))})});
+const predictionData=await requestPredictionResult({endpoint:`${baseUrl}/api/predictions`,fixtureIds:matches.map(match=>String(match.officialMatchId||match.matchId||"")),timeoutMs:Math.max(1,Math.min(120000,latestAllowed-Date.now()))});
 const verifiedOfficialMatches=resolveServerOfficialMatches(predictionData,matches,date);
 audit.officialManifest=verifiedOfficialMatches.map(match=>({officialMatchId:String(match.officialMatchId||match.matchId),salesDate:match.salesDate,kickoffAt:match.kickoffAt,home:match.home,away:match.away,league:match.league}));
 audit.sourceFetchedAt=predictionData.officialSource.fetchedAt;

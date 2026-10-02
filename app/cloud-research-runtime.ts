@@ -2,6 +2,7 @@ import { getCloudResearchStore } from "./cloud-research-binding";
 import { cloudCaptureEngine } from "./cloud-capture-engine.js";
 import { fetchOfficialSporttery } from "./sporttery-official";
 import { POST as predictOfficial } from "./api/predictions/route";
+import {readCompletedPredictionResponse} from "./prediction-compute-client.js";
 import { fetchPublishedResults } from "./api/sporttery/results/route";
 import { appendResearchResult, readResearchResults, type ResultObservation, type ResearchWriterLease } from "./research-result-store";
 import forwardIndex from "../data/generated-forward-validation-index.json";
@@ -20,9 +21,9 @@ export function getCloudCaptureEngine() {
       const response = await predictOfficial(new Request("https://football-focus.invalid/api/predictions", {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fixtureIds }),
       }));
-      const data = await response.json();
-      if (!response.ok) throw Object.assign(new Error(data.error || "服务器预测读取失败"), {code:data.code,sourceState:data.sourceState});
-      return data;
+      // Until this trusted in-process path has its own durable job reader,
+      // a queued response is not a completed forecast or a successful capture.
+      return readCompletedPredictionResponse(response);
     },
     readResults: fetchPublishedResults,
     appendResult: (record: ResultObservation, lease: ResearchWriterLease) => appendResearchResult(record, lease),

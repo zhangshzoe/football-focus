@@ -120,6 +120,81 @@ const fixture=(id,narrative="主队方向 · 升盘，多盘口较一致，偏�
 });
 const commonProps={loading:false,error:"",aiError:"",fetchedAt:"",sourceUrl:"",methodology:"测试模型",aiProvider:"",aiLoading:false,onAiReview(){}};
 
+test("prediction page waits for a queued generation without saving zero coverage or replacing it with a browser baseline",async()=>{
+ const Home=await load("../app/page.tsx");
+ const {dom,restore}=installDom(),errors=[],container=dom.window.document.getElementById("test-root");
+ Object.defineProperty(dom.window,"indexedDB",{value:new IDBFactory()});
+ const now=new Date().toISOString(),date=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai"}).format(new Date());
+ const version={predictionId:"queued-page-version",inputSnapshotId:"queued-input",baseModelVersion:"test",calibrationVersion:"none",generatedAt:now};
+ const rows=[{...fixture("周一001"),...version,officialMappingStatus:"verified",salesDate:date,marketEligibility:{}}];
+ const matches=rows.map(row=>({...row,matchId:row.officialMatchId,odds:[2,3.2,3.8],marketOdds:{"胜平负":[2,3.2,3.8]},form:[],risk:"测试",tag:"测试",matchStatus:"Selling"}));
+ let jobStarted=false,complete;
+ globalThis.fetch=async(url,init)=>{
+  const path=String(url);
+  if(path==="/api/sporttery")return Response.json({matches,fetchedAt:now});
+  if(path==="/api/predictions")return Response.json({status:"queued",jobId:"page-job"},{status:202});
+  if(path==="/api/prediction-jobs?jobId=page-job"){
+   jobStarted=true;return new Promise((resolve,reject)=>{complete=()=>resolve(Response.json({jobId:"page-job",reports:rows,...version,version,fetchedAt:now,unavailableOfficialMatches:[]}));init.signal.addEventListener("abort",()=>reject(init.signal.reason),{once:true})});
+  }
+  throw Error(`Unexpected queued page request: ${path}`);
+ };
+ const root=createRoot(container,{onUncaughtError:error=>errors.push(error),onRecoverableError:error=>errors.push(error)});
+ const storage=await import(await componentUrl(new URL("../app/browser-storage.ts",import.meta.url)));
+ const flush=async predicate=>{for(let i=0;i<120&&!predicate();i++)await act(async()=>{await new Promise(resolve=>setTimeout(resolve,20))});assert.ok(predicate(),JSON.stringify({errors:errors.map(error=>error.message),text:container.textContent.slice(0,1800)}))};
+ try{
+  await act(async()=>root.render(h(Home)));
+  await flush(()=>jobStarted);
+  assert.equal(container.querySelectorAll(".daily-prediction-card").length,0);
+  assert.equal(container.querySelector(".prediction-coverage"),null,"A pending job is not a zero-predictions coverage result");
+  assert.equal(await storage.readBrowserData("ff-today-predictions-v3",null),null);
+  assert.doesNotMatch(container.textContent,/已切换为已核验体彩|新预测已暂停/);
+  await act(async()=>complete());
+  await flush(()=>container.querySelectorAll(".compact-predictions-page .daily-prediction-card").length===1);
+  assert.match(container.querySelector(".prediction-coverage").textContent,/已生成 1 \/ 1/);
+  let saved;
+  for(let i=0;i<60&&!saved?.matches?.length;i++)await act(async()=>{saved=await storage.readBrowserData("ff-today-predictions-v3",null);await new Promise(resolve=>setTimeout(resolve,10))});
+  assert.equal(saved.predictionId,version.predictionId);assert.equal(saved.matches.length,1);
+  assert.deepEqual(errors.map(error=>error.message),[]);
+ }finally{await act(async()=>root.unmount());restore()}
+});
+
+test("closing a pending single-match review cannot publish its late result in another match",async()=>{
+ const Home=await load("../app/page.tsx");
+ const {dom,restore}=installDom(),errors=[],container=dom.window.document.getElementById("test-root");
+ Object.defineProperty(dom.window,"indexedDB",{value:new IDBFactory()});
+ const now=new Date().toISOString(),date=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai"}).format(new Date());
+ const version={predictionId:"detail-version",inputSnapshotId:"detail-input",baseModelVersion:"test",calibrationVersion:"none",generatedAt:now};
+ const matches=["周一001","周一002"].map(id=>({...fixture(id),salesDate:date,matchId:`fixture-${id}`,form:[],tag:"测试",risk:"测试",matchStatus:"Selling"}));
+ const report={...matches[0],...version,officialMappingStatus:"verified",contextProof:{synthetic:true},modelInput:{matchContext:{status:"unavailable"}}};
+ let predictionCalls=0,jobStarted=false,finishOld,analysisCalls=0;
+ globalThis.fetch=async(url)=>{
+  const path=String(url);
+  if(path==="/api/sporttery")return Response.json({matches,fetchedAt:now});
+  if(path.startsWith("/api/sporttery/detail"))return Response.json({});
+  if(path==="/api/predictions")return ++predictionCalls===1?Response.json({reports:[],...version,version,fetchedAt:now}):Response.json({status:"queued",jobId:"detail-job"},{status:202});
+  if(path==="/api/prediction-jobs?jobId=detail-job"){jobStarted=true;return new Promise(resolve=>{finishOld=()=>resolve(Response.json({reports:[report],jobId:"detail-job",...version,version,fetchedAt:now}))})}
+  if(path==="/api/analyze"){analysisCalls++;return Response.json({text:"不应出现在另一场的旧结果"})}
+  throw Error(`Unexpected detail review request: ${path}`);
+ };
+ const root=createRoot(container,{onUncaughtError:error=>errors.push(error),onRecoverableError:error=>errors.push(error)});
+ const flush=async predicate=>{for(let i=0;i<120&&!predicate();i++)await act(async()=>{await new Promise(resolve=>setTimeout(resolve,20))});assert.ok(predicate(),errors.map(error=>error.message).join(";"))};
+ try{
+  await act(async()=>root.render(h(Home)));
+  await flush(()=>predictionCalls===1&&container.querySelectorAll(".detail-entry").length===2);
+  await act(async()=>container.querySelectorAll(".detail-entry")[0].click());
+  const review=()=>[...container.querySelectorAll(".ai-action button")][0];
+  await act(async()=>review().click());
+  await flush(()=>jobStarted);
+  await act(async()=>container.querySelector('button[aria-label="关闭"]').click());
+  await act(async()=>container.querySelectorAll(".detail-entry")[1].click());
+  assert.equal(review().disabled,false,"Cancellation must not leave the next detail stuck loading");
+  await act(async()=>{finishOld();await new Promise(resolve=>setTimeout(resolve,30))});
+  assert.equal(analysisCalls,0,"The cancelled match must not proceed to AI analysis");
+  assert.equal(container.querySelector(".ai-result"),null);
+  assert.deepEqual(errors.map(error=>error.message),[]);
+ }finally{await act(async()=>root.unmount());restore()}
+});
+
 test("today recommendations refresh official SP on generation, show net ranges and preserve prior results on fetch failure",async()=>{
  const Recommendations=await load("../app/components/TodayRecommendations.tsx");
  const {dom,restore}=installDom(),errors=[],container=dom.window.document.getElementById("test-root");
