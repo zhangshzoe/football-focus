@@ -178,3 +178,12 @@ revision. On 2026-10-02 the Site reports no linked cloud automations and a
 configured secret whose value is not returned by the environment tool. These
 facts do not prove that the runtime secret matches a service credential or that
 source/consumer access works. Do not rotate credentials as an access probe.
+
+A subsequent read-only check on the owner's exact published Site returned
+HTTP 403 when using the existing Site service credential, with redirects
+disabled and no secret persisted or printed. The response alone does not
+identify whether dispatch or application authorization refused it. This is
+distinct from official-source HTTP 567; it is not a verified cloud connection.
+Do not automatically replace the updater secret with a returned service token.
+Reuse proven restricted access or implement a supported, explicitly authorized
+Site-hosted connection before enabling unattended consumers or capture mode.
