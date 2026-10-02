@@ -3,11 +3,11 @@ import {createBasePredictionVersion,deriveMarkets,predictionHash} from "../../pr
 import {getPublishedCalibration,MIN_TEMPERATURE_CALIBRATION_MATCHES} from "../../calibration-service";
 import {PREDICTION_PIPELINE_VERSION,predictFromSnapshot,compatibleCalibration} from "../../prediction-model.js";
 import {createPredictionComputeCache} from "../../prediction-compute-cache.js";
+import {computePredictionUnit} from "../../prediction-computation.js";
 import {normalizeCompany,assessPredictionInput,createOddsBatchLoader} from "../../prediction-input.js";
 import {deVig,asianMarketTarget,validAsianLine} from "../../asian-market.js";
 import {TEAM_ALIAS_VERSION,teamIdentity,teamNamesCompatible} from "../../team-identity.js";
 import {readContextBatch} from "../../match-context-service";
-import {fitTeamStrength} from "../../team-strength-model.js";
 import teamHistoryIndex from "../../../data/generated-team-history-index.json";
 import {selectTeamHistory} from "../../team-history.js";
 import {signContextProof} from "../../context-evidence.js";
@@ -236,7 +236,8 @@ export async function POST(request: Request) {
         : null;
       const activeCalibration = leagueCalibration || globalCalibration;
       const modelParameters={...(activeCalibration||{}),temperature:probabilityTemperature};
-      const modeled = predictionComputeCache.predict(modelInput,modelParameters,{mode:"official",calibrationId:String(calibrationProfile?.profileId||"cal-none")}),rawProbabilities:number[]=modeled.marketProbabilities,probabilities=rawProbabilities;
+      const {marketModel:modeled,teamStrengthCandidate}=computePredictionUnit({schemaVersion:1,namespace:"official",modelInput,modelParameters,calibrationId:String(calibrationProfile?.profileId||"cal-none"),teamOptions:{league,homeTeamId:matchContext.homeTeamId,awayTeamId:matchContext.awayTeamId,decisionAt:generatedAt}},{marketCompute:predictionComputeCache.predict});
+      const rawProbabilities:number[]=modeled.marketProbabilities,probabilities=rawProbabilities;
       const derived=deriveMarkets(modeled.fullScoreDistribution,officialHandicap),finalProbabilities=derived.hadProbabilities.map(point=>point.probability/100),finalHhad=derived.hhadProbabilities?.map(point=>point.probability)||[],finalGoals=derived.totalGoalProbabilities.map(point=>point.probability);
       const initialProbabilities = normalized1x2(companies.map(row=>({...row,win:row.firstWin,draw:row.firstDraw,lose:row.firstLose})), []);
       const currentExternalProbabilities = normalized1x2(companies, []);
@@ -268,7 +269,7 @@ export async function POST(request: Request) {
         companies, marketProbabilities:rawProbabilities.map(value=>value*100),probabilities: {home: finalProbabilities[0] * 100, draw: finalProbabilities[1] * 100, away: finalProbabilities[2] * 100},
         consensus: {handicap, totalLine, agreement: companies.length === 3 && spread < 0.3 && modeled.fitError < 0.03 ? "较一致" : "有分歧"},
         marketSignal: {direction:directions[directionIndex],movementDirection:directions[movementDirectionIndex],strength:directionStrength,probabilityShifts:shifts,fairOdds,hadEv,hhadEv,evThreshold:EV_THRESHOLD,institutionAction,handicapExpectation:expectation,firstHandicap,handicapChange,narrative,officialOdds:official?.odds||[],officialHandicap:officialHandicap===null?"":String(officialHandicap),officialHhadOdds,officialHhadFair:officialHhadFair.map(value=>value*100),modeledHhad:finalHhad,hhadAvailable:officialHandicap!==null&&officialHhadOdds.length===3,modeledTotalGoals:finalGoals,totalGoalLabels:TOTAL_GOAL_LABELS,modeledHalfFull:modeled.halfFullProbabilities,halfFullLabels:HALF_FULL_LABELS,asianHomeProbability:asianHomeTarget*100,asianAwayProbability:(1-asianHomeTarget)*100,asianMovement,overProbability:overTarget*100,fitAgreement,handicapMeaning:handicapMeaning(handicap,officialHandicap),rawProbabilities:rawProbabilities.map(value=>value*100),calibrationSampleSize:activeCalibration?.sampleSize||0,probabilityTemperature,historicalMeanTotalGoals:activeCalibration?.meanTotalGoals,goalDispersion:activeCalibration?.goalDispersion,firstHalfGoalShare:activeCalibration?.firstHalfGoalShare,lowScoreRho:modeled.lowScoreRho},
-        matchContext,teamStrengthCandidate:{...fitTeamStrength(teamHistory.rows,{league,homeTeamId:matchContext.homeTeamId,awayTeamId:matchContext.awayTeamId,decisionAt:generatedAt}),history:teamHistory},modelMarketEligibility:{halfFull:{status:"research-only",reason:"条件进球分配近似，尚未独立前瞻验证"}},expectedGoals: {home: modeled.expectedGoals[0], away: modeled.expectedGoals[1]}, scores: modeled.scores,fullScoreDistribution:modeled.fullScoreDistribution,
+        matchContext,teamStrengthCandidate:{...teamStrengthCandidate,history:teamHistory},modelMarketEligibility:{halfFull:{status:"research-only",reason:"条件进球分配近似，尚未独立前瞻验证"}},expectedGoals: {home: modeled.expectedGoals[0], away: modeled.expectedGoals[1]}, scores: modeled.scores,fullScoreDistribution:modeled.fullScoreDistribution,
         missingCompanies: COMPANY_IDS.filter((id) => !companies.some((row) => row.companyId === id)),
       };
     }).filter(Boolean);
@@ -315,7 +316,8 @@ export async function GET() {
       const sourceCompanies=parsedCompanies(match,fetchedAt),companies=displayCompanies(sourceCompanies);
       const modelInput=inputSnapshot(sourceCompanies,decisionAt),dataQuality=assessPredictionInput(sourceCompanies,decisionAt);
       if(dataQuality.status!=="ready")return reject(dataQuality.reasons.join("；"));
-      const modeled=predictionComputeCache.predict(modelInput,{}, {mode:"research",scope:`${issue}:${externalMatchId}`}),rawProbabilities:number[]=modeled.marketProbabilities;
+      const {marketModel:modeled}=computePredictionUnit({schemaVersion:1,namespace:"research",scope:`${issue}:${externalMatchId}`,modelInput,modelParameters:{}},{marketCompute:predictionComputeCache.predict});
+      const rawProbabilities:number[]=modeled.marketProbabilities;
       const totalRows=sourceCompanies.filter(row=>validAsianLine(row.total)&&row.total>0&&asianMarketTarget(row.overPrice,row.underPrice)!==null);
       const asianRows=sourceCompanies.filter(row=>validAsianLine(row.handicap)&&asianMarketTarget(row.homePrice,row.awayPrice)!==null);
       const totalLine=median(totalRows.map(row=>row.total));
