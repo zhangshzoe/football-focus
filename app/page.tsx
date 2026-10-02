@@ -2,9 +2,8 @@
 "use client";
 import {FormEvent,useEffect,useMemo,useRef,useState} from "react";
 import {usePathname} from "next/navigation";
-import TodayRecommendations from "./components/TodayRecommendations";
+import SiteShell from "./components/SiteShell";
 import AiPredictionReport from "./components/AiPredictionReport";
-import ArchiveNavLink from "./components/ArchiveNavLink";
 import type {PredictionCoverageSummary,UnavailablePredictionMatch} from "./components/PredictionCoverage";
 import MarketPredictionTable from "./components/MarketPredictionTable";
 import {SavedPredictionSet,type AiEvidenceSummary} from "./prediction-config";
@@ -68,7 +67,7 @@ const fairMarketPoints=(labels:string[],odds:number[])=>{const raw=odds.map(valu
 export default function Home(){
  const[dataErrorCode,setDataErrorCode]=useState("");
  const pathname=usePathname();
- const view=pathname==="/recommendations"?"recommendations":pathname==="/market-predictions"?"market-predictions":pathname==="/predictions"?"predictions":pathname==="/prediction-archive"?"prediction-archive":"matches";
+ const view=pathname==="/market-predictions"?"market-predictions":pathname==="/predictions"?"predictions":pathname==="/prediction-archive"?"prediction-archive":"matches";
  const[picks,setPicks]=useState<Pick[]>([]),[stake,setStake]=useState(20),[budget]=useState(200),[records,setRecords]=useState<Rec[]>([]),[ready,setReady]=useState(false),[betMatch,setBetMatch]=useState(""),[betMarket,setBetMarket]=useState<Market>("胜平负"),[detailMatch,setDetailMatch]=useState<string|null>(null),[detailMarket,setDetailMarket]=useState<Market>("胜平负"),[aiLoading,setAiLoading]=useState(false),[aiResult,setAiResult]=useState(""),[aiError,setAiError]=useState(""),[liveMatches,setLiveMatches]=useState<Match[]>([]),[dataLoading,setDataLoading]=useState(true),[dataState,setDataState]=useState<DataState>("loading"),[dataError,setDataError]=useState(""),[dataMeta,setDataMeta]=useState<{upstreamUpdatedAt:string;fetchedAt:string;poolStatus?:PoolStatus;deliveryMode?:string}>({upstreamUpdatedAt:"",fetchedAt:""}),[detailData,setDetailData]=useState<DetailData|null>(null),[detailDataLoading,setDetailDataLoading]=useState(false),[detailDataError,setDetailDataError]=useState("");
  const[leagueFilter,setLeagueFilter]=useState("全部比赛");
  const[dateFilter,setDateFilter]=useState("全部场次");
@@ -258,13 +257,12 @@ export default function Home(){
   finally{setResearchAiLoading(false)}
  }
  function add(e:FormEvent<HTMLFormElement>){e.preventDefault();const f=new FormData(e.currentTarget);setRecords(x=>[{id:Date.now(),date:shanghaiDate(),match:String(f.get("match")),type:String(f.get("type")||""),pick:String(f.get("pick")),stake:Number(f.get("stake")),odd:Number(f.get("odd")),result:"待定",note:String(f.get("note"))},...x]);e.currentTarget.reset()}
- return <main className={`view-${view}`}><div className="sky-shell"><header className="site-intro"><a className="brand" href="/matches"><span>球</span><span className="brand-copy"><b>竞彩研习室</b><small>理性分析 · 数据研究 · 提升认知</small></span></a><div className="top-utility"><a className="mobile-preview-link" href="/mobile-preview">手机预览</a><span className="weather" aria-label="天气装饰">☀ 24°C 晴</span><span className="avatar" aria-hidden="true">●</span></div></header><div className="topbar compact-nav"><nav><a className={view==="matches"?"active":""} href="/matches"><span aria-hidden="true">▣</span><b>今日比赛</b></a><a className={view==="predictions"?"active":""} href="/predictions"><span aria-hidden="true">◉</span><b>AI预测</b></a><a className={view==="market-predictions"?"active":""} href="/market-predictions"><span aria-hidden="true">◆</span><b>盘口预测</b></a><a className={view==="recommendations"?"active":""} href="/recommendations"><span aria-hidden="true">★</span><b>今日推荐</b></a><ArchiveNavLink/></nav></div></div>
+ return <SiteShell view={view}>
  <section className="hero" id="top"><div><p className="eyebrow">PERSONAL FOOTBALL LAB</p><h1>先研究，再决定。</h1><p className="lede">把赛程、赔率和自己的判断放在同一个地方。这里不提供“稳胆”，只帮助你看清风险。</p></div><div className="budget-card"><div><span>本月娱乐预算</span><strong>¥ {budget}</strong></div><div className="progress"><i style={{width:`${Math.min(100,invested/budget*100)}%`}}/></div><small>已记录 ¥{invested} · 剩余 ¥{Math.max(0,budget-invested)}</small></div></section>
  <section className="warning"><span>理性参与</span>彩票不是投资。请只使用能够完全承受损失的娱乐预算。比赛与赔率按需读取，不在本站保存。</section>
  {view==="matches"&&dataState==="success"&&dataMeta.deliveryMode?.includes("mobile-calculator")&&<div className="data-fallback" role="status">逐玩法接口未完整返回，已改用<a href="https://m.sporttery.cn/mjc/jsq/zqspf/" target="_blank" rel="noreferrer">竞彩网手机计算器</a>使用的官方汇总接口。仅显示已校验玩法；赔率及开售状态仍须以投注时官方信息为准。</div>}
  {dataState==="stale"&&dataError&&<div className="data-fallback source-failure" role="alert"><p>{dataErrorCode==="OFFICIAL_ACCESS_BLOCKED"?<>官方数据源拒绝本站访问（HTTP 567）。刷新不能解除限制；请在<a href="https://www.sporttery.cn/" target="_blank" rel="noreferrer">竞彩网核对实时信息</a>，取得授权或放行后再试。</>:<>官方实时数据暂不可用，当前展示过期缓存。{dataErrorCode==="OFFICIAL_MANIFEST_UNAVAILABLE"&&"本次只收到销售控制配置，未提供赛事清单；当前比赛数量未知，不能据此认定停售或今日无比赛。"}取得并核验新数据前，赔率选择与新预测保持暂停。</>}</p><details><summary>查看读取失败详情</summary><p>{dataError.replace(/[。；]+$/u,"")}</p></details></div>}
  <div className="match-repair-toolbar"><div><b>比赛缺失或玩法未补全？</b><span>补抓会重试官方五种玩法，并与当前列表合并，不会删除已经获取成功的比赛。</span></div><button type="button" onClick={()=>void repairMissingMatches()} disabled={dataLoading}>{dataLoading?"正在补抓…":"补抓缺失场次"}</button>{repairNotice&&<em className={repairNotice.startsWith("补抓失败")?"failed":"success"}>{repairNotice}</em>}</div>
- {view==="recommendations"&&<TodayRecommendations/>}
  {view==="market-predictions"&&<MarketPredictionTable rows={predictionRows} coverage={predictionCoverage} unavailableMatches={unavailablePredictions} loading={predictionLoading} error={predictionError} aiError={predictionAiError} fetchedAt={predictionMeta.fetchedAt} sourceUrl={predictionMeta.sourceUrl} aiProvider={predictionAiProvider} aiLoading={predictionAiLoading} onAiReview={reviewTodayWithAi} onRetryUnavailable={retryUnavailablePredictionData} retryingUnavailable={dataLoading||predictionLoading||predictionRepairing} retryMessage={repairNotice}/>}
  {view==="predictions"&&((dataState==="stale"||dataState==="error")?<AiPredictionReport researchOnly rows={researchRows} loading={researchLoading} error={researchError} aiError={researchAiError} fetchedAt={researchMeta.fetchedAt} sourceUrl={researchMeta.sourceUrl} methodology={researchMeta.methodology} aiProvider={researchAiProvider} aiLoading={researchAiLoading} onAiReview={reviewResearchWithAi}/>:<AiPredictionReport rows={predictionRows} coverage={predictionCoverage} unavailableMatches={unavailablePredictions} loading={predictionLoading} error={predictionError} aiError={predictionAiError} fetchedAt={predictionMeta.fetchedAt} sourceUrl={predictionMeta.sourceUrl} methodology={predictionMeta.methodology} aiProvider={predictionAiProvider} aiLoading={predictionAiLoading} onAiReview={()=>reviewTodayWithAi()} onRetryUnavailable={retryUnavailablePredictionData} retryingUnavailable={dataLoading||predictionLoading||predictionRepairing} retryMessage={repairNotice}/>)}
  <section className="results-page"><div className="section-head"><div><p className="eyebrow">MATCH RESULTS</p><h2>竞彩足球赛果</h2></div><div className="results-query"><label>查询日期<input type="date" value={resultDate} min={shanghaiDate(-29)} max={shanghaiDate()} onChange={event=>setResultDate(event.target.value)}/></label><span>支持最近 30 天</span></div></div>{resultError&&<div className="data-fallback">{resultError}</div>}{resultLoading?<div className="results-empty">正在读取竞彩网赛果…</div>:resultRows.length?<div className="results-table-wrap"><table className="results-table"><thead><tr><th>场次</th><th>联赛</th><th>对阵</th><th>半场</th><th>全场赛果</th><th>让球</th></tr></thead><tbody>{resultRows.map(row=><tr key={row.matchId||`${row.id}-${row.home}`}><td><strong>{row.id}</strong></td><td><span className="league-chip">{row.league||"—"}</span></td><td><div className="result-versus"><strong>{row.home}</strong><span>vs</span><strong>{row.away}</strong></div></td><td>{row.halfScore}</td><td><b className="full-score">{row.fullScore}</b></td><td>{row.handicap||"—"}</td></tr>)}</tbody></table></div>:!resultError&&<div className="results-empty">该日期暂无已公布赛果</div>}<p className="results-source">数据来源：中国体育彩票·竞彩网；页面按需查询，不保存赛果数据。</p></section>
@@ -297,7 +295,7 @@ export default function Home(){
    </div></div>
  })()}
  <section className="field-footer"><div><p className="eyebrow">PLAY WITH PERSPECTIVE</p><h2>把判断留给数据，<br/>把热爱留在球场。</h2><p>每一次选择都记录依据、概率与风险。保持预算，长期复盘。</p><a href="#top">返回今日比赛 ↑</a></div></section>
- <footer className="site-footer"><span>竞彩研习室 · 个人研究版</span><span>正式快照随站点同步；浏览器保留设备缓存，手动试算独立留档</span></footer></main>}
+ </SiteShell>}
 
 
 

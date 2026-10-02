@@ -26,7 +26,7 @@ button,a,select,input{touch-action:manipulation}
 }
 
 @media(max-width:767px){
-  body{padding-bottom:calc(var(--mobile-nav-height) + env(safe-area-inset-bottom));background-attachment:scroll}
+  body{min-width:0;padding-bottom:calc(var(--mobile-nav-height) + env(safe-area-inset-bottom));background-attachment:scroll}
   main:not(.mobile-preview-page){width:100%!important;max-width:none!important;padding-right:var(--mobile-gutter)!important;padding-bottom:18px!important;padding-left:var(--mobile-gutter)!important}
   .sky-shell{width:100%!important;padding:0!important}
   .site-intro{position:sticky;z-index:35;top:0;min-height:58px;padding:8px 4px!important;border-bottom:1px solid rgba(197,221,233,.9);background:rgba(239,249,253,.94);backdrop-filter:blur(18px)}
@@ -129,12 +129,24 @@ button,a,select,input{touch-action:manipulation}
   .market-forecast-table th,.market-forecast-table td{font-size:12px!important;line-height:1.45!important}
   .market-forecast-wrap:after{bottom:10px!important;font-size:10px!important}
 
-  /* Tickets are read one at a time with a visible preview of the next ticket. */
-  .purchase-plan-grid{display:flex!important;gap:10px!important;margin-inline:-2px!important;overflow-x:auto!important;padding:2px 2px 8px!important;scroll-padding-inline:2px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch}
-  .purchase-plan-card{flex:0 0 min(88vw,340px)!important;scroll-snap-align:start}
-  .purchase-plan-title{padding:11px 12px!important}.purchase-plan-title span{font-size:15px!important}.purchase-plan-title b{font-size:11px!important}
-  .purchase-plan-card li{padding:10px 11px!important}.purchase-plan-card li>div:first-child b,.purchase-plan-card li>div:first-child span{font-size:12px!important}.purchase-plan-card li strong{font-size:13px!important}.purchase-plan-card li small,.purchase-plan-card li em{font-size:11px!important}
-  .purchase-plan-card footer{font-size:11px!important}.purchase-plan-card footer strong{font-size:13px!important}
+  /* Keep the complete ticket, its cost and risk in one vertical reading flow. */
+  .view-recommendations .recommendations-page{padding:8px!important}
+  .view-recommendations .daily-purchase-panel{padding:8px!important}
+  .view-recommendations .purchase-plan-module{padding:7px!important}
+  .purchase-plan-grid{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:12px!important;margin-inline:0!important;overflow:visible!important;padding:0!important;scroll-snap-type:none}
+  .purchase-plan-grid[hidden]{display:none!important}
+  .purchase-plan-card{width:100%;max-width:100%;min-width:0;scroll-snap-align:none}
+  .purchase-plan-title{padding:12px!important}.purchase-plan-title span{font-size:1rem!important}.purchase-plan-title b{font-size:.875rem!important;line-height:1.5}
+  .purchase-summary{padding:12px!important}.purchase-summary span{font-size:.875rem!important}.purchase-summary span b{font-size:1rem!important}
+  .purchase-plan-card li{gap:8px!important;padding:12px!important}
+  .purchase-plan-card li>div:first-child{align-items:baseline;flex-wrap:wrap}
+  .purchase-plan-card li>div:first-child b,.purchase-plan-card li>div:first-child span,.purchase-plan-card li strong{font-size:.875rem!important;line-height:1.6}
+  .purchase-plan-card li>div:first-child span{min-width:0;overflow:visible;overflow-wrap:anywhere;text-overflow:clip;white-space:normal}
+  .purchase-plan-card li small,.purchase-plan-card li em,.purchase-plan-card li i{font-size:.875rem!important;line-height:1.5}
+  .purchase-plan-card .purchase-coverage{color:#355b72!important}
+  .purchase-plan-card footer{padding:12px!important;font-size:.875rem!important}.purchase-plan-card footer strong{font-size:.875rem!important}
+  .purchase-plan-card .purchase-leg-returns{padding:12px;font-size:.875rem!important;line-height:1.6;overflow-wrap:anywhere}
+  .purchase-plan-card .purchase-risk{margin:0;padding:12px;font-size:.875rem!important;line-height:1.6!important;overflow-wrap:anywhere}
   .purchase-kanban>div{min-height:74px;padding:10px!important}.purchase-kanban span{font-size:11px!important}.purchase-kanban b{font-size:18px!important}
   .recommendation-builder fieldset{padding:12px!important;border-radius:12px!important}.recommendation-builder legend{font-size:14px!important}
   .choice-grid label,.choice-grid.passes label{min-height:44px!important}

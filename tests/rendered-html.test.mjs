@@ -322,7 +322,7 @@ test("mobile prediction summaries swipe while forecast rows become readable card
   readFile(new URL("../app/components/MarketPredictionTable.tsx",import.meta.url),"utf8"),
   readFile(new URL("../app/reference-ui.css",import.meta.url),"utf8"),
   readFile(new URL("../app/mobile-ui.css",import.meta.url),"utf8"),
-  readFile(new URL("../app/page.tsx",import.meta.url),"utf8"),
+  readFile(new URL("../app/components/SiteShell.tsx",import.meta.url),"utf8"),
   readFile(new URL("../app/components/ArchiveNavLink.tsx",import.meta.url),"utf8"),
  ]);
  assert.match(report,/左右滑动查看 5 类预测/);
@@ -336,7 +336,7 @@ test("mobile prediction summaries swipe while forecast rows become readable card
  assert.match(mobileStyles,/\.market-forecast-table tr\{display:grid!important/);
  assert.match(mobileStyles,/\.market-forecast-table td:nth-child\(n\+10\)\{display:flex!important/);
  assert.match(mobileStyles,/\.topbar\.compact-nav nav a>span\{font-size:20px!important/);
- assert.match(page,/<span aria-hidden="true">▣<\/span><b>今日比赛<\/b>/);
+ assert.match(page,/view: "matches", href: "\/matches", icon: "▣", label: "今日比赛"/);
  assert.match(archiveNav,/<span aria-hidden="true">▤<\/span><b>盘后回溯<\/b>/);
 });
 

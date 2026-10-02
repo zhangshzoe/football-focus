@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
 import ts from "typescript";
 import {JSDOM} from "jsdom";
-import {IDBFactory} from "fake-indexeddb";
+import {IDBFactory,IDBObjectStore} from "fake-indexeddb";
 import {act,createElement as h} from "react";
 import {renderToString} from "react-dom/server";
 import {createRoot,hydrateRoot} from "react-dom/client";
@@ -328,10 +328,23 @@ function recommendationArchiveFixture() {
  return {date,early,late,loadedTrial,results};
 }
 
-async function mountRecommendationArchive({savedTrial=false,livePrediction=false}={}) {
- const Recommendations=await load("../app/components/TodayRecommendations.tsx");
+async function mountRecommendationArchive({savedTrial=false,livePrediction=false,independentPage=false}={}) {
+ const Recommendations=await load(independentPage?"../app/recommendations/page.tsx":"../app/components/TodayRecommendations.tsx");
  const {dom,restore}=installDom(),errors=[],container=dom.window.document.getElementById("test-root");
+ if(independentPage)dom.reconfigure({url:"http://localhost:3000/recommendations"});
  Object.defineProperty(dom.window,"indexedDB",{value:new IDBFactory()});
+ const recordAccess=[],storageRestorers=[];
+ if(independentPage){
+  dom.window.localStorage.setItem("ff-records",JSON.stringify([{id:1,match:"独立页面必须不读取的记录",stake:8}]));
+  for(const [prototype,methods] of [[dom.window.Storage.prototype,{getItem:0,setItem:0,removeItem:0,clear:null}],[IDBObjectStore.prototype,{get:0,put:1,add:1,delete:0,clear:null}]]){
+   for(const [method,keyIndex] of Object.entries(methods)){
+    const original=prototype[method];
+    prototype[method]=function(...args){if(keyIndex===null||args[keyIndex]==="ff-records")recordAccess.push(method);return original.apply(this,args);};
+    storageRestorers.push(()=>{prototype[method]=original;});
+   }
+  }
+ }
+ const restorePage=()=>{storageRestorers.reverse().forEach(restoreMethod=>restoreMethod());restore();};
  const fixture=recommendationArchiveFixture();
  const archive={snapshots:[],purchasePlanSnapshots:[{planSet:fixture.early},{planSet:fixture.late}],resultCache:Object.fromEntries(fixture.results.map(result=>[result.matchId+"|"+result.date,result])),captureAttempts:[]};
  const archiveBefore=JSON.stringify(archive),savedBodies=[],requests=[];
@@ -378,22 +391,42 @@ async function mountRecommendationArchive({savedTrial=false,livePrediction=false
   }
   await act(async()=>root.render(h(Recommendations)));
   await flush(()=>{const select=container.querySelector('select[aria-label="选择预购买方案快照"]');return select&&!select.disabled&&select.value;});
- }catch(error){await act(async()=>root.unmount());restore();throw error}
+ }catch(error){await act(async()=>root.unmount());restorePage();throw error}
  const select=()=>container.querySelector('select[aria-label="选择预购买方案快照"]');
  const button=text=>[...container.querySelectorAll(".daily-purchase-panel button")].find(node=>node.textContent===text);
  const choose=async id=>{await act(async()=>{select().value=id;select().dispatchEvent(new dom.window.Event("change",{bubbles:true}))});await flush(()=>select()?.value===id&&!select().disabled);};
  const cash=label=>[...container.querySelectorAll(".purchase-kanban>div")].find(node=>node.querySelector("span").textContent===label)?.textContent;
- return {dom,container,fixture,select,button,choose,cash,flush,savedBodies,requests,archive,archiveBefore,
-  async dispose(){await act(async()=>root.unmount());restore();assert.deepEqual(errors.map(error=>error.message),[]);}
+ return {dom,container,fixture,select,button,choose,cash,flush,savedBodies,requests,archive,archiveBefore,recordAccess,
+  async dispose(){await act(async()=>root.unmount());restorePage();assert.deepEqual(errors.map(error=>error.message),[]);}
  };
 }
 
+test("independent recommendations page reads and settles history without Home requests or record access",async()=>{
+ const ui=await mountRecommendationArchive({independentPage:true});
+ try{
+  assert.equal(ui.container.querySelector("main").className,"view-recommendations");
+  const navigation=ui.container.querySelector('nav[aria-label="主要页面"]');
+  assert.equal(navigation.querySelectorAll("a").length,5);
+  assert.equal(navigation.querySelector('[aria-current="page"]').getAttribute("href"),"/recommendations");
+  assert.equal(ui.container.querySelectorAll(".site-footer").length,1);
+  assert.equal(ui.select().value,ui.fixture.early.snapshotId);
+  assert.match(ui.cash("模拟净收益"),/\+¥16\.00/);
+  assert.ok(ui.requests.some(request=>request.path==="/api/prediction-snapshots?view=recommendations"));
+  assert.ok(ui.requests.every(request=>request.path!=="/api/sporttery"&&request.path!=="/api/predictions"&&request.path!=="/api/model-audit"),"Without a valid current prediction, reading archived tickets must not start Home's live-data or prediction chain");
+  assert.deepEqual(ui.recordAccess,[],"Recommendation navigation must neither read nor mutate ff-records in either browser storage implementation");
+  assert.equal(ui.requests.some(request=>request.method!=="GET"),false);
+  assert.equal(JSON.stringify(ui.archive),ui.archiveBefore);
+ }finally{await ui.dispose()}
+});
+
 test("archived recommendations default to formal snapshots, retain both slot cash rows, and support DOM controls",async()=>{
- const ui=await mountRecommendationArchive({savedTrial:true});
+ const ui=await mountRecommendationArchive({savedTrial:true,independentPage:true});
  const {container,fixture,dom}=ui;
  try{
   assert.equal(ui.select().value,fixture.early.snapshotId,"A newer saved research trial must not replace the default formal snapshot");
   assert.match(container.querySelector(".daily-purchase-panel header h3").textContent,/每日固定组合票/);
+  assert.match(container.querySelector(".purchase-summary").textContent,/整票模型概率.*总投入.*-¥2\.00.*跨场独立假设/);
+  assert.match(container.querySelector(".purchase-coverage").textContent,/单场覆盖率 70\.0%/);
   assert.equal([...ui.select().options].some(option=>option.value===fixture.loadedTrial.snapshotId),true,"Saved research remains explicitly selectable");
   assert.match(ui.cash("模拟投入"),/-¥2\.00/);assert.match(ui.cash("模拟返还"),/\+¥18\.00/);assert.match(ui.cash("模拟净收益"),/\+¥16\.00/);
   assert.match(container.querySelector(".purchase-plan-module-score .purchase-risk").textContent,/旧版本未达目标门槛/);
@@ -447,11 +480,12 @@ test("archived recommendations default to formal snapshots, retain both slot cas
   await ui.flush(()=>ui.select()?.value===fixture.early.snapshotId&&!ui.select().disabled,"Refresh returns to the formal snapshot");
   assert.equal(JSON.stringify(ui.archive),ui.archiveBefore,"Research/slot navigation leaves original archive fixtures intact");
   assert.equal(ui.requests.some(request=>request.method!=="GET"),false,"Archive navigation makes no external writes");
+  assert.deepEqual(ui.recordAccess,[]);
  }finally{await ui.dispose()}
 });
 
 test("saving a research trial through React DOM preserves formal cash and does not change the default after refresh",async()=>{
- const ui=await mountRecommendationArchive({livePrediction:true});
+ const ui=await mountRecommendationArchive({livePrediction:true,independentPage:true});
  try{
   await ui.flush(()=>ui.button("按当前盘口试算")&&!ui.button("按当前盘口试算").disabled,"Current prediction enables trial preview");
   await act(async()=>ui.button("按当前盘口试算").click());

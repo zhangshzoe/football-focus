@@ -136,6 +136,13 @@ export type PurchaseItem = {
   finalScore?: string;
   settlementState?: string;
 };
+function purchaseSelectionCoverage(item: PurchaseItem): string {
+  const selections = item.picks?.length ? item.picks : [item];
+  const total = selections.reduce((sum, selection) => sum + selection.probability, 0);
+  if (selections.some(selection => !Number.isFinite(selection.probability) || selection.probability < 0 || selection.probability > 100)
+      || new Set(selections.map(selection => selection.pick)).size !== selections.length || total > 100 + 1e-8) return "待核验";
+  return `${total.toFixed(1)}%`;
+}
 type PurchasePlan = {
   decision?:{objective:string;targetNetProfit:number|null;targetMet:boolean|null;maximumLoss:number};
   id: string;
@@ -771,9 +778,11 @@ function DailyPurchasePlans({
                       注数 <b>{plan.betCount || 1} 注</b>
                     </span>
                     <span>
-                      模型概率{" "}
+                      整票模型概率{" "}
                       <b>{(plan.estimatedProbability * 100).toFixed(2)}%</b>
                     </span>
+                    <span>总投入 <SignedPurchaseMoney value={plan.stake} flow="stake"/></span>
+                    <span>概率口径 <b>跨场独立假设</b></span>
                   </div>
                   <ol>
                     {plan.items.map((item) => (
@@ -801,13 +810,13 @@ function DailyPurchasePlans({
                             </i>
                           )}
                         </div>
+                        <small className="purchase-coverage">所选结果单场覆盖率 {purchaseSelectionCoverage(item)}</small>
                       </li>
                     ))}
                   </ol>
                   <PurchasePlanReturns plan={plan}/>
                   <PurchasePlanDecision plan={plan}/>
                   <footer>
-                    <span>投入 <SignedPurchaseMoney value={plan.stake} flow="stake"/></span>
                     <strong>{planResult(plan)}</strong>
                   </footer>
               </>
