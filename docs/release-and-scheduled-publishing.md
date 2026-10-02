@@ -129,3 +129,52 @@ attempt. Completion requires the current run owner and its persisted attempt;
 release/renew are compare-and-set and cannot affect a replacement owner.
 GET request readback follows the completed run's actual attempt ID; a running
 run returns 202 and is never presented as completed evidence.
+
+### Durable prediction dispatch and internal waiting
+
+`GET /api/prediction-dispatch` requires the same restricted updater credential.
+It is SELECT-only and accepts `kind=unit|batch`, `namespace=official|research`,
+`limit=1..25` and an optional JSON `cursor` containing `createdAtEpoch` and `id`.
+Batch scope is always official. Build identity is server-owned, never supplied
+by the caller. Only current-build queued tasks and running tasks with expired
+leases are discoverable, before their original business deadline. Ready,
+failed, expired, wrong-lane and old-build tasks are not consumed by recovery.
+
+An independent driver must call this scan, then make a separate authorized
+`POST /api/prediction-units` with `{id}` per unit. After unit invocations, it
+scans the batch lane and separately calls `POST /api/prediction-jobs` per parent.
+Pending parents must not stop cursor advancement. At the final page, the next
+cycle starts from the beginning; when a bounded pass returns a non-null cursor,
+continue from that cursor rather than repeatedly processing the first page.
+Each unit invocation does one numerical computation, not a whole 120-match loop.
+
+`npm run consume:prediction-jobs` implements that external HTTP driver with
+bounded concurrency and a fixed 90-second total wait. Its runtime supplies
+`PREDICTION_SITE_ORIGIN` and the existing `RESEARCH_CAPTURE_TOKEN`; neither is
+accepted as a command-line secret. It prints only task IDs, bounded statuses,
+failure codes and continuation cursors. It cannot submit odds, generate raw
+snapshots, override clocks, slide expiry or cancel durable shared work.
+This command is not itself a cloud schedule and is not launched by a GET.
+
+Atomic claims also filter the server's complete build hash. If deployment
+changes after a scan, the new consumer cannot claim and fail the old task.
+Restart recovery is guaranteed for successfully persisted tasks, not a parent
+that never reached its durable enqueue. Terminal failed tasks are not silently
+requeued; source expiry and kickoff/cutoff remain hard absolute boundaries.
+
+The trusted capture path has an internal read-only batch waiter. With the
+server-only `PREDICTION_JOB_MODE=durable` it prepares and freezes official input,
+enqueues one parent with children, then only reads verified stored results.
+Waiting ends at the earliest of the unchanged source/fixture/task deadline,
+the actual capture window and a fixed 90-second caller budget. A lost capture
+lease aborts waiting; it does not cancel a shared numerical task. GET readers
+never fit, aggregate, sign, claim or renew. No code enables this mode or creates
+a linked schedule merely because the components were published.
+
+Activation still requires a fresh cloud task to obtain the intended restricted
+authorization, invoke the independent driver while capture is waiting, and
+read back a real official result and immutable snapshot on the same production
+revision. On 2026-10-02 the Site reports no linked cloud automations and a
+configured secret whose value is not returned by the environment tool. These
+facts do not prove that the runtime secret matches a service credential or that
+source/consumer access works. Do not rotate credentials as an access probe.

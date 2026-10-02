@@ -8,6 +8,7 @@ import { sqliteD1 } from "./helpers/cloud-sqlite-fixture.mjs";
 import { createPredictionJobStore, predictionJobSchemaSql } from "../app/prediction-job-store.js";
 import { createPredictionUnitRuntime } from "../app/prediction-unit-runtime.js";
 import { createPredictionBatchRuntime } from "../app/prediction-batch-runtime.js";
+import { waitForPredictionBatch } from "../app/prediction-batch-waiter.js";
 import { deriveFixture } from "./helpers/prediction-preparation-fixture.mjs";
 import { resolveContextEvidence } from "../app/context-evidence.js";
 
@@ -147,6 +148,16 @@ test("a complete frozen batch waits without claiming, then independent units and
       assert.equal("reports" in waiting, false);
       assert.ok(f.queries.every((query) => query.trimStart().startsWith("SELECT")));
       assert.equal(f.writes.length, writes);
+      assert.deepEqual(
+        (await createPredictionBatchRuntime(options).listDispatchable()).jobs.map((row) => row.id),
+        [submitted.job.id],
+      );
+      const waitingRead = waitForPredictionBatch({
+        jobId: submitted.job.id,
+        deadlineMs: Date.now() + 10000,
+        pollIntervalMs: 1,
+        readStatus: (id) => createPredictionBatchRuntime(options).readStatus(id),
+      });
       const units = createPredictionUnitRuntime({
         store: f.store,
         codeIdentity,
@@ -168,6 +179,10 @@ test("a complete frozen batch waits without claiming, then independent units and
       assert.equal(completed.status, "ready");
       assert.equal(projections, 1);
       assert.equal(signatures, 1);
+      const awaited = await waitingRead;
+      assert.equal(awaited.status, "ready");
+      assert.equal(awaited.reports.length, 2);
+      assert.equal(awaited.coverage.officialMatches, 3);
       const reader = createPredictionBatchRuntime({
         ...options,
         project: () => {

@@ -220,8 +220,8 @@ export function createPredictionUnitRuntime({
       return { ok: false, status: "failed", code: "AMBIGUOUS_TASK_SELECTOR" };
     const kind = "prediction-unit-computation";
     const claimed = id
-      ? await store.claim({ id, kind })
-      : await store.claimNext({ namespace, kind });
+      ? await store.claim({ id, kind, codeHash: codeFingerprint })
+      : await store.claimNext({ namespace, kind, codeHash: codeFingerprint });
     if (!claimed.ok || !claimed.claimed) return claimed;
     const { job, lease } = claimed;
     try {
@@ -301,5 +301,14 @@ export function createPredictionUnitRuntime({
       return failure(error, id);
     }
   }
-  return { enqueue, consumeOne, readStatus };
+  function listDispatchable({ namespace = "official", limit = 25, after = null } = {}) {
+    return store.listDispatchable({
+      namespace,
+      kind: "prediction-unit-computation",
+      codeHash: codeFingerprint,
+      limit,
+      after,
+    });
+  }
+  return { enqueue, consumeOne, readStatus, listDispatchable };
 }

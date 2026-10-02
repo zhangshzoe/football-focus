@@ -409,9 +409,11 @@ export function createPredictionJobStore({ database, objects }) {
     if (!latest.ok) return latest;
     return { ...latest, result: value.result };
   }
-  async function claim({ id, kind = null, leaseSeconds = 120 }) {
+  async function claim({ id, kind = null, codeHash = null, leaseSeconds = 120 }) {
     idValue(id);
     kindValue(kind);
+    if (codeHash !== null && (typeof codeHash !== "string" || !HASH.test(codeHash)))
+      throw invalid("INVALID_CODE_IDENTITY");
     seconds(leaseSeconds, 600, "INVALID_LEASE_SECONDS");
     await expireId(id);
     const row = await statement(
@@ -420,14 +422,17 @@ export function createPredictionJobStore({ database, objects }) {
       started_at = unixepoch(), updated_at = unixepoch()
       WHERE id = ? AND expires_at > unixepoch()
         AND (? IS NULL OR json_extract(input_identity_json, '$.kind') = ?)
+        AND (? IS NULL OR code_hash = ?)
         AND (status = 'queued' OR (status = 'running' AND lease_until <= unixepoch()))
       RETURNING *, unixepoch() AS database_now`,
-      [randomUUID(), leaseSeconds, id, kind, kind],
+      [randomUUID(), leaseSeconds, id, kind, kind, codeHash, codeHash],
     ).first();
     if (row) return outcome(row, { claimed: true, lease: leaseFor(row) });
     const current = outcome(await load(id), { claimed: false });
     if (current.ok && kind !== null && current.job.inputIdentity.kind !== kind)
       return { ...current, ok: false, code: "JOB_KIND_MISMATCH" };
+    if (current.ok && codeHash !== null && current.job.codeHash !== codeHash)
+      return { ...current, ok: false, code: "PREDICTION_BUILD_CHANGED" };
     return current.ok
       ? {
           ...current,
@@ -435,9 +440,48 @@ export function createPredictionJobStore({ database, objects }) {
         }
       : current;
   }
-  async function claimNext({ namespace, kind = null, leaseSeconds = 120 }) {
+  // A durable outbox view, not a claim. Dispatchers can restart with no local
+  // job IDs and page past pending parents without mutating any task or clock.
+  async function listDispatchable({ namespace, kind, codeHash, limit = 25, after = null }) {
     namespaceValue(namespace);
     kindValue(kind);
+    if (kind === null || kind === undefined) throw invalid("INVALID_JOB_KIND");
+    if (typeof codeHash !== "string" || !HASH.test(codeHash))
+      throw invalid("INVALID_CODE_IDENTITY");
+    seconds(limit, 25, "INVALID_DISPATCH_LIMIT");
+    if (
+      after !== null &&
+      (!after ||
+        Array.isArray(after) ||
+        Object.keys(after).length !== 2 ||
+        !Number.isSafeInteger(after.createdAtEpoch) ||
+        after.createdAtEpoch < 0 ||
+        typeof after.id !== "string" ||
+        !JOB_ID.test(after.id))
+    )
+      throw invalid("INVALID_DISPATCH_CURSOR");
+    const values = [namespace, kind, codeHash];
+    const cursorSql = after ? "AND (created_at > ? OR (created_at = ? AND id > ?))" : "";
+    if (after) values.push(after.createdAtEpoch, after.createdAtEpoch, after.id);
+    values.push(limit + 1);
+    const rows = (
+      await statement(
+        `SELECT id, created_at AS createdAtEpoch FROM prediction_jobs
+       WHERE namespace = ? AND json_extract(input_identity_json, '$.kind') = ?
+         AND code_hash = ? AND expires_at > unixepoch()
+         AND (status = 'queued' OR (status = 'running' AND lease_until <= unixepoch()))
+         ${cursorSql} ORDER BY created_at, id LIMIT ?`,
+        values,
+      ).all()
+    ).results;
+    const jobs = rows.slice(0, limit).map(({ id, createdAtEpoch }) => ({ id, createdAtEpoch }));
+    return { jobs, nextCursor: rows.length > limit ? jobs.at(-1) : null };
+  }
+  async function claimNext({ namespace, kind = null, codeHash = null, leaseSeconds = 120 }) {
+    namespaceValue(namespace);
+    kindValue(kind);
+    if (codeHash !== null && (typeof codeHash !== "string" || !HASH.test(codeHash)))
+      throw invalid("INVALID_CODE_IDENTITY");
     seconds(leaseSeconds, 600, "INVALID_LEASE_SECONDS");
     const row = await statement(
       `UPDATE prediction_jobs SET status = 'running', owner_token = ?, fence = fence + 1,
@@ -445,10 +489,12 @@ export function createPredictionJobStore({ database, objects }) {
       started_at = unixepoch(), updated_at = unixepoch()
       WHERE id = (SELECT id FROM prediction_jobs WHERE namespace = ? AND expires_at > unixepoch()
         AND (? IS NULL OR json_extract(input_identity_json, '$.kind') = ?)
+        AND (? IS NULL OR code_hash = ?)
         AND (status = 'queued' OR (status = 'running' AND lease_until <= unixepoch())) ORDER BY created_at, id LIMIT 1)
+        AND (? IS NULL OR code_hash = ?)
         AND expires_at > unixepoch() AND (status = 'queued' OR (status = 'running' AND lease_until <= unixepoch()))
       RETURNING *, unixepoch() AS database_now`,
-      [randomUUID(), leaseSeconds, namespace, kind, kind],
+      [randomUUID(), leaseSeconds, namespace, kind, kind, codeHash, codeHash, codeHash, codeHash],
     ).first();
     return row
       ? outcome(row, { claimed: true, lease: leaseFor(row) })
@@ -528,6 +574,7 @@ export function createPredictionJobStore({ database, objects }) {
     readResult,
     claim,
     claimNext,
+    listDispatchable,
     renew,
     complete,
     fail,

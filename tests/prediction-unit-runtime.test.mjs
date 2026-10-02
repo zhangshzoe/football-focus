@@ -355,7 +355,9 @@ test("build mismatch rejects before cold fit; losing readers neither fail nor ca
     assert.equal(f.writes.length, writes);
     assert.equal((await reader.consumeOne({ id: queued.job.id })).code, "PREDICTION_BUILD_CHANGED");
     assert.equal(calls, 0);
-    assert.equal((await f.store.read(queued.job.id)).status, "failed");
+    assert.equal((await f.store.read(queued.job.id)).status, "queued");
+    assert.equal((await f.store.read(queued.job.id)).job.fence, 0);
+    assert.equal((await reader.consumeOne({ namespace: "official" })).code, "NO_RUNNABLE_JOB");
   } finally {
     f.sql.close();
   }
@@ -541,13 +543,12 @@ test("an independent worker reopens durable input, cold-computes, and a separate
       const {sqliteD1}=await import(workerData.adapter),{createPredictionJobStore}=await import(workerData.store),{createPredictionUnitRuntime}=await import(workerData.runtime);
       const sql=new DatabaseSync(workerData.path),key=k=>join(workerData.keys,createHash('sha256').update(k).digest('hex'));
       const objects={async get(k){try{const b=await readFile(key(k),'utf8');return{text:async()=>b}}catch(e){if(e.code==='ENOENT')return null;throw e}},async put(k,b){try{await writeFile(key(k),b,{flag:'wx'})}catch(e){if(e.code!=='EEXIST')throw e}}};
-      try{const store=createPredictionJobStore({database:sqliteD1(sql),objects});parentPort.postMessage(await createPredictionUnitRuntime({store,codeIdentity:workerData.codeIdentity}).consumeOne({id:workerData.id}));}finally{sql.close()}`;
+      try{const store=createPredictionJobStore({database:sqliteD1(sql),objects}),runtime=createPredictionUnitRuntime({store,codeIdentity:workerData.codeIdentity});const page=await runtime.listDispatchable();if(page.jobs.length!==1)throw new Error('durable recovery did not find one unit');parentPort.postMessage(await runtime.consumeOne({id:page.jobs[0].id}));}finally{sql.close()}`;
     const worker = new Worker(source, {
       eval: true,
       workerData: {
         path,
         keys,
-        id: queued.job.id,
         codeIdentity,
         adapter: new URL("./helpers/cloud-sqlite-fixture.mjs", import.meta.url).href,
         store: new URL("../app/prediction-job-store.js", import.meta.url).href,

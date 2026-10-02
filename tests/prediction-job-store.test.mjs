@@ -192,6 +192,97 @@ test("the standalone schema is explicit and the real D1 session contract is used
   }
 });
 
+test("recovery scan is SELECT-only, current-build isolated and keyset paginated without R2", async () => {
+  const { store, sql, database } = fixture();
+  try {
+    const kind = "prediction-unit-computation";
+    const add = (name, options = {}) =>
+      queued(store, {
+        identity: { ...inputIdentity, fixtureKey: name, kind },
+        ...options,
+      });
+    const first = await add("first"),
+      recovered = await add("recovered"),
+      third = await add("third");
+    const live = await add("live"),
+      ready = await add("ready"),
+      failed = await add("failed");
+    const expired = await add("expired");
+    const wrongKind = await add("parent", {
+      identity: { ...inputIdentity, kind: "official-prediction-batch" },
+    });
+    await add("research", { namespace: "research" });
+    const old = await add("old", { code: { ...codeIdentity, sourceHash: "d".repeat(64) } });
+    await store.claim({ id: recovered.job.id });
+    sql
+      .prepare("UPDATE prediction_jobs SET lease_until = unixepoch() - 1 WHERE id = ?")
+      .run(recovered.job.id);
+    await store.claim({ id: live.job.id });
+    await store.complete((await store.claim({ id: ready.job.id })).lease, resultPayload);
+    await store.fail((await store.claim({ id: failed.job.id })).lease, { code: "TEST_FAILED" });
+    sql.exec("UPDATE prediction_jobs SET created_at = unixepoch() - 200");
+    sql
+      .prepare("UPDATE prediction_jobs SET expires_at = unixepoch() - 1 WHERE id = ?")
+      .run(expired.job.id);
+    const before = sql.prepare("SELECT * FROM prediction_jobs ORDER BY id").all();
+    const queries = [];
+    const reader = createPredictionJobStore({
+      database: {
+        prepare(query) {
+          assert.match(query.trimStart(), /^SELECT\b/);
+          queries.push(query);
+          return database.prepare(query);
+        },
+      },
+      objects: {
+        async get() {
+          throw new Error("scan cannot read R2");
+        },
+        async put() {
+          throw new Error("scan cannot write R2");
+        },
+      },
+    });
+    const args = { namespace: "official", kind, codeHash: first.job.codeHash, limit: 1 };
+    const actual = [];
+    let after = null;
+    do {
+      const page = await reader.listDispatchable({ ...args, after });
+      actual.push(...page.jobs.map((row) => row.id));
+      after = page.nextCursor;
+    } while (after);
+    assert.deepEqual(actual, [first.job.id, recovered.job.id, third.job.id].sort());
+    assert.deepEqual(sql.prepare("SELECT * FROM prediction_jobs ORDER BY id").all(), before);
+    const one = await reader.listDispatchable(args);
+    await store.complete((await store.claim({ id: one.jobs[0].id })).lease, resultPayload);
+    assert.equal(
+      (await reader.listDispatchable({ ...args, after: one.nextCursor })).jobs.length,
+      1,
+    );
+    const count = queries.length;
+    for (const invalid of [
+      { kind: null },
+      { codeHash: "x" },
+      { limit: 26 },
+      { after: { id: first.job.id, createdAtEpoch: -1 } },
+    ])
+      await assert.rejects(reader.listDispatchable({ ...args, ...invalid }));
+    assert.equal(queries.length, count);
+    // A deployment between discovery and POST must not claim or fail old work.
+    const refused = await store.claim({ id: old.job.id, kind, codeHash: first.job.codeHash });
+    assert.equal(refused.code, "PREDICTION_BUILD_CHANGED");
+    assert.equal((await store.read(old.job.id)).status, "queued");
+    assert.equal((await store.read(old.job.id)).job.fence, 0);
+    assert.equal(
+      (await store.claimNext({ namespace: "official", kind, codeHash: "f".repeat(64) })).code,
+      "NO_RUNNABLE_JOB",
+    );
+    assert.equal((await store.read(wrongKind.job.id)).job.fence, 0);
+  } finally {
+    sql.close();
+  }
+});
+
 test("prepared content must be durable and verified before a pointer can enter D1", async () => {
   const { store, sql, objects } = fixture();
   try {

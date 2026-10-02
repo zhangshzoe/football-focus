@@ -279,7 +279,7 @@ export function createPredictionBatchRuntime({
       if (prepared.status === "failed") return failure({ code: prepared.job.failureCode }, id);
       const children = await readChildren(prepared.payload);
       if (children.pending) return { ok: true, jobId: id, status: prepared.status };
-      const claimed = await store.claim({ id, kind: KIND });
+      const claimed = await store.claim({ id, kind: KIND, codeHash: expectedCodeHash });
       if (!claimed.ok || !claimed.claimed) return claimed;
       lease = claimed.lease;
       if (!children.ok) fail(children.code || "BATCH_CHILD_FAILED");
@@ -337,5 +337,14 @@ export function createPredictionBatchRuntime({
       return failure(error, id);
     }
   }
-  return { enqueue, consumeOne, readStatus };
+  function listDispatchable({ limit = 25, after = null } = {}) {
+    return store.listDispatchable({
+      namespace: "official",
+      kind: KIND,
+      codeHash: expectedCodeHash,
+      limit,
+      after,
+    });
+  }
+  return { enqueue, consumeOne, readStatus, listDispatchable };
 }
