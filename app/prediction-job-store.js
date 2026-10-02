@@ -7,7 +7,7 @@ const MAX_IDENTITY_BYTES = 64 * 1024;
 const HASH = /^[a-f0-9]{64}$/;
 const JOB_ID = /^prediction-[a-f0-9]{64}$/;
 const CREDENTIAL_KEY =
-  /^(?:authorization|cookie|setcookie|password|secret|apikey|accesskey|accesstoken|refreshtoken|usertoken|bearertoken|sessiontoken|credentials)$/i;
+  /^(?:authorization|cookie|setcookie|password|secret|token|apikey|accesskey|accesstoken|refreshtoken|usertoken|bearertoken|sessiontoken|credentials)$|(?:apikey|signingkey|capturetoken|secret)$/i;
 
 function invalid(code) {
   const error = new TypeError(code);
@@ -47,6 +47,11 @@ const objectKey = (namespace, kind, contentHash) =>
 function namespaceValue(namespace) {
   if (!NAMESPACES.has(namespace)) throw invalid("INVALID_JOB_NAMESPACE");
   return namespace;
+}
+function kindValue(kind) {
+  if (kind !== null && (typeof kind !== "string" || !/^[a-z][a-z0-9-]{0,79}$/.test(kind)))
+    throw invalid("INVALID_JOB_KIND");
+  return kind;
 }
 function identityJson(value, code) {
   if (!value || Array.isArray(value) || typeof value !== "object" || !Object.keys(value).length)
@@ -264,9 +269,18 @@ export function createPredictionJobStore({ database, objects }) {
     );
     return { ...saved, namespace, inputIdentity: JSON.parse(inputIdentityJson), inputFingerprint };
   }
-  async function enqueue({ namespace, inputIdentity, codeIdentity, prepared, ttlSeconds = 900 }) {
+  async function enqueue({
+    namespace,
+    inputIdentity,
+    codeIdentity,
+    prepared,
+    ttlSeconds = 900,
+    expiresAtEpoch = null,
+  }) {
     namespaceValue(namespace);
     seconds(ttlSeconds, 604800, "INVALID_JOB_TTL");
+    if (expiresAtEpoch !== null && (!Number.isSafeInteger(expiresAtEpoch) || expiresAtEpoch < 1))
+      throw invalid("INVALID_JOB_DEADLINE");
     if (
       !prepared ||
       !HASH.test(prepared.contentHash || "") ||
@@ -307,7 +321,9 @@ export function createPredictionJobStore({ database, objects }) {
       `INSERT INTO prediction_jobs
       (id, namespace, input_fingerprint, input_identity_json, code_hash, code_identity_json,
        prepared_object_key, prepared_hash, status, created_at, updated_at, expires_at, fence)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'queued', unixepoch(), unixepoch(), unixepoch() + ?, 0)
+      SELECT ?, ?, ?, ?, ?, ?, ?, ?, 'queued', unixepoch(), unixepoch(),
+        min(unixepoch() + ?, coalesce(?, unixepoch() + ?)), 0
+      WHERE coalesce(?, unixepoch() + ?) > unixepoch()
       ON CONFLICT DO NOTHING`,
       [
         identity.id,
@@ -319,9 +335,15 @@ export function createPredictionJobStore({ database, objects }) {
         prepared.objectKey,
         prepared.contentHash,
         ttlSeconds,
+        expiresAtEpoch,
+        ttlSeconds,
+        expiresAtEpoch,
+        ttlSeconds,
       ],
     ).run();
     const row = await load(identity.id);
+    if (!row && expiresAtEpoch !== null)
+      return { ok: false, status: "expired", job: null, enqueued: false, code: "JOB_EXPIRED" };
     if (
       row &&
       (row.namespace !== namespace ||
@@ -387,8 +409,9 @@ export function createPredictionJobStore({ database, objects }) {
     if (!latest.ok) return latest;
     return { ...latest, result: value.result };
   }
-  async function claim({ id, leaseSeconds = 120 }) {
+  async function claim({ id, kind = null, leaseSeconds = 120 }) {
     idValue(id);
+    kindValue(kind);
     seconds(leaseSeconds, 600, "INVALID_LEASE_SECONDS");
     await expireId(id);
     const row = await statement(
@@ -396,12 +419,15 @@ export function createPredictionJobStore({ database, objects }) {
       lease_until = min(unixepoch() + ?, expires_at), first_started_at = coalesce(first_started_at, unixepoch()),
       started_at = unixepoch(), updated_at = unixepoch()
       WHERE id = ? AND expires_at > unixepoch()
+        AND (? IS NULL OR json_extract(input_identity_json, '$.kind') = ?)
         AND (status = 'queued' OR (status = 'running' AND lease_until <= unixepoch()))
       RETURNING *, unixepoch() AS database_now`,
-      [randomUUID(), leaseSeconds, id],
+      [randomUUID(), leaseSeconds, id, kind, kind],
     ).first();
     if (row) return outcome(row, { claimed: true, lease: leaseFor(row) });
     const current = outcome(await load(id), { claimed: false });
+    if (current.ok && kind !== null && current.job.inputIdentity.kind !== kind)
+      return { ...current, ok: false, code: "JOB_KIND_MISMATCH" };
     return current.ok
       ? {
           ...current,
@@ -409,18 +435,20 @@ export function createPredictionJobStore({ database, objects }) {
         }
       : current;
   }
-  async function claimNext({ namespace, leaseSeconds = 120 }) {
+  async function claimNext({ namespace, kind = null, leaseSeconds = 120 }) {
     namespaceValue(namespace);
+    kindValue(kind);
     seconds(leaseSeconds, 600, "INVALID_LEASE_SECONDS");
     const row = await statement(
       `UPDATE prediction_jobs SET status = 'running', owner_token = ?, fence = fence + 1,
       lease_until = min(unixepoch() + ?, expires_at), first_started_at = coalesce(first_started_at, unixepoch()),
       started_at = unixepoch(), updated_at = unixepoch()
       WHERE id = (SELECT id FROM prediction_jobs WHERE namespace = ? AND expires_at > unixepoch()
+        AND (? IS NULL OR json_extract(input_identity_json, '$.kind') = ?)
         AND (status = 'queued' OR (status = 'running' AND lease_until <= unixepoch())) ORDER BY created_at, id LIMIT 1)
         AND expires_at > unixepoch() AND (status = 'queued' OR (status = 'running' AND lease_until <= unixepoch()))
       RETURNING *, unixepoch() AS database_now`,
-      [randomUUID(), leaseSeconds, namespace],
+      [randomUUID(), leaseSeconds, namespace, kind, kind],
     ).first();
     return row
       ? outcome(row, { claimed: true, lease: leaseFor(row) })
@@ -440,8 +468,10 @@ export function createPredictionJobStore({ database, objects }) {
     const current = await load(lease.jobId);
     return refused(current, lease) || { ...outcome(current), ok: false, code: "LEASE_LOST" };
   }
-  async function complete(lease, resultPayload) {
+  async function complete(lease, resultPayload, { beforePublish } = {}) {
     leaseValue(lease);
+    if (beforePublish !== undefined && typeof beforePublish !== "function")
+      throw invalid("INVALID_PUBLICATION_GUARD");
     const current = await load(lease.jobId),
       denied = refused(current, lease);
     if (denied) return denied;
@@ -455,6 +485,9 @@ export function createPredictionJobStore({ database, objects }) {
       result: resultPayload,
     });
     if (!saved.ok) return { ...outcome(current), ok: false, code: `RESULT_${saved.code}` };
+    // Runtime qualification is distinct from numerical completion. The absolute
+    // deadline in expires_at also guards the later SQL await, not just this hook.
+    if (beforePublish) await beforePublish();
     // The lease can expire while R2 is awaited. Only this atomic statement may
     // publish the pointer; a losing worker's orphan object is never a ready job.
     const row = await statement(

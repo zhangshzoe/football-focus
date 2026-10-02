@@ -3,9 +3,9 @@ import vinext from "vinext";
 import { defineConfig } from "vite";
 import hostingConfig from "./.openai/hosting.json";
 import { forwardCodeHashes } from "./scripts/forward-research-files.mjs";
+import { predictionBuildIdentity } from "./scripts/prediction-build-identity.mjs";
 
-const SITE_CREATOR_PLACEHOLDER_DATABASE_ID =
-  "00000000-0000-4000-8000-000000000000";
+const SITE_CREATOR_PLACEHOLDER_DATABASE_ID = "00000000-0000-4000-8000-000000000000";
 
 const { d1, r2 } = hostingConfig;
 
@@ -46,7 +46,10 @@ export default defineConfig(async () => {
 
   return {
     // Build-time identity of actual source, not a caller-supplied model version.
-    define: { __FF_FORWARD_CODE_HASHES__: JSON.stringify(await forwardCodeHashes()) },
+    define: {
+      __FF_FORWARD_CODE_HASHES__: JSON.stringify(await forwardCodeHashes()),
+      __FF_PREDICTION_BUILD_IDENTITY__: JSON.stringify(await predictionBuildIdentity()),
+    },
     server: isCodexSeatbeltSandbox
       ? { watch: { useFsEvents: false, usePolling: true } }
       : undefined,

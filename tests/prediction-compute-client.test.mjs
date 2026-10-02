@@ -183,19 +183,22 @@ test("source rejection retains exact error code and unknown coverage rather than
 test("one overall deadline cannot slide forward during repeated pending polls", async () => {
   let polls = 0;
   const started = Date.now();
+  let elapsed = 0;
   await assert.rejects(
     requestPredictionResult({
-      timeoutMs: 30,
-      pollIntervalMs: 2,
+      timeoutMs: 1000,
+      pollIntervalMs: 1,
+      clock: () => started + elapsed,
       fetcher: async () => {
         polls++;
+        elapsed += 100;
         return queued();
       },
     }),
     (error) => error.code === "PREDICTION_WAIT_TIMEOUT",
   );
   assert.ok(polls >= 2);
-  assert.ok(Date.now() - started < 1000);
+  assert.equal(elapsed,1000,"Repeated polls consume one fixed deadline, never renew it");
   await assert.rejects(requestPredictionResult({ timeoutMs: 0 }), /预算无效/);
 });
 

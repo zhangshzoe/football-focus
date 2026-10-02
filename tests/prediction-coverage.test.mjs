@@ -71,10 +71,10 @@ async function loadRoute(){
  const context=compile((await readFile(new URL("../app/match-context-service.ts",import.meta.url),"utf8")).replace('from "./team-identity.js"',`from ${JSON.stringify(aliases)}`));
  const history=compile(`export default ${await readFile(new URL("../data/generated-team-history-index.json",import.meta.url),"utf8")};`);
  const source=(await readFile(new URL("../app/api/predictions/route.ts",import.meta.url),"utf8"))
-  .replace('const predictionComputeCache = createPredictionComputeCache({compute:predictFromSnapshot});','const predictionComputeCache = createPredictionComputeCache({compute:(input,parameters)=>{globalThis.__footballCoverageModelCalls=(globalThis.__footballCoverageModelCalls||0)+1;return predictFromSnapshot(input,parameters);}});')
-  .replace('import {fetchOfficialSporttery,OfficialSportteryError} from "../../sporttery-official";',`import {OfficialSportteryError} from ${JSON.stringify(officialModule)};const fetchOfficialSporttery=options=>globalThis.__footballCoverageOfficialFetch(options);`)
+  .replace(/const predictionComputeCache = createPredictionComputeCache\(\{\s*compute:\s*predictFromSnapshot,?\s*\}\);/,'const predictionComputeCache = createPredictionComputeCache({compute:(input,parameters)=>{globalThis.__footballCoverageModelCalls=(globalThis.__footballCoverageModelCalls||0)+1;return predictFromSnapshot(input,parameters);}});')
+  .replace(/import\s*\{[^}]*\}\s*from "\.\.\/\.\.\/sporttery-official";/,`import {OfficialSportteryError} from ${JSON.stringify(officialModule)};const fetchOfficialSporttery=options=>globalThis.__footballCoverageOfficialFetch(options);`)
   .replace('from "../../prediction-version"',`from ${JSON.stringify(version)}`)
-  .replace('import {getPublishedCalibration,MIN_TEMPERATURE_CALIBRATION_MATCHES} from "../../calibration-service";','const getPublishedCalibration=async()=>null; const MIN_TEMPERATURE_CALIBRATION_MATCHES=30;')
+  .replace(/import\s*\{[^}]*\}\s*from "\.\.\/\.\.\/calibration-service";/,'const getPublishedCalibration=async()=>null; const MIN_TEMPERATURE_CALIBRATION_MATCHES=30;')
   .replace('from "../../match-context-service"',`from ${JSON.stringify(context)}`)
   .replace('from "../../../data/generated-team-history-index.json"',`from ${JSON.stringify(history)}`)
   .replace(/from "(\.\.\/\.\.\/[^\"]+\.js)"/g,(_,path)=>`from ${JSON.stringify(new URL(path.replace("../../","../app/"),import.meta.url).href)}`)
@@ -83,12 +83,17 @@ async function loadRoute(){
 }
 
 test("prediction API recovers every confirmed alias and explains the reversed fixture instead of dropping it",async()=>{
+ // These historical alias fixtures are exercised at their actual pre-match
+ // decision era, not offered as current predictions after kickoff.
+ const OriginalDate=globalThis.Date;
+ let fixtureNow=OriginalDate.parse("2026-09-14T12:00:00+08:00");
+ globalThis.Date=class extends OriginalDate{constructor(...args){super(...(args.length?args:[fixtureNow++]));}static now(){return fixtureNow++;}};
  const official=fixtures.map(([id,home,away,,,league,kickoff])=>({id:`周一${id}`,officialMatchId:`test-${id}`,salesDate:"2026-09-14",matchDate:kickoff.slice(0,10),time:kickoff.slice(11),kickoffAt:kickoff.replace(" ","T")+"+08:00",home,away,league,odds:[2.1,3.2,3.4],marketOdds:{"总进球数":[16,8,3.2,4,8,16,32,32]},sourceFetchedAt:new Date().toISOString(),marketEligibility:{}}));
  const external=fixtures.map(([id,,,home,away,league,kickoff])=>({ID:`test-feed-${id}`,CC_ID:`周一${id}`,HOST_NAME:home,GUEST_NAME:away,LEAGUE_NAME_SIMPLY:league,MATCH_TIME:kickoff,listOdds:[2,3,22].map(company=>({SOURCE_COMPANY_ID:company,COMPANY_NAME:`测试公司${company}`,WIN:2.1,SAME:3.2,LOST:3.4,HANDICAP:-.25,HOST:.9,GUEST:.9,DW_HANDICAP:2.5,BIG:.9,SMALL:.9,FIRST_WIN:2.2,FIRST_SAME:3.2,FIRST_LOST:3.3,FIRST_HANDICAP:-.25,FIRST_HOST:.9,FIRST_GUEST:.9,DW_FIRST_HANDICAP:2.5,FIRST_BIG:.9,FIRST_SMALL:.9}))}));
  const {POST}=await loadRoute(),originalFetch=globalThis.fetch,originalOfficialFetch=globalThis.__footballCoverageOfficialFetch,originalModelCalls=globalThis.__footballCoverageModelCalls;
  globalThis.__footballCoverageModelCalls=0;
  let serverMatches=official;
- globalThis.__footballCoverageOfficialFetch=async()=>({matches:serverMatches,fetchedAt:new Date().toISOString(),source:"官方测试源",sourcePage:"https://www.sporttery.cn/"});
+ globalThis.__footballCoverageOfficialFetch=async()=>{const fetchedAt=new Date().toISOString();return{matches:serverMatches,fetchedAt,manifestState:"complete",poolStatus:Object.fromEntries(["HAD","HHAD","CRS","TTG","HAFU"].map(pool=>[pool,{status:"success",observedAt:fetchedAt}])),source:"官方测试源",sourcePage:"https://www.sporttery.cn/"};};
  globalThis.fetch=async(url)=>{assert.equal(url,"https://plzx.zgzcw.com/odds/oyzs_ajax.action");return Response.json(external)};
  const predict=matches=>POST(new Request("http://localhost/api/predictions",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({matches,forceRefresh:true})}));
  try{
@@ -157,7 +162,8 @@ test("prediction API recovers every confirmed alias and explains the reversed fi
    {...official[0],away:"另一支球队"},
   ]){
    serverMatches=[changed,...official.slice(1)];
-   const rejected=await (await predict([changed,...official.slice(1)])).json();
+   const response=await predict([changed,...official.slice(1)]),rejected=await response.json();
+   if(OriginalDate.parse(changed.kickoffAt)<=fixtureNow){assert.equal(response.status,502,"A selected fixture already started invalidates the whole frozen batch");continue;}
    assert.equal(rejected.reports.some(row=>row.officialMatchId==="test-002"),false,"Alias recognition must not bypass other identity checks");
    assert.equal(rejected.unavailableOfficialMatches.some(row=>row.officialMatchId==="test-002"),true);
   }
@@ -165,7 +171,7 @@ test("prediction API recovers every confirmed alias and explains the reversed fi
   const ambiguous=await (await predict([...official,{...official[0],officialMatchId:"duplicate-match"}])).json();
   assert.equal(ambiguous.reports.some(row=>row.id==="周一002"),false);
   assert.match(ambiguous.pendingVerification.find(row=>row.displayId==="周一002").reason,/无法唯一确认/);
- }finally{globalThis.fetch=originalFetch;globalThis.__footballCoverageOfficialFetch=originalOfficialFetch;globalThis.__footballCoverageModelCalls=originalModelCalls}
+ }finally{globalThis.fetch=originalFetch;globalThis.__footballCoverageOfficialFetch=originalOfficialFetch;globalThis.__footballCoverageModelCalls=originalModelCalls;globalThis.Date=OriginalDate;}
 });
 
 test("formal prediction fails closed on missing official identities, stale reads and upstream rejection",async()=>{

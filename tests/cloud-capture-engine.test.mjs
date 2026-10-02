@@ -32,7 +32,7 @@ function harness({ at = "2026-10-02T12:50:00+08:00", sourceError, malformed, dur
   const had = [100 * 78 / 169, 100 * 13 / 169, 100 * 78 / 169];
   const report = { ...match, officialMappingStatus: "verified", predictionId: "test-prediction", inputSnapshotId: "test-input", predictionGeneratedAt: at, sourceFetchedAt: at,
     oddsScores: grid, fullScoreDistribution: grid, probabilities: { home: 100 * 78 / 169, draw: 100 * 13 / 169, away: 100 * 78 / 169 },
-    modelInput: { decisionAt: at, official: { officialMatchId: match.officialMatchId, salesDate: match.salesDate, kickoffAt: match.kickoffAt, fetchedAt: at, hadOdds: match.odds, hhadOdds: [], totalOdds: match.marketOdds["总进球数"], scoreOdds: match.marketOdds["比分"], halfFullOdds: match.marketOdds["半全场"] } },
+    modelInput: { decisionAt: at, official: { officialMatchId: match.officialMatchId, salesDate: match.salesDate, kickoffAt: match.kickoffAt, fetchedAt: at, hadOdds: match.odds, handicap: null, hhadOdds: [], totalOdds: match.marketOdds["总进球数"], scoreOdds: match.marketOdds["比分"], halfFullOdds: match.marketOdds["半全场"] } },
     officialVerification: { method: "server-refetch", fetchedAt: at },
     modelParameters: { firstHalfGoalShare: .45 },
     marketSignal: { modeledTotalGoals: totals, modeledHalfFull: expectedHalfFullDistribution(grid, { firstHalfGoalShare: .45 }) },

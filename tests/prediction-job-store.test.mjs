@@ -108,6 +108,49 @@ async function waitForDatabaseSecond(sql, at) {
   assert.fail("real database clock did not reach lease/expiry boundary");
 }
 
+test("absolute business deadline is enforced by SQL even after R2 and database waits", async () => {
+  const { store, sql } = fixture();
+  try {
+    const prepared = await store.persistPrepared({ namespace: "official", inputIdentity, payload });
+    const now = sql.prepare("SELECT unixepoch() AS now").get().now;
+    const queued = await store.enqueue({
+      namespace: "official",
+      inputIdentity,
+      codeIdentity,
+      prepared,
+      expiresAtEpoch: now + 2,
+    });
+    assert.equal(queued.job.expiresAtEpoch, now + 2);
+    const claimed = await store.claim({ id: queued.job.id });
+    const completed = await store.complete(claimed.lease, resultPayload, {
+      beforePublish: () => waitForDatabaseSecond(sql, now + 2),
+    });
+    assert.equal(completed.ok, false);
+    assert.equal(completed.code, "JOB_EXPIRED");
+    assert.equal((await store.readResult(queued.job.id)).ok, false);
+    const expiredIdentity = { ...inputIdentity, fixtureKey: "expired-new-fixture" };
+    const pointer = await store.persistPrepared({
+      namespace: "official",
+      inputIdentity: expiredIdentity,
+      payload,
+    });
+    assert.equal(
+      (
+        await store.enqueue({
+          namespace: "official",
+          inputIdentity: expiredIdentity,
+          codeIdentity,
+          prepared: pointer,
+          expiresAtEpoch: now,
+        })
+      ).code,
+      "JOB_EXPIRED",
+    );
+  } finally {
+    sql.close();
+  }
+});
+
 test("the standalone schema is explicit and the real D1 session contract is used", async () => {
   const sql = new DatabaseSync(":memory:"),
     objects = objectStore();

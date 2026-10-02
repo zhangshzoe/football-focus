@@ -119,10 +119,10 @@ test("official outage research stays separate from purchasable and archived fore
   readFile(new URL("../app/components/AiPredictionReport.tsx",import.meta.url),"utf8"),
   readFile(new URL("../app/api/predictions/ai/route.ts",import.meta.url),"utf8")
  ]);
- assert.match(route,/mode:"research-only"/);
- assert.match(route,/officialMappingStatus:"unmatched",marketEligibility:\{\}/);
- assert.match(route,/officialOdds:\[\],officialHandicap:"",officialHhadOdds:\[\]/);
- assert.match(route,/if\(kickoff<=now\)return\[\]/);
+ assert.match(route,/mode:\s*"research-only"/);
+ assert.match(route,/officialMappingStatus:\s*"unmatched",\s*marketEligibility:\s*\{\}/);
+ assert.match(route,/officialOdds:\s*\[\],\s*officialHandicap:\s*"",\s*officialHhadOdds:\s*\[\]/);
+ assert.match(route,/if\s*\(kickoff\s*<=\s*now\)\s*return\s*\[\]/);
  assert.match(page,/setResearchRows\(rows\)/);
  assert.match(page,/researchOnly rows=\{researchRows\}/);
  assert.match(page,/matches:predictionRows\.map\(/);
@@ -1008,7 +1008,7 @@ test("model audit surface exposes historical baseline comparison and guarded imp
  assert.match(model,/低比分修正处于影子验证/);
  assert.match(model,/const selectors:\s*unknown\[\]\s*=\s*Array\.isArray\(input\?\.fixtureIds\)/);
  assert.match(model,/selectors\.length\s*>\s*120/);
- assert.match(model,/await fetchOfficialSporttery\(\{repair:forceRefresh,serverHeaders:true\}\)/);
+ assert.match(model,/await fetchOfficialSporttery\(\{\s*repair:\s*forceRefresh,\s*serverHeaders:\s*true\s*\}\)/);
  assert.match(model,/unavailableOfficialMatches/);
  assert.match(model,/覆盖 \$\{coverage\.predictedMatches\}\/\$\{coverage\.officialMatches\} 场官方赛事/);
  assert.match(archive,/match\.officialMatchId&&result\.matchId/);
