@@ -11,11 +11,14 @@ const data=await response.json().catch(()=>({}));
 if(!response.ok)throw Object.assign(new Error(data.error||"体彩比赛数据读取失败"),{code:data.code,sourceState:data.sourceState});
 if(!data.poolStatus||["HAD","HHAD","CRS","TTG","HAFU"].some(pool=>data.poolStatus[pool]?.status!=="success"))
  throw new Error("官方五玩法清单未全部读取成功，覆盖范围未知");
+if(!Array.isArray(data.matches))throw new Error("官方赛事清单结构无效，不能认定无到期比赛");
 const due=new Map();
 const now=Date.now();
+const date=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date(now));
 audit.sourceFetchedAt=data.fetchedAt||null;
 audit.officialManifest=(data.matches||[]).filter(m=>!m.isMock&&m.officialMatchId).map(m=>({officialMatchId:String(m.officialMatchId),salesDate:m.salesDate,kickoffAt:m.kickoffAt,home:m.home,away:m.away,league:m.league}));
 for(const match of Array.isArray(data.matches)?data.matches:[]){
+ if(match.salesDate!==date||match.isMock||!/^\d+$/.test(String(match.officialMatchId||match.matchId||""))||!(Date.parse(match.kickoffAt)>now))continue;
  const targetAt=decisionTargetAt(match.salesDate,match.kickoffAt);
  const target=Date.parse(targetAt||"");
  if(!Number.isFinite(target)||now>=target||target-now>windowMs)continue;

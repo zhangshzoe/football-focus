@@ -71,7 +71,7 @@ test("navigation survives hydration, prediction-page replacement and root unmoun
 });
 
 test("full prediction page keeps eleven matches visible when localStorage is full",async()=>{
- const [Home,Notice]=await Promise.all([load("../app/page.tsx"),load("../app/components/BrowserStorageNotice.tsx")]);
+ const [Home,Notice]=await Promise.all([load("../app/predictions/page.tsx"),load("../app/components/BrowserStorageNotice.tsx")]);
  const {dom,restore}=installDom(),errors=[];
  Object.defineProperty(dom.window,"indexedDB",{value:new IDBFactory()});
  dom.window.localStorage.setItem("ff-records",JSON.stringify([{id:1,match:"保留的旧记录",stake:100,odd:10,result:"未中"}]));
@@ -97,7 +97,7 @@ test("full prediction page keeps eleven matches visible when localStorage is ful
   assert.equal(dom.window.document.querySelectorAll(".compact-predictions-page .daily-prediction-card").length,11);
   assert.match(dom.window.document.querySelector(".prediction-coverage").textContent,/已生成 11 \/ 11/);
   assert.doesNotMatch(dom.window.document.querySelector(".compact-predictions-page").textContent,/官方数据已过期|官方数据读取失败/);
-  assert.match(dom.window.document.querySelector(".browser-storage-notice").textContent,/投注记录暂未保存/);
+  assert.equal(dom.window.document.querySelector(".browser-storage-notice"),null,"Prediction route must not attempt to rewrite unrelated betting records");
   const storage=await import(await componentUrl(new URL("../app/browser-storage.ts",import.meta.url)));
   let saved;
   for(let attempt=0;attempt<50;attempt++){
@@ -120,8 +120,207 @@ const fixture=(id,narrative="主队方向 · 升盘，多盘口较一致，偏�
 });
 const commonProps={loading:false,error:"",aiError:"",fetchedAt:"",sourceUrl:"",methodology:"测试模型",aiProvider:"",aiLoading:false,onAiReview(){}};
 
+test("current market quotes reject ambiguous identities, changed kickoff, stale pools and different handicaps",async()=>{
+ const {currentOfficialOdds}=await import(await componentUrl(new URL("../app/football-workspace.ts",import.meta.url)));
+ const row={...fixture("周一001"),salesDate:"2026-10-02"},now=new Date().toISOString(),match={...row,matchId:row.officialMatchId,handicap:"-1",quoteState:"fresh",marketOdds:{"总进球数":[1,2,3,4,5,6,7,8],"让球胜平负":[2,3,4]},marketStatus:{"总进球数":"available","让球胜平负":"available"},marketEligibility:{"总进球数":{qualification:"qualified"},"让球胜平负":{qualification:"qualified"}},marketSource:{"总进球数":{observedAt:now},"让球胜平负":{observedAt:now}}};
+ assert.deepEqual(currentOfficialOdds(row,[match],"总进球数"),[1,2,3,4,5,6,7,8]);
+ for(const altered of [{...match,salesDate:"2026-10-03"},{...match,kickoffAt:"2026-10-02T23:00:00+08:00"},{...match,home:"同号另一队"},{...match,quoteState:"stale"},{...match,marketSource:{}},{...match,marketSource:{"总进球数":{observedAt:new Date(Date.now()-300001).toISOString()}}}]){
+  assert.deepEqual(currentOfficialOdds(row,[altered],"总进球数"),[]);
+ }
+ assert.deepEqual(currentOfficialOdds(row,[match,match],"总进球数"),[]);
+ assert.deepEqual(currentOfficialOdds(row,[match],"让球胜平负","-2"),[]);
+ assert.deepEqual(currentOfficialOdds(row,[match],"让球胜平负","-1"),[2,3,4]);
+});
+
+test("prediction scroll controls target only their own match overview",async()=>{
+ const Report=await load("../app/components/AiPredictionReport.tsx"),{dom,restore}=installDom(),container=dom.window.document.getElementById("test-root"),calls=[];
+ const original=dom.window.HTMLElement.prototype.scrollBy;
+ dom.window.HTMLElement.prototype.scrollBy=function(options){calls.push({node:this,options})};
+ const root=createRoot(container);
+ try{
+  await act(async()=>root.render(h(Report,{...commonProps,rows:[fixture("周一001"),fixture("周一002")]})));
+  const regions=container.querySelectorAll(".prediction-overview-grid");
+  Object.defineProperty(regions[1],"clientWidth",{value:320});
+  await act(async()=>container.querySelector('button[aria-label="周一002 查看下一类预测"]').click());
+  assert.equal(calls.length,1);assert.equal(calls[0].node,regions[1]);assert.equal(calls[0].options.left,288);
+  assert.equal(regions[1].children.length,5);
+ }finally{await act(async()=>root.unmount());dom.window.HTMLElement.prototype.scrollBy=original;restore()}
+});
+
+for(const route of ["predictions","market-predictions"]){
+ test(`${route} route reads one official batch, preserves sales-day scope and never touches betting records`,async()=>{
+  const Page=await load(`../app/${route}/page.tsx`),{dom,restore}=installDom(),container=dom.window.document.getElementById("test-root"),errors=[];
+  Object.defineProperty(dom.window,"indexedDB",{value:new IDBFactory()});
+  const now=new Date().toISOString(),date=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai"}).format(new Date()),tomorrow=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai"}).format(new Date(Date.now()+86400000));
+  const version={predictionId:"scoped-version",inputSnapshotId:"scoped-input",baseModelVersion:"test",calibrationVersion:"none",generatedAt:now};
+  const row={...fixture("周一001"),...version,salesDate:date,kickoffAt:new Date(Date.now()+4*3600000).toISOString(),officialMappingStatus:"verified"};
+  const other={...row,id:"周二001",officialMatchId:"tomorrow-fixture",salesDate:tomorrow};
+  const asMatch=row=>({...row,matchId:row.officialMatchId,form:[],risk:"测试",tag:"测试",quoteState:"fresh",marketStatus:{"比分":"available","总进球数":"available"},marketEligibility:{"比分":{qualification:"qualified"},"总进球数":{qualification:"qualified"}},marketSource:{"比分":{observedAt:now},"总进球数":{observedAt:now}},marketOdds:{"比分":[7],"总进球数":[12,7,3.2,3,5,10,20,30]}});
+  const originalGet=dom.window.Storage.prototype.getItem,originalSet=dom.window.Storage.prototype.setItem,recordTouches=[],requests=[];
+  dom.window.Storage.prototype.getItem=function(key){if(key==="ff-records")recordTouches.push("read");return originalGet.call(this,key)};
+  dom.window.Storage.prototype.setItem=function(key,value){if(key==="ff-records")recordTouches.push("write");return originalSet.call(this,key,value)};
+  globalThis.fetch=async(url,init)=>{
+   const path=String(url);requests.push(path);
+   if(path==="/api/sporttery")return Response.json({matches:[asMatch(row),asMatch(other)],fetchedAt:now});
+   if(path==="/api/predictions"){assert.deepEqual(JSON.parse(init.body).fixtureIds,[row.officialMatchId]);return Response.json({reports:[row],...version,version,fetchedAt:now,unavailableOfficialMatches:[]})}
+   if(path==="/api/model-audit")return Response.json({});
+   throw Error("Unexpected independent-route request: "+path);
+  };
+  const root=createRoot(container,{onUncaughtError:error=>errors.push(error)});
+  try{
+   await act(async()=>root.render(h(Page)));
+   for(let i=0;i<80&&!container.querySelector(".prediction-coverage")?.textContent.includes("已生成 1 / 1");i++)await act(async()=>{await new Promise(resolve=>setTimeout(resolve,20))});
+   assert.match(container.querySelector(".prediction-coverage").textContent,/已生成 1 \/ 1/);
+   assert.equal(requests.filter(path=>path==="/api/sporttery").length,1);
+   assert.equal(requests.filter(path=>path==="/api/predictions").length,1);
+   assert.deepEqual(recordTouches,[]);
+   assert.equal(container.querySelector("#journal"),null);assert.equal(container.querySelector("#matches"),null);
+   assert.deepEqual(errors.map(error=>error.message),[]);
+  }finally{await act(async()=>root.unmount());dom.window.Storage.prototype.getItem=originalGet;dom.window.Storage.prototype.setItem=originalSet;restore()}
+ });
+}
+
+test("successful empty official refresh clears matches-page selections without generating predictions",async()=>{
+ const Page=await load("../app/matches/page.tsx"),{dom,restore}=installDom(),container=dom.window.document.getElementById("test-root");
+ Object.defineProperty(dom.window,"indexedDB",{value:new IDBFactory()});
+ const now=new Date().toISOString(),row={...fixture("周一001"),form:[],tag:"测试",risk:"测试",quoteState:"fresh",matchStatus:"Selling",marketOdds:{"胜平负":[2,3,4]},marketStatus:{"胜平负":"available"},marketEligibility:{"胜平负":{qualification:"qualified"}}};
+ let calls=0;
+ globalThis.fetch=async(url)=>{assert.equal(String(url),"/api/sporttery");return Response.json({matches:++calls===1?[row]:[],fetchedAt:now})};
+ const root=createRoot(container),flush=async predicate=>{for(let i=0;i<80&&!predicate();i++)await act(async()=>{await new Promise(resolve=>setTimeout(resolve,20))});assert.ok(predicate(),container.textContent.slice(-600))};
+ try{
+  await act(async()=>root.render(h(Page)));await flush(()=>container.querySelector(".had-group button")?.disabled===false);
+  await act(async()=>container.querySelector(".had-group button").click());assert.equal(container.querySelectorAll(".pick-list>div>span").length,1);
+  await act(async()=>container.querySelector(".data-status button").click());await flush(()=>container.textContent.includes("今日暂无官方赛事")&&container.querySelectorAll(".pick-list>div>span").length===0);
+  assert.equal(calls,2);assert.equal(container.querySelectorAll(".match-row").length,0);
+ }finally{await act(async()=>root.unmount());restore()}
+});
+
+test("old AI review cannot overwrite a refreshed official prediction version",async()=>{
+ const Page=await load("../app/predictions/page.tsx"),{dom,restore}=installDom(),container=dom.window.document.getElementById("test-root");
+ Object.defineProperty(dom.window,"indexedDB",{value:new IDBFactory()});
+ const now=new Date().toISOString(),date=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai"}).format(new Date()),kickoffAt=new Date(Date.now()+4*3600000).toISOString();
+ let generation=0,finishReview,reviewSignal;
+ const makeVersion=()=>({predictionId:"generation-"+generation,inputSnapshotId:"input-"+generation,baseModelVersion:"test",calibrationVersion:"none",generatedAt:now});
+ const row=()=>({...fixture("周一001"),...makeVersion(),officialMappingStatus:"verified",salesDate:date,kickoffAt});
+ globalThis.fetch=async(url,init)=>{
+  const path=String(url);
+  if(path==="/api/sporttery")return Response.json({matches:[{...row(),matchId:row().officialMatchId}],fetchedAt:now});
+  if(path==="/api/predictions"){generation++;const version=makeVersion();return Response.json({reports:[row()],...version,version,fetchedAt:now})}
+  if(path==="/api/model-audit")return Response.json({});
+  if(path.startsWith("/api/predictions/ai")){
+   const body=JSON.parse(init.body);reviewSignal=init.signal;
+   return new Promise(resolve=>{finishReview=()=>resolve(Response.json({version:{...body.version,reviewForPredictionId:body.version.predictionId},reports:body.reports,model:"过期复核",reviewMode:"evidence-summary-v1"}))});
+  }
+  throw Error("Unexpected review race request: "+path);
+ };
+ const root=createRoot(container),flush=async predicate=>{for(let i=0;i<100&&!predicate();i++)await act(async()=>{await new Promise(resolve=>setTimeout(resolve,20))});assert.ok(predicate(),container.textContent.slice(0,1000))};
+ try{
+  await act(async()=>root.render(h(Page)));await flush(()=>container.textContent.includes("generation-1"));
+  await act(async()=>[...container.querySelectorAll("button")].find(node=>node.textContent==="AI 复核全部比赛").click());await flush(()=>!!finishReview);
+  await act(async()=>[...container.querySelectorAll("button")].find(node=>node.textContent==="刷新比赛与赔率").click());await flush(()=>container.textContent.includes("generation-2"));
+  assert.equal(reviewSignal.aborted,true);
+  await act(async()=>{finishReview();await new Promise(resolve=>setTimeout(resolve,30))});
+  assert.match(container.textContent,/generation-2/);assert.doesNotMatch(container.textContent,/过期复核/);
+ }finally{await act(async()=>root.unmount());restore()}
+});
+
+for(const route of ["predictions","market-predictions"]){
+ test(`${route} clears an interrupted force-repair state and allows another repair`,async()=>{
+  const Page=await load(`../app/${route}/page.tsx`),{dom,restore}=installDom(),container=dom.window.document.getElementById("test-root");
+  Object.defineProperty(dom.window,"indexedDB",{value:new IDBFactory()});
+  const now=new Date().toISOString(),date=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai"}).format(new Date());
+  const rows=["周一001","周一002"].map(id=>({...fixture(id),salesDate:date,kickoffAt:new Date(Date.now()+4*3600000).toISOString(),officialMappingStatus:"verified"}));
+  let generation=0,forceCalls=0,finishOld,oldSignal;
+  globalThis.fetch=async(url,init)=>{
+   const path=String(url);
+   if(path.startsWith("/api/sporttery"))return Response.json({matches:rows.map(row=>({...row,matchId:row.officialMatchId})),fetchedAt:now});
+   if(path==="/api/model-audit")return Response.json({});
+   if(path==="/api/predictions"){
+    const force=JSON.parse(init.body).forceRefresh;
+    generation++;
+    const version={predictionId:`repair-${generation}`,inputSnapshotId:`input-${generation}`,baseModelVersion:"test",calibrationVersion:"none",generatedAt:now};
+    const response=()=>Response.json({reports:[{...rows[0],...version}],...version,version,fetchedAt:now});
+    if(force&&++forceCalls===1){oldSignal=init.signal;return new Promise(resolve=>{finishOld=()=>resolve(response())})}
+    return response();
+   }
+   throw Error("Unexpected repair-state request: "+path);
+  };
+  const root=createRoot(container),flush=async predicate=>{for(let i=0;i<100&&!predicate();i++)await act(async()=>{await new Promise(resolve=>setTimeout(resolve,20))});assert.ok(predicate(),container.textContent.slice(-1200))};
+  const button=text=>[...container.querySelectorAll("button")].find(node=>node.textContent===text);
+  try{
+   await act(async()=>root.render(h(Page)));await flush(()=>button("重新抓取并核验")&&!button("重新抓取并核验").disabled);
+   await act(async()=>button("重新抓取并核验").click());await flush(()=>!!finishOld);
+   await act(async()=>button("刷新比赛与赔率").click());await flush(()=>button("重新抓取并核验")&&!button("重新抓取并核验").disabled);
+   assert.equal(oldSignal.aborted,true);
+   await act(async()=>{finishOld();await new Promise(resolve=>setTimeout(resolve,20))});
+   assert.equal(button("重新抓取并核验").disabled,false);
+   await act(async()=>button("重新抓取并核验").click());await flush(()=>forceCalls===2&&button("重新抓取并核验")&&!button("重新抓取并核验").disabled);
+  }finally{await act(async()=>root.unmount());restore()}
+ });
+}
+
+test("sales-day clock and resumed focus reject yesterday's pending response and preserve old history",async()=>{
+ const Page=await load("../app/predictions/page.tsx"),{dom,restore}=installDom(),container=dom.window.document.getElementById("test-root");
+ Object.defineProperty(dom.window,"indexedDB",{value:new IDBFactory()});
+ const actualNow=Date.now,originalInterval=dom.window.setInterval,originalClear=dom.window.clearInterval;
+ let clock=Date.parse("2026-10-02T23:59:59+08:00"),checkDate,finishYesterday,yesterdaySignal,officialCalls=0;
+ Date.now=()=>clock;
+ dom.window.setInterval=(callback,ms)=>{assert.equal(ms,30000);checkDate=callback;return 123};
+ dom.window.clearInterval=id=>assert.equal(id,123);
+ const oldDate="2026-10-02",todayDate="2026-10-03",nextDate="2026-10-04",requests=[];
+ const rows=[oldDate,todayDate,nextDate].map((salesDate,index)=>({...fixture(`测试${index+1}`),officialMatchId:`day-${salesDate}`,salesDate,kickoffAt:`${salesDate}T23:59:59+08:00`,officialMappingStatus:"verified"}));
+ globalThis.fetch=async(url,init)=>{
+  const path=String(url);
+  if(path==="/api/sporttery"){officialCalls++;return Response.json({matches:rows.map(row=>({...row,matchId:row.officialMatchId})),fetchedAt:new Date(clock).toISOString()})}
+  if(path==="/api/model-audit")return Response.json({});
+  if(path==="/api/predictions"){
+   const ids=JSON.parse(init.body).fixtureIds;requests.push(ids);
+   const row=rows.find(row=>ids.includes(row.officialMatchId)),generatedAt=new Date(clock).toISOString(),version={predictionId:`version-${row.salesDate}`,inputSnapshotId:`input-${row.salesDate}`,baseModelVersion:"test",calibrationVersion:"none",generatedAt};
+   const response=()=>Response.json({reports:[{...row,...version}],...version,version,fetchedAt:generatedAt});
+   if(row.salesDate===oldDate){yesterdaySignal=init.signal;return new Promise(resolve=>{finishYesterday=()=>resolve(response())})}
+   return response();
+  }
+  throw Error("Unexpected midnight request: "+path);
+ };
+ const storage=await import(await componentUrl(new URL("../app/browser-storage.ts",import.meta.url))),config=await import(await componentUrl(new URL("../app/prediction-config.ts",import.meta.url)));
+ const existing={historyRecordId:"untouched-history",predictionId:"prior-version",date:"2026-10-01",matches:[]};
+ await storage.writeBrowserData(config.PREDICTION_SNAPSHOT_STORAGE_KEY,[existing]);
+ const root=createRoot(container),flush=async predicate=>{for(let i=0;i<100&&!predicate();i++)await act(async()=>{await new Promise(resolve=>setTimeout(resolve,20))});assert.ok(predicate(),container.textContent.slice(-1200))};
+ try{
+  await act(async()=>root.render(h(Page)));await flush(()=>!!finishYesterday&&!!checkDate);
+  assert.deepEqual(requests,[[`day-${oldDate}`]]);
+  clock=Date.parse("2026-10-03T00:00:01+08:00");
+  await act(async()=>checkDate());await flush(()=>container.textContent.includes(`version-${todayDate}`));
+  assert.equal(yesterdaySignal.aborted,true);assert.deepEqual(requests[1],[`day-${todayDate}`]);
+  await act(async()=>{finishYesterday();await new Promise(resolve=>setTimeout(resolve,20))});
+  assert.doesNotMatch(container.textContent,/version-2026-10-02/);
+  let saved;
+  for(let i=0;i<60&&saved?.date!==todayDate;i++)await act(async()=>{saved=await storage.readBrowserData(config.PREDICTION_STORAGE_KEY,null);await new Promise(resolve=>setTimeout(resolve,10))});
+  assert.equal(saved.date,todayDate);assert.ok(saved.matches.every(row=>row.salesDate===todayDate));
+  clock=Date.parse("2026-10-04T00:01:00+08:00");
+  await act(async()=>dom.window.dispatchEvent(new dom.window.Event("focus")));await flush(()=>container.textContent.includes(`version-${nextDate}`));
+  assert.deepEqual(requests[2],[`day-${nextDate}`]);assert.equal(officialCalls,3);
+  let history;
+  for(let i=0;i<60&&!history?.some(row=>row.date===nextDate);i++)await act(async()=>{history=await storage.readBrowserData(config.PREDICTION_SNAPSHOT_STORAGE_KEY,[]);await new Promise(resolve=>setTimeout(resolve,10))});
+  assert.deepEqual(history.find(row=>row.historyRecordId===existing.historyRecordId),existing);
+  assert.ok(history.filter(row=>row.historyRecordId!==existing.historyRecordId).every(row=>row.matches.every(match=>match.salesDate===row.date)));
+ }finally{await act(async()=>root.unmount());Date.now=actualNow;dom.window.setInterval=originalInterval;dom.window.clearInterval=originalClear;restore()}
+});
+
+test("same official ID and date with changed kickoff is excluded from the current prediction",async()=>{
+ const Page=await load("../app/predictions/page.tsx"),{dom,restore}=installDom(),container=dom.window.document.getElementById("test-root");
+ Object.defineProperty(dom.window,"indexedDB",{value:new IDBFactory()});
+ const now=new Date().toISOString(),date=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai"}).format(new Date()),version={predictionId:"changed-kickoff",inputSnapshotId:"input",baseModelVersion:"test",calibrationVersion:"none",generatedAt:now},row={...fixture("周一001"),...version,salesDate:date,officialMappingStatus:"verified"};
+ globalThis.fetch=async(url)=>String(url)==="/api/sporttery"?Response.json({matches:[{...row,matchId:row.officialMatchId,kickoffAt:new Date(Date.now()+4*3600000).toISOString()}],fetchedAt:now}):String(url)==="/api/model-audit"?Response.json({}):Response.json({reports:[row],...version,version,fetchedAt:now});
+ const root=createRoot(container);
+ try{
+  await act(async()=>root.render(h(Page)));for(let i=0;i<80&&!container.querySelector(".prediction-coverage");i++)await act(async()=>{await new Promise(resolve=>setTimeout(resolve,20))});
+  assert.match(container.querySelector(".prediction-coverage").textContent,/已生成 0 \/ 1/);assert.equal(container.querySelectorAll(".daily-prediction-card").length,0);
+ }finally{await act(async()=>root.unmount());restore()}
+});
+
 test("prediction page waits for a queued generation without saving zero coverage or replacing it with a browser baseline",async()=>{
- const Home=await load("../app/page.tsx");
+ const Home=await load("../app/predictions/page.tsx");
  const {dom,restore}=installDom(),errors=[],container=dom.window.document.getElementById("test-root");
  Object.defineProperty(dom.window,"indexedDB",{value:new IDBFactory()});
  const now=new Date().toISOString(),date=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai"}).format(new Date());
@@ -171,7 +370,7 @@ test("closing a pending single-match review cannot publish its late result in an
   const path=String(url);
   if(path==="/api/sporttery")return Response.json({matches,fetchedAt:now});
   if(path.startsWith("/api/sporttery/detail"))return Response.json({});
-  if(path==="/api/predictions")return ++predictionCalls===1?Response.json({reports:[],...version,version,fetchedAt:now}):Response.json({status:"queued",jobId:"detail-job"},{status:202});
+  if(path==="/api/predictions"){predictionCalls++;return Response.json({status:"queued",jobId:"detail-job"},{status:202})}
   if(path==="/api/prediction-jobs?jobId=detail-job"){jobStarted=true;return new Promise(resolve=>{finishOld=()=>resolve(Response.json({reports:[report],jobId:"detail-job",...version,version,fetchedAt:now}))})}
   if(path==="/api/analyze"){analysisCalls++;return Response.json({text:"不应出现在另一场的旧结果"})}
   throw Error(`Unexpected detail review request: ${path}`);
@@ -180,7 +379,8 @@ test("closing a pending single-match review cannot publish its late result in an
  const flush=async predicate=>{for(let i=0;i<120&&!predicate();i++)await act(async()=>{await new Promise(resolve=>setTimeout(resolve,20))});assert.ok(predicate(),errors.map(error=>error.message).join(";"))};
  try{
   await act(async()=>root.render(h(Home)));
-  await flush(()=>predictionCalls===1&&container.querySelectorAll(".detail-entry").length===2);
+  await flush(()=>container.querySelectorAll(".detail-entry").length===2);
+  assert.equal(predictionCalls,0,"Matches page must not generate predictions before explicit evidence review");
   await act(async()=>container.querySelectorAll(".detail-entry")[0].click());
   const review=()=>[...container.querySelectorAll(".ai-action button")][0];
   await act(async()=>review().click());

@@ -6,6 +6,7 @@ import {register} from "node:module";
 import {calculatePurchaseLegReturns,deduplicatePurchasePlans,generatePurchasePlans,PURCHASE_PLAN_DEFINITIONS,PURCHASE_PLAN_MODULES,MARKET_META,settlePurchasePlan,summarizePurchasePlanModules,summarizePurchasePlanDefinitions,summarizePurchasePlanDays} from "../app/purchase-plan-engine.js";
 import {DEFAULT_RECOMMENDATION_POLICY,assessRecommendation,canonicalTicketKey} from "../app/recommendation-policy.js";
 import {calculateTicketEconomics,ticketFixtureKey} from "../app/ticket-economics.js";
+async function readWorkspaceSource(){return (await Promise.all(["football-workspace.ts","hooks/useOfficialMatches.ts","hooks/usePredictionWorkspace.ts","components/MatchesWorkspace.tsx","components/PredictionWorkspace.tsx","components/OfficialSourceNotice.tsx"].map(path=>readFile(new URL("../app/"+path,import.meta.url),"utf8")))).join("\n")}
 const completePoints=(labels,weights)=>{const missing=labels.filter(label=>!Object.hasOwn(weights,label)),remaining=100-Object.values(weights).reduce((sum,p)=>sum+p,0);assert.ok(remaining>=-1e-8);return labels.map(score=>({score,probability:Object.hasOwn(weights,score)?weights[score]:missing.length?remaining/missing.length:0}));};
 const scoreGridFixture=weights=>completePoints(Array.from({length:169},(_,index)=>`${Math.floor(index/13)}:${index%13}`),weights);
 
@@ -115,7 +116,7 @@ test("total-goals API marks missing cloud reports and rejects corrupt or retired
 test("official outage research stays separate from purchasable and archived forecasts",async()=>{
  const [route,page,report,review]=await Promise.all([
   readFile(new URL("../app/api/predictions/route.ts",import.meta.url),"utf8"),
-  readFile(new URL("../app/page.tsx",import.meta.url),"utf8"),
+  readWorkspaceSource(),
   readFile(new URL("../app/components/AiPredictionReport.tsx",import.meta.url),"utf8"),
   readFile(new URL("../app/api/predictions/ai/route.ts",import.meta.url),"utf8")
  ]);
@@ -124,8 +125,8 @@ test("official outage research stays separate from purchasable and archived fore
  assert.match(route,/officialOdds:\s*\[\],\s*officialHandicap:\s*"",\s*officialHhadOdds:\s*\[\]/);
  assert.match(route,/if\s*\(kickoff\s*<=\s*now\)\s*return\s*\[\]/);
  assert.match(page,/setResearchRows\(rows\)/);
- assert.match(page,/researchOnly rows=\{researchRows\}/);
- assert.match(page,/matches:predictionRows\.map\(/);
+ assert.match(page,/researchOnly\s+rows=\{researchRows\}/);
+ assert.match(page,/matches:\s*predictionRows\.map\(/);
  assert.match(report,/不参与选号、每日固定票或正式赛前复盘/);
  assert.match(review,/外围研究不能混入官方预测版本/);
 });
@@ -316,7 +317,7 @@ test("primary HTTP blocks and mobile configuration failures retain independent d
  }finally{globalThis.fetch=originalFetch;}
 });
 
-test("mobile prediction summaries swipe while forecast rows become readable cards",async()=>{
+test("mobile prediction summaries swipe and forecast tables keep fixed headers and first columns",async()=>{
  const [report,table,styles,mobileStyles,page,archiveNav]=await Promise.all([
   readFile(new URL("../app/components/AiPredictionReport.tsx",import.meta.url),"utf8"),
   readFile(new URL("../app/components/MarketPredictionTable.tsx",import.meta.url),"utf8"),
@@ -328,13 +329,16 @@ test("mobile prediction summaries swipe while forecast rows become readable card
  assert.match(report,/左右滑动查看 5 类预测/);
  assert.match(report,/role="region"/);
  assert.match(table,/左右滑动查看完整预测数据/);
- assert.match(table,/手机端按场次展示全部预测/);
+ assert.doesNotMatch(table,/手机端按场次展示全部预测/);
+ assert.doesNotMatch(table,/fetch\(/,"The display table must not repeat official requests");
  assert.match(styles,/\.prediction-overview-grid\{display:flex!important/);
  assert.match(styles,/scroll-snap-type:x mandatory/);
  assert.match(styles,/touch-action:pan-x pan-y/);
  assert.match(styles,/\.market-forecast-table th:nth-child\(9\).*width:230px!important/);
- assert.match(mobileStyles,/\.market-forecast-table tr\{display:grid!important/);
- assert.match(mobileStyles,/\.market-forecast-table td:nth-child\(n\+10\)\{display:flex!important/);
+ assert.doesNotMatch(mobileStyles,/\.market-forecast-table tr\{display:grid!important/);
+ assert.match(mobileStyles,/\.market-forecast-wrap\{max-height:min\(70dvh,640px\)!important;overflow:auto!important/);
+ assert.match(mobileStyles,/tbody td:first-child\{position:sticky!important;left:0/);
+ assert.match(mobileStyles,/thead th:first-child\{position:sticky!important;top:0;left:0/);
  assert.match(mobileStyles,/\.topbar\.compact-nav nav a>span\{font-size:20px!important/);
  assert.match(page,/view: "matches", href: "\/matches", icon: "▣", label: "今日比赛"/);
  assert.match(archiveNav,/<span aria-hidden="true">▤<\/span><b>盘后回溯<\/b>/);
@@ -375,7 +379,7 @@ test("mobile prediction fallback derives a traceable baseline only from official
 });
 
 test("match-board merge keeps omitted or failed quotes unavailable for selection",async()=>{
- const page=await readFile(new URL("../app/page.tsx",import.meta.url),"utf8"),snippet=page.slice(page.indexOf("const matchCacheKey="),page.indexOf("const fairMarketPoints=")),javascript=ts.transpileModule(snippet,{compilerOptions:{target:ts.ScriptTarget.ES2022}}).outputText;
+ const page=await readWorkspaceSource(),snippet=page.slice(page.indexOf("export const matchCacheKey"),page.indexOf("export const fairMarketPoints")).replaceAll("export ",""),javascript=ts.transpileModule(snippet,{compilerOptions:{target:ts.ScriptTarget.ES2022}}).outputText;
  const {mergeOfficialMatches,oddsFor}=new Function(`${javascript};return {mergeOfficialMatches,oddsFor};`)();
  const match={id:"周六001",officialMatchId:"m1",salesDate:"2026-09-19",marketOdds:{"胜平负":[2,3,4]},marketStatus:{"胜平负":"available"},marketEligibility:{"胜平负":{qualification:"qualified"}}};
  assert.equal(oddsFor(mergeOfficialMatches([match],[])[0],"胜平负"),null);
@@ -383,21 +387,21 @@ test("match-board merge keeps omitted or failed quotes unavailable for selection
  assert.equal(oddsFor(mergeOfficialMatches([match],[{...match,marketEligibility:{"胜平负":{qualification:"unknown"}}}])[0],"胜平负"),null);
  assert.deepEqual(oddsFor(mergeOfficialMatches([match],[match])[0],"胜平负"),[2,3,4]);
  assert.equal(mergeOfficialMatches([],[match])[0].quoteState,"fresh");
- assert.match(page,/buildOfficialPredictionFallback\(predictionMatches,dataMeta\.fetchedAt\|\|"",error\)/);
- assert.match(page,/setPredictionVersion\(available\?fallback\.version:null\)/);
+ assert.match(page,/buildOfficialPredictionFallback\([\s\S]*predictionMatches,[\s\S]*dataMeta\.fetchedAt \|\| "",[\s\S]*error/);
+ assert.match(page,/setPredictionVersion\(available \? fallback\.version : null\)/);
 });
 
 test("production match board has explicit official-data states and no demo fallback",async()=>{
- const page=await readFile(new URL("../app/page.tsx",import.meta.url),"utf8");
- assert.match(page,/type DataState="loading"\|"success"\|"stale"\|"empty"\|"error"/);
- assert.match(page,/const allMatches=useMemo\(\(\)=>liveMatches\.slice\(\)\.sort\(compareMatchesByDateAndSequence\)/);
- assert.match(page,/const compareMatchesByDateAndSequence=/);
- assert.match(page,/const oddsFor=.*return null/);
+ const page=await readWorkspaceSource();
+ assert.match(page,/type DataState\s*=\s*"loading"[\s\S]*"success"[\s\S]*"stale"[\s\S]*"empty"[\s\S]*"error"/);
+ assert.match(page,/liveMatches\.slice\(\)\.sort\(compareMatchesByDateAndSequence\)/);
+ assert.match(page,/const compareMatchesByDateAndSequence\s*=/);
+ assert.match(page,/const oddsFor[\s\S]*return null/);
  assert.match(page,/暂未开售或暂无官方赔率/);
  assert.match(page,/全部赔率选择和新预测已暂停/);
  assert.match(page,/internalError instanceof OfficialAccessBlockedError/);
  assert.match(page,/刷新不能解除限制/);
- assert.match(page,/<details><summary>查看读取失败详情<\/summary>/);
+ assert.match(page,/<details>\s*<summary>查看读取失败详情<\/summary>/);
  assert.doesNotMatch(page,/liveMatches\.length\?liveMatches:demoMatches/);
  assert.doesNotMatch(page,/demoMatches|比赛研究样例/);
  assert.doesNotMatch(page,/const marketOdds:Record<Market,number\[\]>/);
@@ -453,7 +457,7 @@ test("historical calibration is wired into predictions without treating missing 
   readFile(new URL("../app/components/PredictionArchive.tsx",import.meta.url),"utf8"),
   readFile(new URL("../app/post-match-review.ts",import.meta.url),"utf8"),
   readFile(new URL("../app/api/predictions/route.ts",import.meta.url),"utf8"),
-  readFile(new URL("../app/page.tsx",import.meta.url),"utf8"),
+  readWorkspaceSource(),
   readFile(new URL("../app/api/predictions/ai/route.ts",import.meta.url),"utf8"),
   readFile(new URL("../app/calibration-service.ts",import.meta.url),"utf8"),
  ]);
@@ -574,14 +578,14 @@ test("market probability highlights remain visible on zebra and hovered rows",as
  assert.match(table,/expandedExpectations/);
  assert.match(table,/aria-expanded=\{expanded\}/);
  assert.match(table,/展开全部/);
- assert.match(table,/前2<br\/>概率和/);
- assert.match(table,/goalCoverage>50\?"goal-top2"/);
- assert.match(table,/rank===0\?"goal-prob-first":rank===1\?"goal-prob-second"/);
- assert.match(table,/goalPicks\.map\(item=>item\.label\)\.join\(" \/ "\)/);
- assert.match(table,/SCORE_TOP_TWO_COVERAGE_THRESHOLD=25/);
- assert.match(table,/SCORE_SINGLE_PROBABILITY_THRESHOLD=15/);
- assert.match(table,/scoreTopTwoCoverage>SCORE_TOP_TWO_COVERAGE_THRESHOLD\?"score-coverage-high"/);
- assert.match(table,/item\?\.probability\|\|0\)>SCORE_SINGLE_PROBABILITY_THRESHOLD/);
+ assert.match(table,/前2\s*<br\s*\/>\s*概率和/);
+ assert.match(table,/goalCoverage\s*>\s*50\s*\?\s*"goal-top2"/);
+ assert.match(table,/rank\s*===\s*0\s*\?\s*"goal-prob-first"\s*:\s*rank\s*===\s*1\s*\?\s*"goal-prob-second"/);
+ assert.match(table,/goalPicks\.map\(\(?item\)?\s*=>\s*item\.label\)\.join\(" \/ "\)/);
+ assert.match(table,/SCORE_TOP_TWO_COVERAGE_THRESHOLD\s*=\s*25/);
+ assert.match(table,/SCORE_SINGLE_PROBABILITY_THRESHOLD\s*=\s*15/);
+ assert.match(table,/scoreTopTwoCoverage\s*>\s*SCORE_TOP_TWO_COVERAGE_THRESHOLD\s*\?\s*"score-coverage-high"/);
+ assert.match(table,/item\?\.probability\s*\|\|\s*0\)\s*>\s*SCORE_SINGLE_PROBABILITY_THRESHOLD/);
  assert.match(styles,/forecast-expectation\.expanded>span[^]*-webkit-line-clamp:unset!important/);
  assert.match(styles,/forecast-view-score td\.forecast-expectation\{text-align:left!important\}/);
 });
@@ -900,7 +904,7 @@ test("one immutable prediction version supplies prediction, recommendation and a
   readFile(new URL("../app/prediction-version.ts",import.meta.url),"utf8"),
   readFile(new URL("../app/api/predictions/route.ts",import.meta.url),"utf8"),
   readFile(new URL("../app/api/predictions/ai/route.ts",import.meta.url),"utf8"),
-  readFile(new URL("../app/page.tsx",import.meta.url),"utf8"),
+  readWorkspaceSource(),
   readFile(new URL("../app/components/TodayRecommendations.tsx",import.meta.url),"utf8"),
   readFile(new URL("../app/components/PredictionArchive.tsx",import.meta.url),"utf8"),
   readFile(new URL("../scripts/capture-prediction-snapshot.mjs",import.meta.url),"utf8"),
@@ -932,7 +936,7 @@ test("one immutable prediction version supplies prediction, recommendation and a
  assert.match(recommendations,/match\.salesDate \|\| match\.matchDate \|\| match\.kickoffAt/);
  assert.match(recommendations,/current\?\.salesDate/);
  assert.match(page,/竞彩开售日/);
- assert.match(page,/match\.salesDate\|\|match\.matchDate/);
+ assert.match(page,/match\.salesDate \|\| match\.matchDate/);
  assert.match(archive,/预测版本 \{selected\.predictionId\}/);
  assert.match(capture,/body: JSON\.stringify\(\{ version: raw\.version, reports: raw\.reports \}\)/);
 });
@@ -942,7 +946,7 @@ test("pre-match snapshots are append-only and keep prediction layers separate",a
   readFile(new URL("../scripts/capture-prediction-snapshot.mjs",import.meta.url),"utf8"),
   readFile(new URL("../scripts/capture-purchase-plan-snapshot.mjs",import.meta.url),"utf8"),
   readFile(new URL("../app/api/prediction-snapshots/route.ts",import.meta.url),"utf8"),
-  readFile(new URL("../app/page.tsx",import.meta.url),"utf8"),
+  readWorkspaceSource(),
   readFile(new URL("../app/components/TodayRecommendations.tsx",import.meta.url),"utf8"),
   readFile(new URL("../app/browser-storage.ts",import.meta.url),"utf8"),
  ]);

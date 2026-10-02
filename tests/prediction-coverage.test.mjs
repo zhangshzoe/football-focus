@@ -214,9 +214,9 @@ test("coverage panel renders visible missing-match reasons and is wired into bot
  assert.equal(renderToStaticMarkup(createElement(Coverage,{predictedCount:0})),"");
  const complete=renderToStaticMarkup(createElement(Coverage,{coverage:{officialMatches:11,predictedMatches:11,unavailableMatches:0},predictedCount:11}));
  assert.match(complete,/全部场次已覆盖/);assert.doesNotMatch(complete,/<ul/);
- const [page,ai,market]=await Promise.all(["../app/page.tsx","../app/components/AiPredictionReport.tsx","../app/components/MarketPredictionTable.tsx"].map(path=>readFile(new URL(path,import.meta.url),"utf8")));
- assert.equal((page.match(/coverage=\{predictionCoverage\} unavailableMatches=\{unavailablePredictions\}/g)||[]).length,2);
- assert.match(page,/const unavailable=predictionMatches\.filter/);
- assert.match(page,/setPredictionCoverage\(null\);setUnavailablePredictions\(\[\]\)/);
- assert.match(ai,/<PredictionCoverage /);assert.match(market,/<PredictionCoverage /);
+ const [page,hook,ai,market]=await Promise.all(["../app/components/PredictionWorkspace.tsx","../app/hooks/usePredictionWorkspace.ts","../app/components/AiPredictionReport.tsx","../app/components/MarketPredictionTable.tsx"].map(path=>readFile(new URL(path,import.meta.url),"utf8")));
+ assert.equal((page.match(/coverage=\{predictionCoverage\}\s+unavailableMatches=\{unavailablePredictions\}/g)||[]).length,2);
+ assert.match(hook,/const unavailable = predictionMatches\s*\.filter/);
+ assert.match(hook,/setPredictionCoverage\(null\);\s*setUnavailablePredictions\(\[\]\)/);
+ assert.match(ai,/<PredictionCoverage\s/);assert.match(market,/<PredictionCoverage\s/);
 });
