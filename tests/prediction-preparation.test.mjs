@@ -9,6 +9,7 @@ import { createPredictionJobStore, predictionJobSchemaSql } from "../app/predict
 import { createPredictionUnitRuntime } from "../app/prediction-unit-runtime.js";
 import { createPredictionBatchRuntime } from "../app/prediction-batch-runtime.js";
 import { deriveFixture } from "./helpers/prediction-preparation-fixture.mjs";
+import { resolveContextEvidence } from "../app/context-evidence.js";
 
 // Only source I/O is replaced. Numerical fits, identity checks, report projection,
 // version hashing and context signing use actual project implementations.
@@ -204,6 +205,108 @@ test("a complete frozen batch waits without claiming, then independent units and
       );
       assert.equal(JSON.stringify(persisted).includes("MATCH_CONTEXT_SIGNING_KEY"), false);
     } finally {
+      f.sql.close();
+    }
+  });
+});
+
+test("independent batch assembly preserves a usable context's real HMAC proof through immutable readback", async () => {
+  await runFixture(async ({ fixture }) => {
+    const f = durableFixture(),
+      previousSecret = process.env.MATCH_CONTEXT_SIGNING_KEY;
+    const secret = "test-only-batch-context-signing-key";
+    process.env.MATCH_CONTEXT_SIGNING_KEY = secret;
+    try {
+      const numericIds = new Map([
+        ["test-first", "100001"],
+        ["test-second", "100002"],
+      ]);
+      for (const match of fixture.officialData.matches)
+        if (numericIds.has(match.officialMatchId)) {
+          match.officialMatchId = numericIds.get(match.officialMatchId);
+          match.matchId = match.officialMatchId;
+        }
+      for (const row of fixture.raw)
+        if (numericIds.has(row.MATCH_ID)) row.MATCH_ID = numericIds.get(row.MATCH_ID);
+      fixture.ids = ["100001", "100002"];
+      fixture.contexts.push([
+        "100001",
+        {
+          status: "partial",
+          observedAt: fixture.officialData.fetchedAt,
+          fixtures: [],
+          sources: [],
+          injuries: [
+            {
+              side: "home",
+              player: "test-only player",
+              injuryFlag: 1,
+              sourceUrl: "https://www.sporttery.cn/test-only",
+              observedAt: fixture.officialData.fetchedAt,
+            },
+          ],
+          missing: ["test-only unavailable replacement impact"],
+        },
+      ]);
+      const batch = JSON.parse(
+        JSON.stringify(await route.prepareOfficialPredictionBatch(fixture.ids, true)),
+      );
+      const options = {
+        store: f.store,
+        codeIdentity,
+        project: route.projectPreparedOfficialReports,
+        finalize: async (prepared, reports) =>
+          (await route.completePreparedOfficialPrediction(prepared, reports)).json(),
+      };
+      const submitted = await createPredictionBatchRuntime(options).enqueue(batch);
+      const consumer = createPredictionUnitRuntime({ store: f.store, codeIdentity });
+      for (const child of submitted.children)
+        assert.equal((await consumer.consumeOne({ id: child.id })).status, "ready");
+      assert.equal(
+        (await createPredictionBatchRuntime(options).consumeOne({ id: submitted.job.id })).status,
+        "ready",
+      );
+      const reader = createPredictionBatchRuntime({
+        ...options,
+        project: () => {
+          throw new Error("read must not project");
+        },
+        finalize: () => {
+          throw new Error("read must not sign");
+        },
+      });
+      const writes = f.writes.length;
+      f.queries.length = 0;
+      const ready = await reader.readStatus(submitted.job.id);
+      assert.equal(ready.status, "ready");
+      const report = ready.reports.find((row) => row.officialMatchId === "100001");
+      assert.ok(report.contextProof);
+      const evidence = await resolveContextEvidence(report, secret, batch.generatedAt);
+      assert.equal(evidence.status, "verified-frozen-context");
+      assert.equal(evidence.evidence[0].kind, "injury-record");
+      assert.equal(
+        (await resolveContextEvidence(report, "different-test-only-key", batch.generatedAt)).status,
+        "unverified",
+      );
+      const tampered = structuredClone(report);
+      tampered.modelInput.matchContext.injuries[0].player = "changed-test-only-player";
+      assert.equal(
+        (await resolveContextEvidence(tampered, secret, batch.generatedAt)).status,
+        "unverified",
+      );
+      assert.equal(f.writes.length, writes);
+      assert.ok(f.queries.every((query) => query.trimStart().startsWith("SELECT")));
+      assert.equal(
+        JSON.stringify((await f.store.readPrepared(submitted.job.id)).payload).includes(secret),
+        false,
+      );
+      assert.equal(
+        JSON.stringify((await f.store.readResult(submitted.job.id)).result).includes(secret),
+        false,
+      );
+    } finally {
+      if (previousSecret === undefined) delete process.env.MATCH_CONTEXT_SIGNING_KEY;
+      else process.env.MATCH_CONTEXT_SIGNING_KEY = previousSecret;
       f.sql.close();
     }
   });

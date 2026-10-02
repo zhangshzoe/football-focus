@@ -288,6 +288,53 @@ test("official Selling casing cannot bypass a cutoff earlier than kickoff", asyn
   }
 });
 
+test("a selected unavailable fixture's earlier cutoff expires the whole scope without writes or refit", async () => {
+  const f = fixture();
+  try {
+    const input = prepared();
+    let current = Date.parse(input.unit.modelInput.decisionAt),
+      calls = 0;
+    const cutoff = current + 10000;
+    input.selectedOfficialMatchIds.push("fixture-unselected");
+    input.pendingVerification.push({
+      candidateOfficialMatchIds: ["fixture-unselected"],
+      reason: "test-only unavailable input",
+    });
+    // Do not mutate the first fixture's shared nested eligibility object.
+    input.officialData.matches[1].marketEligibility = {
+      让球胜平负: {
+        qualification: "qualified",
+        salesStatus: "Selling",
+        handicap: -1,
+        cutoffAt: new Date(cutoff).toISOString(),
+      },
+    };
+    assert.equal(predictionUnitDeadline(input, current), Math.floor(cutoff / 1000));
+    const runtime = createPredictionUnitRuntime({
+      store: f.store,
+      codeIdentity,
+      clock: () => current,
+      compute: (unit) => {
+        calls++;
+        return computePredictionUnit(unit);
+      },
+    });
+    const queued = await runtime.enqueue(input);
+    assert.equal((await runtime.consumeOne({ id: queued.job.id })).status, "ready");
+    current = cutoff;
+    const writes = f.writes.length;
+    assert.equal((await runtime.readStatus(queued.job.id)).code, "PREDICTION_SALES_CLOSED");
+    await assert.rejects(
+      () => runtime.enqueue(input),
+      (error) => error.code === "PREDICTION_SALES_CLOSED",
+    );
+    assert.equal(f.writes.length, writes);
+    assert.equal(calls, 1);
+  } finally {
+    f.sql.close();
+  }
+});
+
 test("build mismatch rejects before cold fit; losing readers neither fail nor cancel the shared task", async () => {
   const f = fixture();
   try {

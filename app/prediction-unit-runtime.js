@@ -90,7 +90,22 @@ export function predictionUnitDeadline(prepared, now = Date.now()) {
     }
     // The whole selected scope remains visible and expires as a batch; no worker
     // quietly drops a missing/started fixture to manufacture complete coverage.
-    for (const id of selected) kickoff(universe.get(id).kickoffAt);
+    for (const id of selected) {
+      const selectedMatch = universe.get(id);
+      kickoff(selectedMatch.kickoffAt);
+      for (const eligibility of Object.values(selectedMatch.marketEligibility || {})) {
+        if (
+          eligibility.qualification === "qualified" &&
+          String(eligibility.salesStatus || "")
+            .trim()
+            .toLowerCase() === "selling"
+        ) {
+          const at = Date.parse(eligibility.cutoffAt || selectedMatch.kickoffAt);
+          if (!Number.isFinite(at) || at <= now) fail("PREDICTION_SALES_CLOSED");
+          deadlines.push(at);
+        }
+      }
+    }
     const match = universe.get(unit.modelInput.official.officialMatchId);
     const source = { ...data, method: "server-refetch" };
     resolveServerOfficialMatches(
@@ -111,18 +126,6 @@ export function predictionUnitDeadline(prepared, now = Date.now()) {
       match.salesDate,
       now,
     );
-    for (const eligibility of Object.values(match.marketEligibility || {})) {
-      if (
-        eligibility.qualification === "qualified" &&
-        String(eligibility.salesStatus || "")
-          .trim()
-          .toLowerCase() === "selling"
-      ) {
-        const at = Date.parse(eligibility.cutoffAt || match.kickoffAt);
-        if (!Number.isFinite(at) || at <= now) fail("PREDICTION_SALES_CLOSED");
-        deadlines.push(at);
-      }
-    }
   } else {
     if (
       prepared.officialData !== undefined ||
