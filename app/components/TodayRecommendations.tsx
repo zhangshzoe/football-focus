@@ -392,6 +392,7 @@ function DailyPurchasePlans({
     [planSets, setPlanSets] = useState<PurchasePlanSet[]>([]),
     [captureAttempts,setCaptureAttempts]=useState<ReturnType<typeof compactCaptureAttempts>>([]),
     [cloudHistoryError,setCloudHistoryError]=useState(""),
+    [savedTrialReadError,setSavedTrialReadError]=useState(""),
     [probabilitySnapshots,setProbabilitySnapshots]=useState<Parameters<typeof slotProbabilityObservations>[0]>([]),
     [cloudAuditRecords,setCloudAuditRecords]=useState<Array<{snapshotId:string;scheduledAt:string;persistedAt:string;reason:string}>>([]),
     [savedTrials, setSavedTrials] = useState<PurchasePlanSet[]>([]),
@@ -455,15 +456,29 @@ function DailyPurchasePlans({
     setBusy(true);
     Promise.all([
       fetch("/api/prediction-snapshots?view=recommendations", { cache: "no-store" })
-        .then((response) => response.ok ? response.json() : {snapshots:[]})
-        .catch(() => ({ snapshots: [] })),
+        .then(async (response) => {
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          const payload = await response.json();
+          if (!payload || (!Array.isArray(payload.snapshots) && !Array.isArray(payload.purchasePlanSnapshots)))
+            throw new Error("历史清单结构无效");
+          return payload;
+        })
+        .catch(() => ({ snapshots: [], historyReadError: "正式快照历史读取失败；当前仅汇总可读取记录，不能据此认定批次缺失或全部历史已同步。请点击“刷新快照”重试。" })),
       fetch("/api/purchase-trials", { cache: "no-store" })
-        .then((response) => response.ok ? response.json() : {trials:[]})
-        .catch(() => ({ trials: [] })),
+        .then(async (response) => {
+          if (response.status === 401)
+            return { trials: [], historyReadError: "尚未登录，无法读取账户中已保存的手动试算；不代表没有试算记录。登录后请点击“刷新快照”。正式历史仍可查看。" };
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          const payload = await response.json();
+          if (!payload || !Array.isArray(payload.trials)) throw new Error("试算清单结构无效");
+          return payload;
+        })
+        .catch(() => ({ trials: [], historyReadError: "已保存的手动试算读取失败，不能据此认定没有试算记录。请点击“刷新快照”重试；正式历史仍可查看。" })),
     ]).then(async ([archive, saved]) => {
         if (!active) return;
         setCaptureAttempts(Array.isArray(archive.captureAttempts)?archive.captureAttempts:[]);
-        setCloudHistoryError(archive.cloudCaptureStatus==="unavailable"?"线上采集历史暂时读取失败；下方已打包历史仍可查看，但不能据此认定所有批次均已同步。":"");
+        setCloudHistoryError(archive.historyReadError || (archive.cloudCaptureStatus==="unavailable"?"线上采集历史暂时读取失败；下方已打包历史仍可查看，但不能据此认定所有批次均已同步。":""));
+        setSavedTrialReadError(saved.historyReadError || "");
         setCloudAuditRecords(Array.isArray(archive.cloudAuditRecords)?archive.cloudAuditRecords:[]);
         const frozenProbabilitySnapshots=Array.isArray(archive.probabilitySlotSnapshots)?archive.probabilitySlotSnapshots:[];
         setProbabilitySnapshots(frozenProbabilitySnapshots);
@@ -519,7 +534,9 @@ function DailyPurchasePlans({
           .sort((a,b)=>b.generatedAt.localeCompare(a.generatedAt))[0]||null;
         // 已归档方案必须按生成时赔率原样读取；没有 17:00 快照时不自动补造正式票。
         if (selected && active) await selectPlanSet(selected, historyResults);
-        else if (active) setStatus(`该彩票日期没有已保存的${activeSlot==="2100"?"21:00":"17:00"}正式组合票；研究试算可在选择器中查看`);
+        else if (active) setStatus(archive.historyReadError || archive.cloudCaptureStatus === "unavailable"
+          ? "历史读取不完整，尚无法确认该日期与批次是否已有正式组合票"
+          : `该彩票日期没有已保存的${activeSlot==="2100"?"21:00":"17:00"}正式组合票；研究试算可在选择器中查看`);
       })
       .finally(() => {
         if (active) setBusy(false);
@@ -673,6 +690,8 @@ function DailyPurchasePlans({
       <div className="purchase-slot-tabs" role="tablist" aria-label="选择固定组合票批次">
         {(["1700","2100"] as const).map(slot=><button key={slot} type="button" role="tab" aria-selected={activeSlot===slot} onClick={()=>{setPlanSet(null);setStatus("正在读取该批次快照…");setActiveSlot(slot)}}>{slot==="1700"?"17:00 场次":"21:00 场次"}</button>)}
       </div>
+      {cloudHistoryError && <p role="alert" className="purchase-notice">{cloudHistoryError}</p>}
+      {savedTrialReadError && <p role="alert" className="purchase-notice">{savedTrialReadError}</p>}
       <div id="purchase-panel-doubling" role="tabpanel" aria-labelledby="purchase-view-doubling" hidden={summaryView !== "doubling"}>
         {resultSyncError && <p role="alert" className="purchase-notice">{resultSyncError}</p>}
         {promotionError && <p role="alert" className="purchase-notice">{promotionError}</p>}
@@ -706,7 +725,6 @@ function DailyPurchasePlans({
         </tbody></table></div>
         <p className="purchase-risk">采集失败、评估不完整和没有执行证据不算未中奖；明确的“不投注”记录也不增加票数。延迟批次保留实际完成时间，不事后补写成17:00或21:00预测。投入与返还仅统计已结算的模拟票，全作废退款不进入中奖率分母。</p>
       </details>
-      {cloudHistoryError&&<p className="purchase-notice">{cloudHistoryError}</p>}
       {cloudAuditRecords.length>0&&<details className="purchase-history-panel"><summary>未纳入严格统计的真实采集记录（{cloudAuditRecords.length}）</summary><p>原始内容保持不变；恢复时刻不能代替计划时刻，过期票不进入正式推荐。</p>{cloudAuditRecords.map(record=><p key={record.snapshotId}>{record.snapshotId} · 实际核验 {new Date(record.persistedAt).toLocaleString("zh-CN",{timeZone:"Asia/Shanghai"})} · {record.reason}</p>)}</details>}
       <PurchaseSlotComparison report={slotComparison}/>
       <PredictionSlotComparison report={probabilityComparison}/>

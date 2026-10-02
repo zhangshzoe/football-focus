@@ -416,6 +416,7 @@ test("today recommendations refresh official SP on generation, show net ranges a
   }
   if(path.startsWith("/api/prediction-snapshots"))return Response.json({snapshots:[]});
   if(path.startsWith("/api/sporttery/results"))return Response.json({results:[]});
+  if(path==="/api/purchase-trials")return Response.json({trials:[]});
   throw new Error(`Unexpected request: ${path}`);
  };
  const root=createRoot(container,{onUncaughtError:error=>errors.push(error),onRecoverableError:error=>errors.push(error)});
@@ -528,7 +529,7 @@ function recommendationArchiveFixture() {
  return {date,early,late,loadedTrial,results};
 }
 
-async function mountRecommendationArchive({savedTrial=false,livePrediction=false,independentPage=false}={}) {
+async function mountRecommendationArchive({savedTrial=false,livePrediction=false,independentPage=false,historyReadFailure=null}={}) {
  const Recommendations=await load(independentPage?"../app/recommendations/page.tsx":"../app/components/TodayRecommendations.tsx");
  const {dom,restore}=installDom(),errors=[],container=dom.window.document.getElementById("test-root");
  if(independentPage)dom.reconfigure({url:"http://localhost:3000/recommendations"});
@@ -563,6 +564,13 @@ async function mountRecommendationArchive({savedTrial=false,livePrediction=false
  });
  globalThis.fetch=async(url,options={})=>{
   const requestPath=String(url);requests.push({path:requestPath,method:options.method||"GET"});
+  if(historyReadFailure?.path===requestPath && options.method!=="POST"){
+   const failure=historyReadFailure.kind;
+   if(failure==="network")throw new TypeError("isolated network failure");
+   if(failure==="invalid-json")return new Response("<html>unavailable</html>",{status:200});
+   if(failure==="malformed")return Response.json({});
+   return Response.json({error:"isolated read failure"},{status:failure});
+  }
   if(requestPath==="/api/prediction-snapshots?view=recommendations")return Response.json(archive);
   if(requestPath==="/api/purchase-trials"){
    if(options.method==="POST"){
@@ -597,9 +605,52 @@ async function mountRecommendationArchive({savedTrial=false,livePrediction=false
  const choose=async id=>{await act(async()=>{select().value=id;select().dispatchEvent(new dom.window.Event("change",{bubbles:true}))});await flush(()=>select()?.value===id&&!select().disabled);};
  const cash=label=>[...container.querySelectorAll(".purchase-kanban>div")].find(node=>node.querySelector("span").textContent===label)?.textContent;
  return {dom,container,fixture,select,button,choose,cash,flush,savedBodies,requests,archive,archiveBefore,recordAccess,
+  setHistoryReadFailure(failure){historyReadFailure=failure;},
   async dispose(){await act(async()=>root.unmount());restorePage();assert.deepEqual(errors.map(error=>error.message),[]);}
  };
 }
+
+test("saved-trial read failures remain explicit across summary tabs and recover without hiding formal history",async()=>{
+ for(const kind of [401,503,"network","invalid-json","malformed"]){
+  const ui=await mountRecommendationArchive({savedTrial:true,historyReadFailure:{path:"/api/purchase-trials",kind}});
+  try{
+   const alert=()=>[...ui.container.querySelectorAll('[role="alert"]')].find(node=>node.textContent.includes("试算记录"));
+   assert.ok(alert(),`Read failure ${kind} must not masquerade as an empty trial list`);
+   assert.match(alert().textContent,kind===401?/尚未登录/:/读取失败/);
+   assert.equal(ui.select().value,ui.fixture.early.snapshotId);
+   assert.match(ui.cash("模拟净收益"),/\+¥16\.00/);
+   await act(async()=>ui.button("倍投计算").click());
+   assert.equal(alert().closest("[hidden]"),null,"Read completeness notice must remain visible in the doubling view");
+   ui.setHistoryReadFailure(null);
+   await act(async()=>ui.button("刷新快照").click());
+   await ui.flush(()=>!alert()&&[...ui.select().options].some(option=>option.value===ui.fixture.loadedTrial.snapshotId),"Recovered trials and cleared warning");
+   assert.equal(JSON.stringify(ui.archive),ui.archiveBefore);
+   assert.equal(ui.requests.some(request=>request.method!=="GET"),false);
+  }finally{await ui.dispose()}
+ }
+});
+
+test("formal archive read failures cannot claim a missing batch or fully loaded history",async()=>{
+ for(const kind of [503,"network","invalid-json","malformed"]){
+  const ui=await mountRecommendationArchive({savedTrial:true});
+  try{
+   ui.setHistoryReadFailure({path:"/api/prediction-snapshots?view=recommendations",kind});
+   await act(async()=>ui.button("刷新快照").click());
+   await ui.flush(()=>!ui.button("刷新快照").disabled&&ui.container.textContent.includes("尚无法确认该日期与批次"));
+   const alert=[...ui.container.querySelectorAll('[role="alert"]')].find(node=>node.textContent.includes("正式快照历史读取失败"));
+   assert.ok(alert);
+   assert.doesNotMatch(ui.container.textContent,/该彩票日期没有已保存的/);
+   assert.ok([...ui.select().options].some(option=>option.value===ui.fixture.loadedTrial.snapshotId),"Successful personal history remains selectable");
+   await act(async()=>ui.button("倍投计算").click());
+   assert.equal(alert.closest("[hidden]"),null);
+   ui.setHistoryReadFailure(null);
+   await act(async()=>ui.button("刷新快照").click());
+   await ui.flush(()=>ui.select()?.value===ui.fixture.early.snapshotId&&!ui.select().disabled&&!ui.container.textContent.includes("正式快照历史读取失败"));
+   assert.equal(JSON.stringify(ui.archive),ui.archiveBefore);
+   assert.equal(ui.requests.some(request=>request.method!=="GET"),false);
+  }finally{await ui.dispose()}
+ }
+});
 
 test("independent recommendations page reads and settles history without Home requests or record access",async()=>{
  const ui=await mountRecommendationArchive({independentPage:true});
