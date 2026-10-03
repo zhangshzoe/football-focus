@@ -14,6 +14,7 @@ import {slotProbabilityObservations,slotProbabilityResultDates} from "../slot-pr
 import PortfolioScenarioSummary, { type PortfolioScenarios } from "./PortfolioScenarioSummary";
 import {comparePurchaseSlots} from "../slot-comparison.js";
 import {readBrowserData} from "../browser-storage";
+import { fetchServerPrediction, predictionVersionMessage } from "../server-prediction-client.js";
 import {fetchOfficialSporttery} from "../sporttery-official";
 import {PROMOTED_PURCHASE_TRIAL,promoteSavedPurchaseTrial} from "../purchase-trial-promotion.js";
 import {
@@ -24,7 +25,6 @@ import {
   MAX_COMBINATION_CANDIDATES,
   MIN_COMPLETENESS,
   parseZonedKickoff,
-  PREDICTION_STORAGE_KEY,
   refreshPolicy,
   SavedPrediction,
   SavedPredictionSet,
@@ -699,7 +699,7 @@ function DailyPurchasePlans({
       </div>
       <div id="purchase-panel-original" role="tabpanel" aria-labelledby="purchase-view-original" hidden={summaryView !== "original"}>
       {planSet && <PortfolioScenarioSummary scenarios={planSet.portfolioScenarios} />}
-      {!data && <p className="purchase-notice">当前浏览器没有今日预测版本，请先到 AI 预测页生成预测；没有预测时无法试算。</p>}
+      {!data && <p className="purchase-notice">当前没有合格的服务端预测版本，暂不能试算；已有历史方案仍按原版本查看与统计。</p>}
       {liveOfficial.error && <p className="purchase-notice">官方盘口获取失败：{liveOfficial.error}。可点击“按当前盘口试算”重试；过期赔率不会参与试算。</p>}
       {previewError && <p role="alert" className="purchase-notice">{previewError}</p>}
       {saveState && <p role="status" className="purchase-notice">{saveState}</p>}
@@ -861,6 +861,8 @@ function DailyPurchasePlans({
 export default function TodayRecommendations() {
   const [data, setData] = useState<SavedPredictionSet | null>(null),
     [loadError, setLoadError] = useState("");
+  const [versionRefresh, setVersionRefresh] = useState(0);
+  const [historicalVersion, setHistoricalVersion] = useState<SavedPredictionSet | null>(null);
   const [count, setCount] = useState(2),
     [scoreCount, setScoreCount] = useState(2),
     [markets, setMarkets] = useState<RecommendationMarket[]>(["score"]),
@@ -873,37 +875,27 @@ export default function TodayRecommendations() {
     official = useOfficialMarkets(data);
   const [selectedMatchDate, setSelectedMatchDate] = useState("");
   useEffect(() => {
-    let active=true;
-    void readBrowserData<SavedPredictionSet|null>(PREDICTION_STORAGE_KEY,null).then(saved=>{
-      if(!active)return;
-      if (!saved) {
-        setLoadError(
-          "尚未找到已保存的模型预测。请先进入“AI预测”生成赔率基线；文字复核可另行执行，不是概率计算前提。",
-        );
-        return;
+    const controller = new AbortController();
+    let expiry: ReturnType<typeof setTimeout> | undefined;
+    const query = new URLSearchParams(window.location.search);
+    const predictionId = query.get("predictionId") || undefined;
+    const salesDate = query.get("salesDate") || (predictionId ? undefined : new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10));
+    setLoadError(predictionVersionMessage("loading"));
+    setData(null); setHistoricalVersion(null);
+    void fetchServerPrediction({ salesDate, predictionId, signal: controller.signal }).then(result => {
+      if (controller.signal.aborted) return;
+      if (result.status === "ready" && result.eligible === true) {
+        setData(result.snapshot); setLoadError("");
+        const remaining = Date.parse(result.expiresAt) - Date.now();
+        if (!(remaining > 0)) { setData(null); setLoadError(predictionVersionMessage("expired")); return; }
+        expiry = setTimeout(() => { setData(null); setLoadError(predictionVersionMessage("expired")); }, remaining);
+      } else {
+        if (result.status === "historical") setHistoricalVersion(result.snapshot);
+        setLoadError(predictionVersionMessage(result.status));
       }
-      const today = new Date(Date.now() + 8 * 60 * 60 * 1000)
-        .toISOString()
-        .slice(0, 10);
-      if (saved.date !== today) {
-        setLoadError(
-          "已保存的预测不是今日数据，请返回“AI预测”刷新并重新复核。",
-        );
-        return;
-      }
-      if (
-        !saved.predictionId || !Array.isArray(saved.matches) ||
-        saved.matches.some((match) => match.predictionId !== saved.predictionId)
-      ) {
-        setLoadError(
-          "旧预测缺少统一版本标识，请返回“AI预测”刷新；旧 AI 结果不会覆盖新盘口。",
-        );
-        return;
-      }
-      setData(saved);
-    }).catch(()=>{if(active)setLoadError("已保存的预测数据无法读取，请返回“AI预测”重新生成。")});
-    return()=>{active=false};
-  }, []);
+    }).catch(() => { if (!controller.signal.aborted) setLoadError(predictionVersionMessage("unavailable")); });
+    return () => { controller.abort(); if (expiry) clearTimeout(expiry); };
+  }, [versionRefresh]);
   const availableMatchDates = useMemo(
     () =>
       Array.from(
@@ -1054,7 +1046,7 @@ export default function TodayRecommendations() {
           <p className="eyebrow">TRACEABLE COMBINATIONS</p>
           <h2>今日推荐</h2>
           <p className="recommendation-intro">
-            读取“AI预测”保存的不可变概率版本，不在本页重新融合。
+            读取服务端保存的同一不可变预测版本，不在本页重新融合概率。
             {data?.predictionId && ` 版本 ${data.predictionId}`}
           </p>
         </div>
@@ -1063,6 +1055,10 @@ export default function TodayRecommendations() {
         </a>
       </div>
       {loadError && <div className="data-fallback">{loadError}</div>}
+      <button className="source-link" onClick={() => setVersionRefresh(value => value + 1)}>刷新预测版本</button>
+      {historicalVersion && <details className="data-fallback"><summary>历史版本 {historicalVersion.predictionId}</summary>
+        {historicalVersion.matches.map(match => <p key={match.officialMatchId}>{match.id} {match.home} vs {match.away} · {(match.hadProbabilities || []).map(point => `${point.score} ${point.probability.toFixed(2)}%`).join(" / ")}</p>)}
+      </details>}
       <div className="recommendation-lottery-date">
         <label>
           <span>彩票日期</span>

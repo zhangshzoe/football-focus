@@ -27,7 +27,7 @@ import { readContextBatch } from "../../match-context-service";
 import teamHistoryIndex from "../../../data/generated-team-history-index.json";
 import { selectTeamHistory } from "../../team-history.js";
 import { signContextProof } from "../../context-evidence.js";
-import { fetchOfficialSporttery, OfficialSportteryError } from "../../sporttery-official";
+import { fetchOfficialSporttery } from "../../sporttery-official";
 type CompanyOdds = {
   companyId: number;
   company: string;
@@ -346,65 +346,8 @@ function nullableHandicap(value: unknown) {
 }
 
 export async function POST(request: Request) {
-  const input = await request.json().catch(() => null);
-  // The caller selects identities only. Quotes, eligibility and observation times
-  // are always re-read on the server, never certified from request.body.
-  const selectors: unknown[] = Array.isArray(input?.fixtureIds)
-    ? input.fixtureIds
-    : Array.isArray(input?.matches)
-      ? input.matches.map((match: any) => match?.officialMatchId || match?.matchId)
-      : [];
-  if (selectors.length > 120 || selectors.some((id) => typeof id !== "string" || !id.trim()))
-    return Response.json(
-      { error: "请提供最多120个有效官方比赛ID；不接受客户端赔率作为官方证据。" },
-      { status: 400 },
-    );
-  const requestedIds = new Set(selectors.map((id) => String(id).trim()));
-  const forceRefresh = input?.forceRefresh === true;
-  if (!requestedIds.size)
-    return Response.json({
-      reports: [],
-      fetchedAt: new Date().toISOString(),
-      sourceUrl: SOURCE_URL,
-      methodology: "没有可确认的官方比赛，未执行赔率模型。",
-    });
-  try {
-    const prepared = await prepareOfficialPredictionBatch([...requestedIds], forceRefresh);
-    const outputs = prepared.units.map((entry: any) => {
-      predictionUnitDeadline(officialComputationPayload(prepared, entry), Date.now());
-      return computePredictionUnit(entry.unit, { marketCompute: predictionComputeCache.predict });
-    });
-    const reports = projectPreparedOfficialReports(prepared, outputs);
-    const response = await completePreparedOfficialPrediction(prepared, reports);
-    for (const entry of prepared.units)
-      predictionUnitDeadline(officialComputationPayload(prepared, entry), Date.now());
-    return response;
-  } catch (error) {
-    if (
-      error &&
-      typeof error === "object" &&
-      "code" in error &&
-      error.code === "OFFICIAL_FIXTURE_NOT_CURRENT"
-    )
-      return Response.json(
-        {
-          error: error instanceof Error ? error.message : "官方比赛已更新",
-          code: error.code,
-          unavailableOfficialMatchIds:
-            "unavailableOfficialMatchIds" in error ? error.unavailableOfficialMatchIds : [],
-        },
-        { status: 409 },
-      );
-    return Response.json(
-      {
-        error: error instanceof Error ? error.message : "赔率数据读取失败",
-        ...(error instanceof OfficialSportteryError
-          ? { code: error.code, sourceState: error.sourceState }
-          : {}),
-      },
-      { status: 502 },
-    );
-  }
+  const { submitPredictionRequest } = await import("../../prediction-submission-binding");
+  return submitPredictionRequest(request);
 }
 
 /** Trusted source preparation only: no probability fit, version or signature. */
@@ -687,8 +630,7 @@ export function projectPreparedOfficialReports(
     );
     const { marketModel: modeled, teamStrengthCandidate } = outputs[index] || {};
     if (!modeled || !teamStrengthCandidate) throw new Error("本场计算结果未完整提供");
-    const rawProbabilities: number[] = modeled.marketProbabilities,
-      probabilities = rawProbabilities;
+    const rawProbabilities: number[] = modeled.marketProbabilities;
     const derived = deriveMarkets(modeled.fullScoreDistribution, officialHandicap),
       finalProbabilities = derived.hadProbabilities.map((point) => point.probability / 100),
       finalHhad = derived.hhadProbabilities?.map((point) => point.probability) || [],
@@ -973,8 +915,18 @@ export async function completePreparedOfficialPrediction(
   });
 }
 
-// 仅供 AI 预测页研究。外围编号不是竞彩官方身份，这些记录不得进入选号、固定票或正式复盘。
+// GET must never cold-compute a batch. Research lacks a persisted aggregate
+// reader today, so explicitly pause it rather than hiding synchronous work in a
+// nominally read-only request or reclassifying official data as research.
 export async function GET() {
+  return Response.json({ code: "RESEARCH_BACKGROUND_UNAVAILABLE",
+    error: "外围研究的持久结果读取尚未接通；已暂停查询时计算，不影响已保存的正式预测和历史记录。" },
+    { status: 503, headers: { "Cache-Control": "no-store" } });
+}
+
+// Unchanged research algorithm, retained for a future independently invoked
+// research consumer. Not called by GET, browser refresh or official capture.
+export async function computeResearchPrediction() {
   const issue = new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
   try {
     const batch = await fetchCompanyOdds(issue),

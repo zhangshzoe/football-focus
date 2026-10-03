@@ -9,11 +9,24 @@ import { createPredictionJobStore, predictionJobSchemaSql } from "../app/predict
 import { computePredictionUnit } from "../app/prediction-computation.js";
 import { PREDICTION_PIPELINE_VERSION } from "../app/prediction-model.js";
 import { sqliteD1, researchDatabase } from "./helpers/cloud-sqlite-fixture.mjs";
+import { predictionRuntimeSchemaSql } from "../app/prediction-submission.js";
 
-const migration = await readFile(
+const baseMigration = await readFile(
   new URL("../drizzle/0004_gray_omega_sentinel.sql", import.meta.url),
   "utf8",
 );
+const versionMigration = await readFile(new URL("../drizzle/0005_cheerful_dust.sql", import.meta.url), "utf8");
+const runtimeMigration = await readFile(new URL("../drizzle/0006_square_silver_centurion.sql", import.meta.url), "utf8");
+const migration = baseMigration + "\n" + versionMigration;
+
+test("runtime migration is additive and matches operational coordination schema", () => {
+  const actual = new DatabaseSync(":memory:"), expected = new DatabaseSync(":memory:");
+  try {
+    assert.doesNotMatch(runtimeMigration, /\b(?:DROP|ALTER|UPDATE|DELETE|INSERT)\b/i);
+    actual.exec(runtimeMigration); expected.exec(predictionRuntimeSchemaSql);
+    assert.deepEqual(actual.prepare("PRAGMA table_info(prediction_runtime_state)").all(), expected.prepare("PRAGMA table_info(prediction_runtime_state)").all());
+  } finally { actual.close(); expected.close(); }
+});
 
 // Physical test-only R2 emulator lets another worker reopen complete objects.
 // It is not a claim that the production R2 binding or cloud schedule is enabled.
@@ -51,7 +64,8 @@ test("generated migration matches the operational store without altering researc
   const actual = new DatabaseSync(":memory:"),
     reference = new DatabaseSync(":memory:");
   try {
-    assert.doesNotMatch(migration, /\b(?:DROP|ALTER|UPDATE|DELETE|INSERT)\b/i);
+    assert.doesNotMatch(baseMigration, /\b(?:DROP|ALTER|UPDATE|DELETE|INSERT)\b/i);
+    assert.doesNotMatch(versionMigration, /\b(?:DROP|UPDATE|DELETE|INSERT)\b/i);
     actual.exec(migration);
     predictionJobSchemaSql().forEach((sql) => reference.exec(sql));
     const columns = (db) =>

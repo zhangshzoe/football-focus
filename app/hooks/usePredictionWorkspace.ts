@@ -2,9 +2,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { savePredictionSet } from "../browser-storage";
 import type { SavedPredictionSet } from "../prediction-config";
-import { buildOfficialPredictionFallback } from "../official-prediction-fallback";
 import { snapshotOddsProjection } from "../snapshot-probability-layers.js";
 import { requestPredictionResult } from "../prediction-compute-client.js";
+import { fetchServerPrediction, predictionVersionMessage } from "../server-prediction-client.js";
 import type {
   PredictionCoverageSummary,
   UnavailablePredictionMatch,
@@ -25,7 +25,6 @@ export function usePredictionWorkspace(
     allMatches,
     dataLoading,
     dataState,
-    dataMeta,
     repairNotice,
     setRepairNotice,
     repairMissingMatches,
@@ -44,6 +43,7 @@ export function usePredictionWorkspace(
   >([]);
   const [predictionLoading, setPredictionLoading] = useState(false);
   const [predictionError, setPredictionError] = useState("");
+  const [predictionReadStatus, setPredictionReadStatus] = useState("loading");
   const [predictionMeta, setPredictionMeta] = useState({
     fetchedAt: "",
     sourceUrl: "",
@@ -66,8 +66,10 @@ export function usePredictionWorkspace(
   const [researchAiError, setResearchAiError] = useState("");
   const [researchAiProvider, setResearchAiProvider] = useState("");
   const [predictionRetryNonce, setPredictionRetryNonce] = useState(0);
+  const [predictionManualNonce, setPredictionManualNonce] = useState(0);
   const [predictionRepairing, setPredictionRepairing] = useState(false);
   const predictionRetryHandledRef = useRef(0);
+  const predictionManualHandledRef = useRef(0);
   const predictionRetryBeforeRef = useRef(0);
   const officialReviewRef = useRef<AbortController | null>(null);
   const researchReviewRef = useRef<AbortController | null>(null);
@@ -152,13 +154,28 @@ export function usePredictionWorkspace(
     setPredictionRetryNonce((value) => value + 1);
   }
 
+  function generatePredictionNow() {
+    if (dataLoading || predictionLoading || predictionRepairing) return;
+    setPredictionManualNonce((value) => value + 1);
+  }
+
   useEffect(() => {
     setPredictionLoading(false);
     setPredictionRepairing(false);
-    if ((view !== "predictions" && view !== "market-predictions") || dataLoading) return;
+    if (view !== "predictions" && view !== "market-predictions") return;
     setPredictionCoverage(null);
     setUnavailablePredictions([]);
-    if (dataState !== "success" || !predictionMatches.length) {
+    const forceRefresh =
+      predictionRetryNonce > 0 && predictionRetryHandledRef.current !== predictionRetryNonce;
+    if (forceRefresh) predictionRetryHandledRef.current = predictionRetryNonce;
+    const manualSubmit =
+      predictionManualNonce > 0 && predictionManualHandledRef.current !== predictionManualNonce;
+    if (manualSubmit) predictionManualHandledRef.current = predictionManualNonce;
+    const submit = forceRefresh || manualSubmit;
+    let readStatus = "unavailable";
+    setPredictionReadStatus(submit ? "submitting" : "loading");
+    if (submit && (dataLoading || dataState !== "success" || !predictionMatches.length)) {
+      setPredictionReadStatus("not-found");
       setPredictionRows([]);
       setPredictionVersion(null);
       setPredictionLoading(false);
@@ -174,44 +191,65 @@ export function usePredictionWorkspace(
     }
     let active = true;
     const predictionController = new AbortController();
-    const forceRefresh =
-      predictionRetryNonce > 0 && predictionRetryHandledRef.current !== predictionRetryNonce;
-    if (forceRefresh) predictionRetryHandledRef.current = predictionRetryNonce;
     if (forceRefresh)
       setRepairNotice("步骤 3/3：正在按竞彩编号、日期、开赛时间和主客队重新核验并生成预测…");
     setPredictionLoading(true);
     setPredictionError("");
-    requestPredictionResult({
-      forceRefresh,
-      fixtureIds: predictionMatches.map((match) =>
-        String(match.officialMatchId || match.matchId || ""),
-      ),
-      signal: predictionController.signal,
-      onPending: (job) => {
-        if (active && forceRefresh)
-          setRepairNotice(
-            job.status === "queued"
-              ? "步骤 3/3：预测已排队，等待独立后台计算；尚未完成。"
-              : "步骤 3/3：后台正在计算，尚未完成官方预测核验。",
-          );
-      },
-    })
+    const readOrGenerate = submit
+      ? requestPredictionResult({
+          forceRefresh,
+          fixtureIds: predictionMatches.map((match) =>
+            String(match.officialMatchId || match.matchId || ""),
+          ),
+          signal: predictionController.signal,
+          onPending: (job) => {
+            if (active)
+              setRepairNotice(
+                job.status === "queued"
+                  ? "步骤 3/3：预测已排队，等待独立后台计算；尚未完成。"
+                  : "步骤 3/3：后台正在计算，尚未完成官方预测核验。",
+              );
+          },
+        })
+      : fetchServerPrediction({
+          salesDate: predictionSalesDate,
+          predictionId: undefined,
+          signal: predictionController.signal,
+        }).then((result) => {
+          readStatus = result.status;
+          if (active) setPredictionReadStatus(result.status);
+          if (result.status !== "ready" || !result.eligible || !result.snapshot)
+            throw new Error(predictionVersionMessage(result.status));
+          const snapshot = result.snapshot;
+          return {
+            reports: snapshot.matches,
+            predictionId: snapshot.predictionId,
+            version: snapshot.version,
+            fetchedAt: snapshot.sourceFetchedAt,
+            sourceUrl: "https://www.sporttery.cn/",
+            methodology: "已保存的服务端不可变预测版本",
+            unavailableOfficialMatches: [],
+          };
+        });
+    readOrGenerate
       .then((data) => {
         if (!active || predictionSalesDate !== shanghaiDate()) return;
+        setPredictionReadStatus("ready");
         const reports = (data.reports || [])
           .filter(
             (row: PredictionReport) =>
               row.predictionId === data.predictionId &&
               row.officialMappingStatus === "verified" &&
-              predictionMatches.some(
-                (match) =>
-                  (match.officialMatchId || match.matchId) === row.officialMatchId &&
-                  matchDateKey(match) === matchDateKey(row) &&
-                  match.home === row.home &&
-                  match.away === row.away &&
-                  Number.isFinite(Date.parse(match.kickoffAt || "")) &&
-                  Date.parse(match.kickoffAt || "") === Date.parse(row.kickoffAt || ""),
-              ),
+              (!submit ||
+                predictionMatches.some(
+                  (match) =>
+                    (match.officialMatchId || match.matchId) === row.officialMatchId &&
+                    matchDateKey(match) === matchDateKey(row) &&
+                    match.home === row.home &&
+                    match.away === row.away &&
+                    Number.isFinite(Date.parse(match.kickoffAt || "")) &&
+                    Date.parse(match.kickoffAt || "") === Date.parse(row.kickoffAt || ""),
+                )),
           )
           .map((row: PredictionReport) => ({
             ...row,
@@ -222,7 +260,7 @@ export function usePredictionWorkspace(
             aiSummary: undefined,
             aiRisk: undefined,
           }));
-        const unavailable = predictionMatches
+        const unavailable = (submit ? predictionMatches : [])
           .filter(
             (match) =>
               !reports.some(
@@ -254,7 +292,7 @@ export function usePredictionWorkspace(
           });
         setUnavailablePredictions(unavailable);
         setPredictionCoverage({
-          officialMatches: predictionMatches.length,
+          officialMatches: submit ? predictionMatches.length : reports.length,
           predictedMatches: reports.length,
           unavailableMatches: unavailable.length,
         });
@@ -280,36 +318,29 @@ export function usePredictionWorkspace(
       })
       .catch((error) => {
         if (active && predictionSalesDate === shanghaiDate()) {
-          const fallback = buildOfficialPredictionFallback(
-              predictionMatches,
-              dataMeta.fetchedAt || "",
-              error,
-            ),
-            available = fallback.reports.length > 0;
-          setPredictionRows(fallback.reports as PredictionReport[]);
-          setPredictionVersion(available ? fallback.version : null);
-          setUnavailablePredictions(fallback.unavailableMatches);
-          setPredictionCoverage(fallback.coverage);
-          setPredictionAiProvider(
-            available ? "体彩官方已核验玩法浏览器基线（外围赔率暂不可达）" : "",
-          );
-          setPredictionMeta(
-            available
-              ? {
-                  fetchedAt: fallback.version.generatedAt,
-                  sourceUrl: "https://www.sporttery.cn/",
-                  methodology: `预测版本 ${fallback.version.predictionId}；仅使用当前已核验体彩玩法；缺失玩法不使用旧报价，外围赔率恢复后将自动回到完整模型。`,
-                }
-              : { fetchedAt: "", sourceUrl: "", methodology: "" },
-          );
+          if (!submit) {
+            setPredictionReadStatus(readStatus);
+            setPredictionRows([]);
+            setPredictionVersion(null);
+            setPredictionCoverage(null);
+            setPredictionError(
+              error instanceof Error ? error.message : predictionVersionMessage("unavailable"),
+            );
+            return;
+          }
+          setPredictionReadStatus("generation-failed");
+          setPredictionRows([]);
+          setPredictionVersion(null);
+          setUnavailablePredictions([]);
+          setPredictionCoverage(null);
+          setPredictionAiProvider("");
+          setPredictionMeta({ fetchedAt: "", sourceUrl: "", methodology: "" });
           setPredictionError(
-            available
-              ? `外围赔率模型暂不可用：${error instanceof Error ? error.message : "读取失败"}。当前已切换为已核验体彩玩法基线，未补造任何赔率。`
-              : `新预测已暂停：${error instanceof Error ? error.message : "读取失败"}。没有当前可核验报价，不使用旧缓存生成备用预测。`,
+            `新预测未完成：${error instanceof Error ? error.message : "读取失败"}。没有服务端不可变版本，不会用浏览器基线代替。`,
           );
           if (forceRefresh)
             setRepairNotice(
-              `重新抓取未完成：${error instanceof Error ? error.message : "盘口读取失败"}；${available ? "仅保留当前已核验玩法基线" : "已暂停新预测"}。`,
+              `重新抓取未完成：${error instanceof Error ? error.message : "盘口读取失败"}；已暂停新预测。`,
             );
         }
       })
@@ -323,7 +354,15 @@ export function usePredictionWorkspace(
       active = false;
       predictionController.abort();
     };
-  }, [view, dataLoading, dataState, liveMatches, predictionRetryNonce, predictionSalesDate]);
+  }, [
+    view,
+    dataLoading,
+    dataState,
+    liveMatches,
+    predictionRetryNonce,
+    predictionManualNonce,
+    predictionSalesDate,
+  ]);
   useEffect(() => {
     if (
       view !== "predictions" ||
@@ -656,6 +695,7 @@ export function usePredictionWorkspace(
     unavailablePredictions,
     predictionLoading,
     predictionError,
+    predictionReadStatus,
     predictionMeta,
     predictionAiLoading,
     predictionAiError,
@@ -668,6 +708,7 @@ export function usePredictionWorkspace(
     researchAiError,
     researchAiProvider,
     retryUnavailablePredictionData,
+    generatePredictionNow,
     predictionRepairing,
     reviewTodayWithAi,
     reviewResearchWithAi,

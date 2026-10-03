@@ -175,7 +175,7 @@ test("driver timeout bounds stalled HTTP; authorization failures do not fall bac
   await assert.rejects(
     drainPredictionOutbox({
       ...options,
-      deadlineMs: Date.now() + 15,
+      deadlineMs: Date.now() + 500,
       fetchImpl: () => new Promise(() => {}),
     }),
     { code: "OUTBOX_DEADLINE" },

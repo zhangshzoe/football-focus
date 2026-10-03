@@ -359,10 +359,9 @@ export function cloudCaptureEngine(deps) {
                 (pool) => official.poolStatus[pool]?.status !== "success",
               )
             )
-              throw new Error("官方五玩法清单未全部读取成功，覆盖范围未知");
+              throw Object.assign(new Error("官方五玩法清单未全部读取成功，覆盖范围未知"), { code: "OFFICIAL_MANIFEST_UNAVAILABLE" });
             const matches = (official.matches || []).filter((match) => match.salesDate === date);
             if (
-              !matches.length ||
               matches.some(
                 (match) =>
                   !/^\d+$/.test(String(match.officialMatchId || match.matchId)) ||
@@ -370,7 +369,7 @@ export function cloudCaptureEngine(deps) {
                   !Number.isFinite(Date.parse(match.kickoffAt)),
               )
             )
-              throw new Error("官方清单为空或真实赛事身份不完整");
+              throw Object.assign(new Error("真实赛事身份不完整"), { code: "OFFICIAL_IDENTITY_CONFLICT" });
             const sourceTime = Date.parse(official.fetchedAt),
               checkedAt = Date.parse(now());
             if (
@@ -378,7 +377,7 @@ export function cloudCaptureEngine(deps) {
               sourceTime > checkedAt ||
               checkedAt - sourceTime > 300000
             )
-              throw new Error("官方数据采集时刻无效或过期");
+              throw Object.assign(new Error("官方数据采集时刻无效或过期"), { code: "OFFICIAL_SOURCE_STALE" });
             audit.officialManifest = matches.map(fixture);
             audit.sourceFetchedAt = official.fetchedAt;
             await writer.append({
@@ -411,7 +410,7 @@ export function cloudCaptureEngine(deps) {
             if (!due.length)
               outcome = {
                 status: "skipped",
-                reason: "no-due-fixtures",
+                reason: matches.length ? "no-due-fixtures" : "official-zero-fixtures",
                 officialFixtureCount: matches.length,
               };
             else {
@@ -625,13 +624,15 @@ export function cloudCaptureEngine(deps) {
             "OFFICIAL_ACCESS_BLOCKED",
             "OFFICIAL_MANIFEST_UNAVAILABLE",
             "OFFICIAL_FETCH_FAILED",
+            "OFFICIAL_IDENTITY_CONFLICT",
+            "OFFICIAL_SOURCE_STALE",
           ].includes(error.code)
         )
           Object.assign(audit, {
             sourceCode: error.code,
             sourceState: error.sourceState || { manifestState: "unknown" },
           });
-        outcome = { status: "failed", reason: error.message };
+        outcome = { status: "failed", reason: error.message, code: error.code || "CAPTURE_FAILED" };
       }
       if (
         outcome.status !== "failed" &&

@@ -257,5 +257,6 @@ test("in-process capture cannot certify pending, missing reports or source failu
     new URL("../app/cloud-research-runtime.ts", import.meta.url),
     "utf8",
   );
-  assert.match(runtime, /return readCompletedPredictionResponse\(response\)/);
+  assert.match(runtime, /return waitForPredictionBatch\(/);
+  assert.doesNotMatch(runtime, /predictOfficial\(|runtime\.consumeOne\(/);
 });

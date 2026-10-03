@@ -64,7 +64,7 @@ test("confirmed aliases match in context without weakening team or home/away ide
 });
 
 async function loadRoute(){
- const officialModule=compile(await readFile(new URL("../app/sporttery-official.ts",import.meta.url),"utf8"));
+ const officialModule=compile((await readFile(new URL("../app/sporttery-official.ts",import.meta.url),"utf8")).replace('from "./source-recovery.js"',`from ${JSON.stringify(new URL("../app/source-recovery.js",import.meta.url).href)}`));
  const version=compile(await readFile(new URL("../app/prediction-version.ts",import.meta.url),"utf8"));
  const aliases=new URL("../app/team-identity.js",import.meta.url).href;
  // data: modules have no relative-import base; keep the real context/model helpers.
@@ -77,9 +77,24 @@ async function loadRoute(){
   .replace(/import\s*\{[^}]*\}\s*from "\.\.\/\.\.\/calibration-service";/,'const getPublishedCalibration=async()=>null; const MIN_TEMPERATURE_CALIBRATION_MATCHES=30;')
   .replace('from "../../match-context-service"',`from ${JSON.stringify(context)}`)
   .replace('from "../../../data/generated-team-history-index.json"',`from ${JSON.stringify(history)}`)
-  .replace(/from "(\.\.\/\.\.\/[^\"]+\.js)"/g,(_,path)=>`from ${JSON.stringify(new URL(path.replace("../../","../app/"),import.meta.url).href)}`)
+  .replace(/from "(\.\.\/\.\.\/[^" ]+\.js)"/g,(_,path)=>`from ${JSON.stringify(new URL(path.replace("../../","../app/"),import.meta.url).href)}`)
   .replace('from "../../team-identity.js"',`from ${JSON.stringify(aliases)}`);
- return import(compile(source));
+ const stages=await import(compile(source));
+ const {createPredictionComputeCache}=await import("../app/prediction-compute-cache.js");
+ const {predictFromSnapshot}=await import("../app/prediction-model.js");
+ const numerical=createPredictionComputeCache({compute:(input,parameters)=>{globalThis.__footballCoverageModelCalls=(globalThis.__footballCoverageModelCalls||0)+1;return predictFromSnapshot(input,parameters);}});
+ // These regression cases exercise the unchanged source/model stages. Public
+ // admission is tested separately; no synchronous HTTP route exists anymore.
+ return {...stages,POST:async request=>{
+  const input=await request.json(),ids=input.fixtureIds||input.matches?.map(m=>m.officialMatchId||m.matchId)||[];
+  if(!ids.length||ids.length>120||ids.some(id=>typeof id!=="string"||!id.trim()))return Response.json({error:"invalid"},{status:400});
+  try{
+   const prepared=await stages.prepareOfficialPredictionBatch(ids,input.forceRefresh===true);
+   const {computePredictionUnit}=await import("../app/prediction-computation.js");
+   const reports=stages.projectPreparedOfficialReports(prepared,prepared.units.map(entry=>computePredictionUnit(entry.unit,{marketCompute:numerical.predict})));
+   return stages.completePreparedOfficialPrediction(prepared,reports);
+  }catch(error){return Response.json({error:error.message,code:error.code},{status:error.code==="OFFICIAL_FIXTURE_NOT_CURRENT"?409:502});}
+ }};
 }
 
 test("prediction API recovers every confirmed alias and explains the reversed fixture instead of dropping it",async()=>{
@@ -216,7 +231,8 @@ test("coverage panel renders visible missing-match reasons and is wired into bot
  assert.match(complete,/全部场次已覆盖/);assert.doesNotMatch(complete,/<ul/);
  const [page,hook,ai,market]=await Promise.all(["../app/components/PredictionWorkspace.tsx","../app/hooks/usePredictionWorkspace.ts","../app/components/AiPredictionReport.tsx","../app/components/MarketPredictionTable.tsx"].map(path=>readFile(new URL(path,import.meta.url),"utf8")));
  assert.equal((page.match(/coverage=\{predictionCoverage\}\s+unavailableMatches=\{unavailablePredictions\}/g)||[]).length,2);
- assert.match(hook,/const unavailable = predictionMatches\s*\.filter/);
+ assert.match(hook,/const unavailable = \(submit \? predictionMatches : \[\]\)\s*\.filter/);
  assert.match(hook,/setPredictionCoverage\(null\);\s*setUnavailablePredictions\(\[\]\)/);
+ assert.match(hook,/fetchServerPrediction\(\{\s*salesDate: predictionSalesDate/);
  assert.match(ai,/<PredictionCoverage\s/);assert.match(market,/<PredictionCoverage\s/);
 });

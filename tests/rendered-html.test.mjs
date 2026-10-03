@@ -132,7 +132,9 @@ test("official outage research stays separate from purchasable and archived fore
 });
 
 async function loadSportteryRoute(){
- const sharedSource=await readFile(new URL("../app/sporttery-official.ts",import.meta.url),"utf8"),sharedJavascript=ts.transpileModule(sharedSource,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText,sharedUrl=`data:text/javascript;base64,${Buffer.from(sharedJavascript).toString("base64")}#${Date.now()}-${Math.random()}`;
+ // Each mock below is a different source incident. Circuit timing has its own
+ // isolated tests; do not let one synthetic incident pause the next fixture.
+ const sharedSource=(await readFile(new URL("../app/sporttery-official.ts",import.meta.url),"utf8")).replace('from "./source-recovery.js"',`from ${JSON.stringify(new URL("../app/source-recovery.js",import.meta.url).href)}`).replace('const recovery = sourceRecovery();','const recovery = {run: (_key, task) => task()};'),sharedJavascript=ts.transpileModule(sharedSource,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText,sharedUrl=`data:text/javascript;base64,${Buffer.from(sharedJavascript).toString("base64")}#${Date.now()}-${Math.random()}`;
  const source=(await readFile(new URL("../app/api/sporttery/route.ts",import.meta.url),"utf8")).replace(/import\s*\{\s*NextResponse\s*\}\s*from "next\/server";/,'const NextResponse={json:(body,init={})=>new Response(JSON.stringify(body),{...init,headers:{"Content-Type":"application/json",...(init.headers||{})}})};').replace('from "../../sporttery-official"',`from "${sharedUrl}"`);
  const javascript=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText;
  return import(`data:text/javascript;base64,${Buffer.from(javascript).toString("base64")}#${Date.now()}-${Math.random()}`);
@@ -231,7 +233,7 @@ test("official markets never fall back to demo odds and tolerate independent poo
 
   globalThis.fetch=async url=>{
    const request=new URL(String(url)),pool=request.searchParams.get("poolCode");
-   if(pool)return new Response("blocked",{status:567});
+   if(pool)return new Response("unavailable",{status:502});
    assert.equal(request.searchParams.get("channel"),"c");
    const row={...officialRow("HAD"),hhad:officialRow("HHAD").hhad,crs:officialRow("CRS").crs,ttg:officialRow("TTG").ttg,hafu:officialRow("HAFU").hafu,poolList:["HAD","HHAD","CRS","TTG","HAFU"].map(poolCode=>({poolCode,poolStatus:"Selling",bettingAllup:1,bettingSingle:1}))};
    const payload=poolPayload([row]);
@@ -312,7 +314,7 @@ test("primary HTTP blocks and mobile configuration failures retain independent d
   assert.equal(response.status,503);assert.equal(data.code,"OFFICIAL_ACCESS_BLOCKED");
   for(const state of Object.values(data.sourceState.poolStatus)){
    assert.equal(state.issues[0].httpStatus,567);assert.equal(state.issues[0].kind,"access-blocked");
-   assert.equal(state.issues[1].source,"mobile");assert.equal(state.issues[1].kind,"manifest-unavailable");
+   assert.equal(state.issues.some(issue=>issue.source==="mobile"),false,"A protected gateway must not be retried through its calculator channel");
   }
  }finally{globalThis.fetch=originalFetch;}
 });
@@ -387,8 +389,8 @@ test("match-board merge keeps omitted or failed quotes unavailable for selection
  assert.equal(oddsFor(mergeOfficialMatches([match],[{...match,marketEligibility:{"胜平负":{qualification:"unknown"}}}])[0],"胜平负"),null);
  assert.deepEqual(oddsFor(mergeOfficialMatches([match],[match])[0],"胜平负"),[2,3,4]);
  assert.equal(mergeOfficialMatches([],[match])[0].quoteState,"fresh");
- assert.match(page,/buildOfficialPredictionFallback\([\s\S]*predictionMatches,[\s\S]*dataMeta\.fetchedAt \|\| "",[\s\S]*error/);
- assert.match(page,/setPredictionVersion\(available \? fallback\.version : null\)/);
+ assert.doesNotMatch(page,/buildOfficialPredictionFallback\(/,"A failed server prediction must not create a new browser-only current version");
+ assert.match(page,/新预测未完成：[\s\S]*没有服务端不可变版本/);
 });
 
 test("production match board has explicit official-data states and no demo fallback",async()=>{
@@ -1010,8 +1012,8 @@ test("model audit surface exposes historical baseline comparison and guarded imp
  assert.match(panel,/<b>0% · 仅文字复核<\/b>/);
  assert.match(model,/predictFromSnapshot/);
  assert.match(model,/低比分修正处于影子验证/);
- assert.match(model,/const selectors:\s*unknown\[\]\s*=\s*Array\.isArray\(input\?\.fixtureIds\)/);
- assert.match(model,/selectors\.length\s*>\s*120/);
+ assert.match(model,/return submitPredictionRequest\(request\)/);
+ assert.match(await readFile(new URL("../app/prediction-submission.js",import.meta.url),"utf8"),/fixtureIds\.length > 120/);
  assert.match(model,/await fetchOfficialSporttery\(\{\s*repair:\s*forceRefresh,\s*serverHeaders:\s*true\s*\}\)/);
  assert.match(model,/unavailableOfficialMatches/);
  assert.match(model,/覆盖 \$\{coverage\.predictedMatches\}\/\$\{coverage\.officialMatches\} 场官方赛事/);

@@ -70,6 +70,14 @@ export const researchCaptureLeases = sqliteTable("research_capture_leases", {
   leaseUntil: integer("lease_until").notNull(),
 });
 
+// Bounded operational coordination only; never a second prediction/evidence store.
+export const predictionRuntimeState = sqliteTable("prediction_runtime_state", {
+  key: text("key").primaryKey(),
+  valueJson: text("value_json").notNull(),
+  updatedAt: integer("updated_at").notNull(),
+  expiresAt: integer("expires_at").notNull(),
+});
+
 // Mutable compute jobs are not immutable research evidence or purchase records.
 // Prepared inputs and numerical results are content-addressed objects in R2.
 export const predictionJobs = sqliteTable(
@@ -95,6 +103,9 @@ export const predictionJobs = sqliteTable(
     leaseUntil: integer("lease_until"),
     resultObjectKey: text("result_object_key"),
     resultHash: text("result_hash"),
+    predictionId: text("prediction_id"),
+    predictionSalesDates: text("prediction_sales_dates"),
+    predictionGeneratedAt: text("prediction_generated_at"),
     failureCode: text("failure_code"),
   },
   (table) => [
@@ -112,6 +123,8 @@ export const predictionJobs = sqliteTable(
       table.id,
     ),
     index("idx_prediction_jobs_expiry").on(table.expiresAt, table.status),
+    index("idx_prediction_jobs_version").on(table.predictionId),
+    index("idx_prediction_jobs_latest").on(table.namespace, table.predictionGeneratedAt),
     check("prediction_jobs_namespace", sql`${table.namespace} IN ('official', 'research')`),
     check(
       "prediction_jobs_status",

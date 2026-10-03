@@ -84,7 +84,7 @@ test("full prediction page keeps eleven matches visible when localStorage is ful
  globalThis.fetch=async url=>{
   const path=String(url);
   if(path==="/api/sporttery")return Response.json({matches,fetchedAt:now});
-  if(path==="/api/predictions")return Response.json({reports:rows,...version,version,fetchedAt:now,unavailableOfficialMatches:[]});
+  if(path.startsWith("/api/prediction-versions?"))return savedVersion(rows,version,date,now);
   if(path.startsWith("/api/sporttery/results"))return Response.json({results:[]});
   if(path.startsWith("/api/prediction-snapshots"))return Response.json({snapshots:[]});
   if(path==="/api/model-audit")return Response.json({});
@@ -117,6 +117,9 @@ const fixture=(id,narrative="主队方向 · 升盘，多盘口较一致，偏�
  probabilities:{home:50,draw:30,away:20},consensus:{handicap:-.25,totalLine:2.5,agreement:"较一致"},expectedGoals:{home:1.6,away:1.1},scores:[{score:"1:0",probability:16},{score:"1:1",probability:14}],missingCompanies:[],
  companies:[{companyId:2,company:"测试公司",win:2,draw:3.2,lose:3.8,handicap:-.25,total:2.5}],
  marketSignal:{direction:"主队方向",narrative,strength:1,officialOdds:[2,3.2,3.8],officialHandicap:"-1",officialHhadOdds:[3.2,3.1,2],officialHhadFair:[3,3,3],fairOdds:[2,3.33,5],hhadAvailable:true,modeledHhad:[30,30,40],modeledTotalGoals:[5,15,30,25,15,5,3,2],modeledHalfFull:[30,10,5,10,20,5,5,5,10],firstHandicap:0,handicapChange:-.25,asianHomeProbability:55,asianAwayProbability:45,asianMovement:2,overProbability:55,fitAgreement:"多盘口较一致",handicapMeaning:"测试让球"}
+});
+const savedVersion=(rows,version,date,fetchedAt)=>Response.json({
+ status:"ready",eligible:true,snapshot:{predictionId:version.predictionId,version,date,sourceFetchedAt:fetchedAt,matches:rows}
 });
 const commonProps={loading:false,error:"",aiError:"",fetchedAt:"",sourceUrl:"",methodology:"测试模型",aiProvider:"",aiLoading:false,onAiReview(){}};
 
@@ -159,10 +162,10 @@ for(const route of ["predictions","market-predictions"]){
   const originalGet=dom.window.Storage.prototype.getItem,originalSet=dom.window.Storage.prototype.setItem,recordTouches=[],requests=[];
   dom.window.Storage.prototype.getItem=function(key){if(key==="ff-records")recordTouches.push("read");return originalGet.call(this,key)};
   dom.window.Storage.prototype.setItem=function(key,value){if(key==="ff-records")recordTouches.push("write");return originalSet.call(this,key,value)};
-  globalThis.fetch=async(url,init)=>{
+  globalThis.fetch=async(url)=>{
    const path=String(url);requests.push(path);
    if(path==="/api/sporttery")return Response.json({matches:[asMatch(row),asMatch(other)],fetchedAt:now});
-   if(path==="/api/predictions"){assert.deepEqual(JSON.parse(init.body).fixtureIds,[row.officialMatchId]);return Response.json({reports:[row],...version,version,fetchedAt:now,unavailableOfficialMatches:[]})}
+   if(path.startsWith("/api/prediction-versions?"))return savedVersion([row],version,date,now);
    if(path==="/api/model-audit")return Response.json({});
    throw Error("Unexpected independent-route request: "+path);
   };
@@ -171,8 +174,9 @@ for(const route of ["predictions","market-predictions"]){
    await act(async()=>root.render(h(Page)));
    for(let i=0;i<80&&!container.querySelector(".prediction-coverage")?.textContent.includes("已生成 1 / 1");i++)await act(async()=>{await new Promise(resolve=>setTimeout(resolve,20))});
    assert.match(container.querySelector(".prediction-coverage").textContent,/已生成 1 \/ 1/);
-   assert.equal(requests.filter(path=>path==="/api/sporttery").length,1);
-   assert.equal(requests.filter(path=>path==="/api/predictions").length,1);
+   assert.ok(requests.filter(path=>path==="/api/sporttery").length<=1);
+   assert.equal(requests.filter(path=>path==="/api/predictions").length,0);
+   assert.ok(requests.filter(path=>path.startsWith("/api/prediction-versions?")).length>=1);
    assert.deepEqual(recordTouches,[]);
    assert.equal(container.querySelector("#journal"),null);assert.equal(container.querySelector("#matches"),null);
    assert.deepEqual(errors.map(error=>error.message),[]);
@@ -205,7 +209,7 @@ test("old AI review cannot overwrite a refreshed official prediction version",as
  globalThis.fetch=async(url,init)=>{
   const path=String(url);
   if(path==="/api/sporttery")return Response.json({matches:[{...row(),matchId:row().officialMatchId}],fetchedAt:now});
-  if(path==="/api/predictions"){generation++;const version=makeVersion();return Response.json({reports:[row()],...version,version,fetchedAt:now})}
+  if(path.startsWith("/api/prediction-versions?")){generation++;const version=makeVersion();return savedVersion([row()],version,date,now)}
   if(path==="/api/model-audit")return Response.json({});
   if(path.startsWith("/api/predictions/ai")){
    const body=JSON.parse(init.body);reviewSignal=init.signal;
@@ -217,10 +221,12 @@ test("old AI review cannot overwrite a refreshed official prediction version",as
  try{
   await act(async()=>root.render(h(Page)));await flush(()=>container.textContent.includes("generation-1"));
   await act(async()=>[...container.querySelectorAll("button")].find(node=>node.textContent==="AI 复核全部比赛").click());await flush(()=>!!finishReview);
-  await act(async()=>[...container.querySelectorAll("button")].find(node=>node.textContent==="刷新比赛与赔率").click());await flush(()=>container.textContent.includes("generation-2"));
+  await flush(()=>[...container.querySelectorAll("button")].some(node=>node.textContent==="刷新比赛与赔率"&&!node.disabled));
+  const previousGeneration=generation;
+  await act(async()=>[...container.querySelectorAll("button")].find(node=>node.textContent==="刷新比赛与赔率").click());await flush(()=>generation>previousGeneration&&container.textContent.includes(`generation-${generation}`));
   assert.equal(reviewSignal.aborted,true);
   await act(async()=>{finishReview();await new Promise(resolve=>setTimeout(resolve,30))});
-  assert.match(container.textContent,/generation-2/);assert.doesNotMatch(container.textContent,/过期复核/);
+  assert.match(container.textContent,new RegExp(`generation-${generation}`));assert.doesNotMatch(container.textContent,/过期复核/);
  }finally{await act(async()=>root.unmount());restore()}
 });
 
@@ -235,6 +241,7 @@ for(const route of ["predictions","market-predictions"]){
    const path=String(url);
    if(path.startsWith("/api/sporttery"))return Response.json({matches:rows.map(row=>({...row,matchId:row.officialMatchId})),fetchedAt:now});
    if(path==="/api/model-audit")return Response.json({});
+   if(path.startsWith("/api/prediction-versions?"))return Response.json({status:"not-found",eligible:false});
    if(path==="/api/predictions"){
     const force=JSON.parse(init.body).forceRefresh;
     generation++;
@@ -248,13 +255,14 @@ for(const route of ["predictions","market-predictions"]){
   const root=createRoot(container),flush=async predicate=>{for(let i=0;i<100&&!predicate();i++)await act(async()=>{await new Promise(resolve=>setTimeout(resolve,20))});assert.ok(predicate(),container.textContent.slice(-1200))};
   const button=text=>[...container.querySelectorAll("button")].find(node=>node.textContent===text);
   try{
-   await act(async()=>root.render(h(Page)));await flush(()=>button("重新抓取并核验")&&!button("重新抓取并核验").disabled);
+   await act(async()=>root.render(h(Page)));await flush(()=>button("生成当前预测")&&!button("生成当前预测").disabled);
+   await act(async()=>button("生成当前预测").click());await flush(()=>button("重新抓取并核验")&&!button("重新抓取并核验").disabled);
    await act(async()=>button("重新抓取并核验").click());await flush(()=>!!finishOld);
-   await act(async()=>button("刷新比赛与赔率").click());await flush(()=>button("重新抓取并核验")&&!button("重新抓取并核验").disabled);
+   await act(async()=>button("刷新比赛与赔率").click());await flush(()=>button("生成当前预测")&&!button("生成当前预测").disabled);
    assert.equal(oldSignal.aborted,true);
    await act(async()=>{finishOld();await new Promise(resolve=>setTimeout(resolve,20))});
-   assert.equal(button("重新抓取并核验").disabled,false);
-   await act(async()=>button("重新抓取并核验").click());await flush(()=>forceCalls===2&&button("重新抓取并核验")&&!button("重新抓取并核验").disabled);
+   assert.equal(button("生成当前预测").disabled,false);
+   await act(async()=>button("生成当前预测").click());await flush(()=>generation===3&&button("重新抓取并核验")&&!button("重新抓取并核验").disabled);
   }finally{await act(async()=>root.unmount());restore()}
  });
 }
@@ -273,10 +281,11 @@ test("sales-day clock and resumed focus reject yesterday's pending response and 
   const path=String(url);
   if(path==="/api/sporttery"){officialCalls++;return Response.json({matches:rows.map(row=>({...row,matchId:row.officialMatchId})),fetchedAt:new Date(clock).toISOString()})}
   if(path==="/api/model-audit")return Response.json({});
-  if(path==="/api/predictions"){
-   const ids=JSON.parse(init.body).fixtureIds;requests.push(ids);
-   const row=rows.find(row=>ids.includes(row.officialMatchId)),generatedAt=new Date(clock).toISOString(),version={predictionId:`version-${row.salesDate}`,inputSnapshotId:`input-${row.salesDate}`,baseModelVersion:"test",calibrationVersion:"none",generatedAt};
-   const response=()=>Response.json({reports:[{...row,...version}],...version,version,fetchedAt:generatedAt});
+  if(path.startsWith("/api/prediction-versions?")){
+   const date=new URL(path,"http://localhost").searchParams.get("salesDate"),row=rows.find(row=>row.salesDate===date);
+   requests.push([row.officialMatchId]);
+   const generatedAt=new Date(clock).toISOString(),version={predictionId:`version-${row.salesDate}`,inputSnapshotId:`input-${row.salesDate}`,baseModelVersion:"test",calibrationVersion:"none",generatedAt};
+   const response=()=>savedVersion([{...row,...version}],version,date,generatedAt);
    if(row.salesDate===oldDate){yesterdaySignal=init.signal;return new Promise(resolve=>{finishYesterday=()=>resolve(response())})}
    return response();
   }
@@ -299,7 +308,7 @@ test("sales-day clock and resumed focus reject yesterday's pending response and 
   assert.equal(saved.date,todayDate);assert.ok(saved.matches.every(row=>row.salesDate===todayDate));
   clock=Date.parse("2026-10-04T00:01:00+08:00");
   await act(async()=>dom.window.dispatchEvent(new dom.window.Event("focus")));await flush(()=>container.textContent.includes(`version-${nextDate}`));
-  assert.deepEqual(requests[2],[`day-${nextDate}`]);assert.equal(officialCalls,3);
+  assert.deepEqual(requests.at(-1),[`day-${nextDate}`]);assert.equal(officialCalls,3);
   let history;
   for(let i=0;i<60&&!history?.some(row=>row.date===nextDate);i++)await act(async()=>{history=await storage.readBrowserData(config.PREDICTION_SNAPSHOT_STORAGE_KEY,[]);await new Promise(resolve=>setTimeout(resolve,10))});
   assert.deepEqual(history.find(row=>row.historyRecordId===existing.historyRecordId),existing);
@@ -311,10 +320,13 @@ test("same official ID and date with changed kickoff is excluded from the curren
  const Page=await load("../app/predictions/page.tsx"),{dom,restore}=installDom(),container=dom.window.document.getElementById("test-root");
  Object.defineProperty(dom.window,"indexedDB",{value:new IDBFactory()});
  const now=new Date().toISOString(),date=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai"}).format(new Date()),version={predictionId:"changed-kickoff",inputSnapshotId:"input",baseModelVersion:"test",calibrationVersion:"none",generatedAt:now},row={...fixture("周一001"),...version,salesDate:date,officialMappingStatus:"verified"};
- globalThis.fetch=async(url)=>String(url)==="/api/sporttery"?Response.json({matches:[{...row,matchId:row.officialMatchId,kickoffAt:new Date(Date.now()+4*3600000).toISOString()}],fetchedAt:now}):String(url)==="/api/model-audit"?Response.json({}):Response.json({reports:[row],...version,version,fetchedAt:now});
+ globalThis.fetch=async(url)=>String(url)==="/api/sporttery"?Response.json({matches:[{...row,matchId:row.officialMatchId,kickoffAt:new Date(Date.now()+4*3600000).toISOString()}],fetchedAt:now}):String(url)==="/api/model-audit"?Response.json({}):String(url).startsWith("/api/prediction-versions?")?Response.json({status:"not-found",eligible:false}):Response.json({reports:[row],...version,version,fetchedAt:now});
  const root=createRoot(container);
  try{
-  await act(async()=>root.render(h(Page)));for(let i=0;i<80&&!container.querySelector(".prediction-coverage");i++)await act(async()=>{await new Promise(resolve=>setTimeout(resolve,20))});
+  await act(async()=>root.render(h(Page)));
+  for(let i=0;i<80&&![...container.querySelectorAll("button")].some(button=>button.textContent==="生成当前预测");i++)await act(async()=>{await new Promise(resolve=>setTimeout(resolve,20))});
+  await act(async()=>[...container.querySelectorAll("button")].find(button=>button.textContent==="生成当前预测").click());
+  for(let i=0;i<80&&!container.querySelector(".prediction-coverage");i++)await act(async()=>{await new Promise(resolve=>setTimeout(resolve,20))});
   assert.match(container.querySelector(".prediction-coverage").textContent,/已生成 0 \/ 1/);assert.equal(container.querySelectorAll(".daily-prediction-card").length,0);
  }finally{await act(async()=>root.unmount());restore()}
 });
@@ -331,6 +343,7 @@ test("prediction page waits for a queued generation without saving zero coverage
  globalThis.fetch=async(url,init)=>{
   const path=String(url);
   if(path==="/api/sporttery")return Response.json({matches,fetchedAt:now});
+  if(path.startsWith("/api/prediction-versions?"))return Response.json({status:"not-found",eligible:false});
   if(path==="/api/predictions")return Response.json({status:"queued",jobId:"page-job"},{status:202});
   if(path==="/api/prediction-jobs?jobId=page-job"){
    jobStarted=true;return new Promise((resolve,reject)=>{complete=()=>resolve(Response.json({jobId:"page-job",reports:rows,...version,version,fetchedAt:now,unavailableOfficialMatches:[]}));init.signal.addEventListener("abort",()=>reject(init.signal.reason),{once:true})});
@@ -342,6 +355,8 @@ test("prediction page waits for a queued generation without saving zero coverage
  const flush=async predicate=>{for(let i=0;i<120&&!predicate();i++)await act(async()=>{await new Promise(resolve=>setTimeout(resolve,20))});assert.ok(predicate(),JSON.stringify({errors:errors.map(error=>error.message),text:container.textContent.slice(0,1800)}))};
  try{
   await act(async()=>root.render(h(Home)));
+  await flush(()=>[...container.querySelectorAll("button")].some(button=>button.textContent==="生成当前预测"));
+  await act(async()=>[...container.querySelectorAll("button")].find(button=>button.textContent==="生成当前预测").click());
   await flush(()=>jobStarted);
   assert.equal(container.querySelectorAll(".daily-prediction-card").length,0);
   assert.equal(container.querySelector(".prediction-coverage"),null,"A pending job is not a zero-predictions coverage result");
@@ -403,10 +418,11 @@ test("today recommendations refresh official SP on generation, show net ranges a
  const scores=Array.from({length:169},(_,index)=>{const score=`${Math.floor(index/13)}:${index%13}`;return {score,probability:score==="1:0"?40:score==="0:0"?30:30/167};});
  assert.equal(scores.length,169);assert.ok(Math.abs(scores.reduce((sum,point)=>sum+point.probability,0)-100)<1e-8);
  const matches=[1,2].map(i=>({id:`周一00${i}`,officialMatchId:`returns-${i}`,predictionId:"returns-version",salesDate:date,matchDate:date,kickoffAt:kickoff,time:kickoff,home:`主队${i}`,away:`客队${i}`,league:"测试联赛",officialMappingStatus:"verified",sourceFetchedAt:now,confidence:85,completeness:10,singleModel:false,combinedScores:scores,fullScoreDistribution:scores}));
- dom.window.localStorage.setItem("ff-today-predictions-v3",JSON.stringify({date,predictionId:"returns-version",matches}));
+ assert.equal(dom.window.localStorage.getItem("ff-today-predictions-v3"),null);
  let calls=0,fail=false,missing=false;
  globalThis.fetch=async url=>{
   const path=String(url);
+  if(path.startsWith("/api/prediction-versions?"))return Response.json({status:"ready",eligible:true,expiresAt:new Date(Date.now()+300000).toISOString(),snapshot:{date,predictionId:"returns-version",matches}});
   if(path==="/api/sporttery"){
    calls++;if(fail)return Response.json({error:"官方接口暂不可用"},{status:502});
    return Response.json({fetchedAt:new Date().toISOString(),matches:matches.map((match,i)=>{
@@ -423,7 +439,7 @@ test("today recommendations refresh official SP on generation, show net ranges a
  const flush=async predicate=>{for(let i=0;i<60&&!predicate();i++)await act(async()=>{await new Promise(resolve=>setTimeout(resolve,15))});assert.ok(predicate(),`Expected UI state did not settle: ${container.textContent.slice(0,700)}`)};
  try{
   const storage=await import(await componentUrl(new URL("../app/browser-storage.ts",import.meta.url)));
-  await storage.writeBrowserData("ff-today-predictions-v3",{date,predictionId:"returns-version",matches});
+  assert.equal(await storage.readBrowserData("ff-today-predictions-v3",null),null,"A new device has no prediction history");
   await act(async()=>root.render(h(Recommendations)));
   await flush(()=>container.querySelector(".generate-row button")?.disabled===false);
   const before=calls;
@@ -564,6 +580,7 @@ async function mountRecommendationArchive({savedTrial=false,livePrediction=false
  });
  globalThis.fetch=async(url,options={})=>{
   const requestPath=String(url);requests.push({path:requestPath,method:options.method||"GET"});
+  if(requestPath.startsWith("/api/prediction-versions?"))return Response.json(livePrediction?{status:"ready",eligible:true,expiresAt:new Date(Date.now()+300000).toISOString(),snapshot:{date,predictionId:"dom-live-prediction",matches:predictions}}:{status:"not-found",eligible:false});
   if(historyReadFailure?.path===requestPath && options.method!=="POST"){
    const failure=historyReadFailure.kind;
    if(failure==="network")throw new TypeError("isolated network failure");
@@ -668,6 +685,70 @@ test("independent recommendations page reads and settles history without Home re
   assert.equal(ui.requests.some(request=>request.method!=="GET"),false);
   assert.equal(JSON.stringify(ui.archive),ui.archiveBefore);
  }finally{await ui.dispose()}
+});
+
+test("visiting prediction tabs reads the saved version and only explicit generation submits a batch",async()=>{
+ const {dom,restore}=installDom();
+ const originalFetch=globalThis.fetch;
+ const requests=[];
+ const date=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+ const match={id:"周六001",matchId:"official-1",officialMatchId:"official-1",salesDate:date,matchDate:date,kickoffAt:`${date}T23:00:00+08:00`,home:"甲",away:"乙",league:"测试联赛",time:"23:00"};
+ globalThis.fetch=async(input,options={})=>{
+  const path=String(input);
+  requests.push({path,method:options.method||"GET",body:options.body});
+  if(path.startsWith("/api/prediction-versions?"))return Response.json({status:"not-found",eligible:false});
+  if(path==="/api/predictions")return new Promise(()=>{});
+  throw new Error(`Unexpected prediction read request: ${path}`);
+ };
+ const {usePredictionWorkspace}=await import(await componentUrl(new URL("../app/hooks/usePredictionWorkspace.ts",import.meta.url)));
+ const official={liveMatches:[match],allMatches:[match],dataLoading:false,dataState:"success",dataMeta:{fetchedAt:new Date().toISOString()},repairNotice:"",setRepairNotice(){},repairMissingMatches:async()=>({ok:true,matches:[match]}),refreshSporttery:async()=>{}};
+ function Harness(){const state=usePredictionWorkspace(official,"market-predictions");return h("button",{onClick:state.generatePredictionNow},state.predictionError||"loading")}
+ const root=createRoot(dom.window.document.getElementById("test-root"));
+ try{
+  await act(async()=>root.render(h(Harness)));
+  for(let i=0;i<20&&!dom.window.document.body.textContent.includes("尚无合格");i++)await act(async()=>{await new Promise(resolve=>setTimeout(resolve,5))});
+  assert.match(dom.window.document.body.textContent,/尚无合格的服务端预测/);
+  assert.equal(requests.filter(row=>row.method==="POST").length,0,"Page visit must never submit a batch");
+  await act(async()=>dom.window.document.querySelector("button").click());
+  assert.equal(requests.filter(row=>row.method==="POST"&&row.path==="/api/predictions").length,1,"Only an explicit click submits");
+  assert.equal(JSON.parse(requests.find(row=>row.method==="POST").body).forceRefresh,false,"Normal generation must permit same-input task reuse");
+ }finally{await act(async()=>root.unmount());globalThis.fetch=originalFetch;restore()}
+});
+
+test("prediction page distinguishes sign-in, read failure, and failed generation without browser replacement",async()=>{
+ const Page=await load("../app/predictions/page.tsx");
+ const date=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai"}).format(new Date());
+ const now=new Date().toISOString();
+ const match={...fixture("周六001"),salesDate:date,matchDate:date,kickoffAt:new Date(Date.now()+4*3600000).toISOString(),matchId:"fixture-周六001",odds:[2,3,4],matchStatus:"Selling"};
+ for(const scenario of ["sign-in","read-failed","generation-failed"]){
+  const {dom,restore}=installDom(),container=dom.window.document.getElementById("test-root"),requests=[];
+  globalThis.fetch=async(url,options={})=>{
+   const path=String(url);requests.push({path,method:options.method||"GET"});
+   if(path==="/api/sporttery")return Response.json({matches:[match],fetchedAt:now});
+   if(path==="/api/model-audit")return Response.json({});
+   if(path.startsWith("/api/prediction-versions?"))return scenario==="sign-in"?new Response(null,{status:401}):scenario==="read-failed"?new Response(null,{status:503}):Response.json({status:"not-found",eligible:false});
+   if(path==="/api/predictions")return Response.json({error:"后台消费者未就绪"},{status:503});
+   throw Error(`Unexpected failure-state request: ${path}`);
+  };
+  const root=createRoot(container);
+  const flush=async predicate=>{for(let i=0;i<80&&!predicate();i++)await act(async()=>{await new Promise(resolve=>setTimeout(resolve,15))});assert.ok(predicate(),container.textContent.slice(0,700))};
+  const generate=()=>[...container.querySelectorAll("button")].find(button=>button.textContent==="生成当前预测");
+  try{
+   await act(async()=>root.render(h(Page)));
+   await flush(()=>generate()&&container.textContent.includes(scenario==="sign-in"?"请先登录":scenario==="read-failed"?"服务端预测读取失败":"今日尚无合格"));
+   if(scenario==="generation-failed"){
+    assert.equal(generate().disabled,false);
+    await act(async()=>generate().click());
+    await flush(()=>container.textContent.includes("新预测未完成"));
+    assert.match(container.textContent,/没有服务端不可变版本，不会用浏览器基线代替/);
+    assert.equal(container.querySelectorAll(".daily-prediction-card").length,0);
+    assert.equal(requests.filter(row=>row.path==="/api/predictions"&&row.method==="POST").length,1);
+   }else{
+    assert.equal(generate().disabled,true);
+    assert.equal(requests.filter(row=>row.path==="/api/predictions").length,0);
+   }
+  }finally{await act(async()=>root.unmount());restore()}
+ }
 });
 
 test("archived recommendations default to formal snapshots, retain both slot cash rows, and support DOM controls",async()=>{

@@ -18,6 +18,7 @@ export default function PredictionWorkspace({
     unavailablePredictions,
     predictionLoading,
     predictionError,
+    predictionReadStatus,
     predictionMeta,
     predictionAiLoading,
     predictionAiError,
@@ -30,6 +31,7 @@ export default function PredictionWorkspace({
     researchAiError,
     researchAiProvider,
     retryUnavailablePredictionData,
+    generatePredictionNow,
     predictionRepairing,
     reviewTodayWithAi,
     reviewResearchWithAi,
@@ -37,6 +39,23 @@ export default function PredictionWorkspace({
   return (
     <SiteShell view={view}>
       <OfficialSourceNotice official={official} predictionPage />
+      {dataState === "success" && !predictionLoading && !predictionRows.length && (
+        <div className="data-fallback">
+          {predictionError || "当前没有可读取的服务端预测版本。"} 如需生成新版本，请主动提交。
+          <button
+            type="button"
+            onClick={generatePredictionNow}
+            disabled={
+              dataLoading ||
+              predictionRepairing ||
+              predictionReadStatus === "sign-in-required" ||
+              predictionReadStatus === "unavailable"
+            }
+          >
+            生成当前预测
+          </button>
+        </div>
+      )}
       {view === "market-predictions" && (
         <MarketPredictionTable
           officialMatches={dataState === "success" ? allMatches : []}
@@ -57,7 +76,7 @@ export default function PredictionWorkspace({
         />
       )}
       {view === "predictions" &&
-        (dataState === "stale" || dataState === "error" ? (
+        ((dataState === "stale" || dataState === "error") && !predictionRows.length ? (
           <AiPredictionReport
             researchOnly
             rows={researchRows}

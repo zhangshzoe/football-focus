@@ -11,6 +11,7 @@ import { createPredictionBatchRuntime } from "../app/prediction-batch-runtime.js
 import { waitForPredictionBatch } from "../app/prediction-batch-waiter.js";
 import { deriveFixture } from "./helpers/prediction-preparation-fixture.mjs";
 import { resolveContextEvidence } from "../app/context-evidence.js";
+import { readServerPredictionVersion } from "../app/server-prediction-versions.js";
 
 // Only source I/O is replaced. Numerical fits, identity checks, report projection,
 // version hashing and context signing use actual project implementations.
@@ -110,6 +111,43 @@ function durableFixture() {
   const store = createPredictionJobStore({ database, objects });
   return { sql, queries, writes, store };
 }
+
+test("server versions are shared, read-only and immutable after replacement and expiry", async () => {
+  await runFixture(async ({ fixture }) => {
+    const f = durableFixture();
+    try {
+      const options = { store: f.store, codeIdentity, project: route.projectPreparedOfficialReports,
+        finalize: async (batch, reports) => (await route.completePreparedOfficialPrediction(batch, reports)).json() };
+      const make = async () => {
+        const prepared = JSON.parse(JSON.stringify(await route.prepareOfficialPredictionBatch(fixture.ids, true)));
+        const runtime = createPredictionBatchRuntime(options), submitted = await runtime.enqueue(prepared);
+        const units = createPredictionUnitRuntime({ store: f.store, codeIdentity });
+        for (const child of submitted.children) assert.equal((await units.consumeOne({ id: child.id })).status, "ready");
+        assert.equal((await runtime.consumeOne({ id: submitted.job.id })).status, "ready");
+        return submitted.job.id;
+      };
+      const id = await make(), salesDate = fixture.officialData.matches[0].salesDate;
+      f.queries.length = 0;
+      const writes = f.writes.length;
+      const [firstDevice, secondDevice] = await Promise.all([1, 2].map(() => readServerPredictionVersion({ store: f.store, salesDate, codeIdentity })));
+      assert.equal(firstDevice.status, "ready");
+      assert.ok(firstDevice.snapshot.matches.length > 0);
+      assert.deepEqual(firstDevice, secondDevice);
+      assert.ok(f.queries.every(query => query.trimStart().startsWith("SELECT")));
+      assert.equal(f.writes.length, writes);
+      const predictionId = firstDevice.snapshot.predictionId, frozen = JSON.stringify(firstDevice.snapshot);
+      await make();
+      const historical = await readServerPredictionVersion({ store: f.store, predictionId, codeIdentity, now: Date.now() + 3600000 });
+      assert.equal(historical.status, "historical");
+      assert.equal(historical.contentHash, firstDevice.contentHash);
+      assert.equal(JSON.stringify(historical.snapshot), frozen);
+      assert.equal((await readServerPredictionVersion({ store: f.store, salesDate, codeIdentity, now: Date.now() + 3600000 })).status, "expired");
+      assert.equal((await readServerPredictionVersion({ store: f.store, salesDate, codeIdentity: { ...codeIdentity, sourceHash: "c".repeat(64) } })).status, "version-changed");
+      f.sql.prepare("UPDATE prediction_jobs SET result_hash = ? WHERE id = ?").run("f".repeat(64), id);
+      assert.equal((await readServerPredictionVersion({ store: f.store, salesDate, predictionId, codeIdentity })).status, "invalid-version");
+    } finally { f.sql.close(); }
+  });
+});
 
 test("a complete frozen batch waits without claiming, then independent units and aggregation retain coverage and pure reads", async () => {
   await runFixture(async ({ fixture, state, sourceCalls }) => {
@@ -486,22 +524,14 @@ test("trusted preparation retains all official scope and exclusions without fitt
   });
 });
 
-test("existing POST uses the extracted stages and ignores caller odds; version keeps the frozen decision time", async () => {
+test("durable stages keep the frozen decision time and official odds", async () => {
   await runFixture(async ({ fixture, state, sourceCalls }) => {
-    const response = await route.POST(
-      new Request("https://example.invalid/api/predictions", {
-        method: "POST",
-        body: JSON.stringify({
-          fixtureIds: fixture.ids,
-          forceRefresh: true,
-          officialData: { matches: [] },
-          odds: [99, 99, 99],
-        }),
-      }),
-    );
+    const prepared = await route.prepareOfficialPredictionBatch(fixture.ids, true);
+    const outputs = prepared.units.map(entry => computePredictionUnit(entry.unit));
+    const response = await route.completePreparedOfficialPrediction(prepared, route.projectPreparedOfficialReports(prepared, outputs));
     assert.equal(response.status, 200);
     const data = await response.json();
-    assert.equal(state.fits, 2);
+    assert.equal(state.fits, 0);
     assert.equal(sourceCalls.length, 1);
     assert.equal(data.coverage.predictedMatches, 2);
     assert.equal(data.coverage.officialMatches, 2);
@@ -529,14 +559,8 @@ test("source and exact official handicap failures are rejected before any fit", 
       (error) => error.code === "OFFICIAL_HANDICAP_MISMATCH",
     );
     assert.equal(state.fits, 0);
-    const response = await route.POST(
-      new Request("https://example.invalid/api/predictions", {
-        method: "POST",
-        body: JSON.stringify({ fixtureIds: ["not-current"], forceRefresh: true }),
-      }),
-    );
-    assert.equal(response.status, 409);
-    assert.deepEqual((await response.json()).unavailableOfficialMatchIds, ["not-current"]);
+    await assert.rejects(() => route.prepareOfficialPredictionBatch(["not-current"], true),
+      error => error.code === "OFFICIAL_FIXTURE_NOT_CURRENT" && error.unavailableOfficialMatchIds[0] === "not-current");
     assert.equal(state.fits, 0);
   });
 });

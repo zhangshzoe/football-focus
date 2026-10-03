@@ -175,7 +175,7 @@ export function createPredictionUnitRuntime({
     code: /^[A-Z][A-Z0-9_]{1,79}$/.test(error?.code || "") ? error.code : "PREDICTION_UNIT_FAILED",
   });
 
-  async function enqueue(prepared) {
+  async function enqueue(prepared, { admissionToken = null } = {}) {
     // Freeze before the first asynchronous storage operation, not after it.
     prepared = structuredClone(prepared);
     const expiresAtEpoch = predictionUnitDeadline(prepared, clock());
@@ -207,6 +207,7 @@ export function createPredictionUnitRuntime({
       codeIdentity: frozenCodeIdentity,
       prepared: pointer,
       expiresAtEpoch,
+      admissionToken,
     });
     predictionUnitDeadline(prepared, clock());
     return result;

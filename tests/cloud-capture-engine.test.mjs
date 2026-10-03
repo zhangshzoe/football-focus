@@ -22,7 +22,7 @@ function memoryStore(onAppend = () => {}) {
   };
   return store;
 }
-function harness({ at = "2026-10-02T12:50:00+08:00", sourceError, malformed, duringWrite, bundled = {}, storeOverride, beforeSource, changePredictionSource } = {}) {
+function harness({ at = "2026-10-02T12:50:00+08:00", sourceError, malformed, duringWrite, bundled = {}, storeOverride, beforeSource, changePredictionSource, emptySource = false } = {}) {
   let clock = at, calls = 0;
   const store = storeOverride || memoryStore((record) => { if (record.type === "raw" && duringWrite) clock = duringWrite; });
   const match = { id: "周五001", officialMatchId: "12345", matchId: "12345", salesDate: "2026-10-02", kickoffAt: "2026-10-02T13:30:00+08:00", matchStatus: "Selling", home: "Test home", away: "Test away", league: "Test league", odds: [2, 3, 4], marketOdds: { "总进球数": Array(8).fill(8), "比分": Array(31).fill(31), "半全场": Array(9).fill(9) }, marketEligibility: { "胜平负": { qualification: "qualified", salesStatus: "Selling", cutoffAt: "2026-10-02T13:30:00+08:00" }, "让球胜平负": { qualification: "unavailable" } } };
@@ -40,13 +40,23 @@ function harness({ at = "2026-10-02T12:50:00+08:00", sourceError, malformed, dur
   if (malformed) malformed(report);
   const codeHashes = Object.fromEntries(["one", "two", "three", "four", "five"].map((key) => [key, "a".repeat(64)]));
   const engine = cloudCaptureEngine({ store, codeHashes, bundled, clock: () => clock,
-    async fetchOfficial() { calls++; if (beforeSource) await beforeSource(); if (sourceError) throw sourceError instanceof Error?sourceError:new Error(sourceError); return { matches: [match], fetchedAt: at, poolStatus: Object.fromEntries(["HAD", "HHAD", "CRS", "TTG", "HAFU"].map((pool) => [pool, { status: "success",observedAt:at }])) }; },
+    async fetchOfficial() { calls++; if (beforeSource) await beforeSource(); if (sourceError) throw sourceError instanceof Error?sourceError:new Error(sourceError); return { matches: emptySource ? [] : [match], fetchedAt: at, poolStatus: Object.fromEntries(["HAD", "HHAD", "CRS", "TTG", "HAFU"].map((pool) => [pool, { status: "success",observedAt:at }])) }; },
     async predict() { const prediction={ officialMatches: [match], reports: [report], officialSource: { method: "server-refetch", fetchedAt: at, manifestState: "complete", poolStatus: Object.fromEntries(["HAD", "HHAD", "CRS", "TTG", "HAFU"].map(pool => [pool, { status: "success",observedAt:at }])) }, version: { inputSnapshotId: "test-input" } };if(changePredictionSource)changePredictionSource(prediction.officialSource);return prediction; },
     async readResults() { return { results: [], fetchedAt: clock }; }, async readResultEvents() { return []; }, async appendResult() { throw new Error("unexpected result append"); },
   });
   return { engine, store, setClock(value) { clock = value; }, get calls() { return calls; }, codeHashes };
 }
 const job = (requestId = "test-run-1") => ({ action: "decisions", requestId });
+
+test("verified zero fixtures is recorded separately from unknown manifest and failed source", async () => {
+  const h = harness({ emptySource: true });
+  const result = await h.engine.execute(job());
+  assert.equal(result.status, "skipped");
+  assert.equal(result.reason, "official-zero-fixtures");
+  const universe = (await h.store.list("official-universe"))[0];
+  assert.deepEqual(universe.payload.fixtures, []);
+  assert.equal((await h.store.list("raw")).length, 0);
+});
 
 test("a real-store engine losing its lease stops audit/index/complete and cannot release its replacement", async () => {
   const sql = await researchDatabase(), bytes = new Map();

@@ -232,13 +232,13 @@ export function createPredictionBatchRuntime({
     predictionBatchDeadline(prepared.batch, clock());
     return { ok: true, outputs, audit };
   }
-  async function enqueue(batch) {
+  async function enqueue(batch, { admissionToken = null } = {}) {
     // Keep one private source snapshot throughout all child and parent awaits.
     batch = structuredClone(batch);
     const expiresAtEpoch = predictionBatchDeadline(batch, clock()),
       children = [];
     for (const entry of batch.units) {
-      const queued = await unitRuntime.enqueue(officialBatchUnitPayload(batch, entry));
+      const queued = await unitRuntime.enqueue(officialBatchUnitPayload(batch, entry), { admissionToken });
       if (!queued.ok) return queued;
       children.push({
         id: queued.job.id,
@@ -265,6 +265,7 @@ export function createPredictionBatchRuntime({
       codeIdentity: frozenCode,
       prepared: saved,
       expiresAtEpoch,
+      admissionToken,
     });
     predictionBatchDeadline(batch, clock());
     return queued.ok ? { ...queued, children } : queued;

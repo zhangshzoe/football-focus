@@ -109,6 +109,9 @@ export function predictionJobSchemaSql() {
       result_object_key TEXT,
       result_hash TEXT,
       failure_code TEXT,
+      prediction_id TEXT,
+      prediction_sales_dates TEXT,
+      prediction_generated_at TEXT,
       UNIQUE(namespace, input_fingerprint, code_identity_json),
       CHECK((status = 'running' AND owner_token IS NOT NULL AND lease_until IS NOT NULL)
         OR (status != 'running' AND owner_token IS NULL AND lease_until IS NULL)),
@@ -117,6 +120,8 @@ export function predictionJobSchemaSql() {
     )`,
     "CREATE INDEX idx_prediction_jobs_claim ON prediction_jobs(namespace, status, expires_at, lease_until, created_at, id)",
     "CREATE INDEX idx_prediction_jobs_expiry ON prediction_jobs(expires_at, status)",
+    "CREATE INDEX idx_prediction_jobs_version ON prediction_jobs(prediction_id)",
+    "CREATE INDEX idx_prediction_jobs_latest ON prediction_jobs(namespace, prediction_generated_at)",
   ];
 }
 
@@ -180,6 +185,7 @@ export function createPredictionJobStore({ database, objects }) {
       result: row.result_hash
         ? { objectKey: row.result_object_key, contentHash: row.result_hash }
         : null,
+      predictionId: row.prediction_id || null,
       createdAt: iso(row.created_at),
       updatedAt: iso(row.updated_at),
       expiresAt: iso(row.expires_at),
@@ -276,7 +282,9 @@ export function createPredictionJobStore({ database, objects }) {
     prepared,
     ttlSeconds = 900,
     expiresAtEpoch = null,
+    admissionToken = null,
   }) {
+    if (admissionToken !== null && !/^[a-f0-9-]{36}$/.test(admissionToken)) throw invalid("INVALID_ADMISSION_TOKEN");
     namespaceValue(namespace);
     seconds(ttlSeconds, 604800, "INVALID_JOB_TTL");
     if (expiresAtEpoch !== null && (!Number.isSafeInteger(expiresAtEpoch) || expiresAtEpoch < 1))
@@ -324,6 +332,7 @@ export function createPredictionJobStore({ database, objects }) {
       SELECT ?, ?, ?, ?, ?, ?, ?, ?, 'queued', unixepoch(), unixepoch(),
         min(unixepoch() + ?, coalesce(?, unixepoch() + ?)), 0
       WHERE coalesce(?, unixepoch() + ?) > unixepoch()
+      ${admissionToken ? "AND EXISTS (SELECT 1 FROM prediction_runtime_state WHERE key='submission-admission' AND json_extract(value_json,'$.token')=? AND expires_at>unixepoch()*1000)" : ""}
       ON CONFLICT DO NOTHING`,
       [
         identity.id,
@@ -339,9 +348,11 @@ export function createPredictionJobStore({ database, objects }) {
         ttlSeconds,
         expiresAtEpoch,
         ttlSeconds,
+        ...(admissionToken ? [admissionToken] : []),
       ],
     ).run();
     const row = await load(identity.id);
+    if (!row && admissionToken) return { ok: false, status: "failed", job: null, enqueued: false, code: "PREPARATION_LEASE_EXPIRED" };
     if (!row && expiresAtEpoch !== null)
       return { ok: false, status: "expired", job: null, enqueued: false, code: "JOB_EXPIRED" };
     if (
@@ -387,8 +398,11 @@ export function createPredictionJobStore({ database, objects }) {
     // Business freshness and official proof must be checked by the real consumer.
     return { ...latest, payload: value.payload };
   }
-  async function readResult(id) {
-    const current = await read(id);
+  async function readResult(id, { historical = false } = {}) {
+    const raw = historical ? await select(idValue(id)) : null;
+    const current = historical && raw?.result_hash && raw.completed_at
+      ? { ok: true, status: "ready", job: jobValue(raw) }
+      : await read(id);
     if (!current.ok) return current;
     if (current.status !== "ready")
       return { ...current, ok: false, code: `JOB_${current.status.toUpperCase()}` };
@@ -405,9 +419,25 @@ export function createPredictionJobStore({ database, objects }) {
       !Object.hasOwn(value, "result")
     )
       return { ...current, ok: false, code: "RESULT_IDENTITY_MISMATCH" };
-    const latest = await read(id);
+    const latest = historical ? current : await read(id);
     if (!latest.ok) return latest;
     return { ...latest, result: value.result };
+  }
+  // Only completed official batch results are indexed. This query never claims
+  // jobs or fits probabilities, and history remains readable after expiry.
+  async function findPredictionVersions({ predictionId, salesDate, limit = 25, offset = 0 }) {
+    if ((predictionId && (typeof predictionId !== "string" || predictionId.length > 180)) ||
+      (salesDate && !/^\d{4}-\d{2}-\d{2}$/.test(salesDate)) ||
+      (!predictionId && !salesDate) || !Number.isInteger(limit) || limit < 1 || limit > 25 ||
+      !Number.isInteger(offset) || offset < 0 || offset > 1000) throw invalid("INVALID_VERSION_QUERY");
+    const rows = await statement(`SELECT id FROM prediction_jobs
+      WHERE namespace = 'official' AND result_hash IS NOT NULL AND completed_at IS NOT NULL
+        AND prediction_id IS NOT NULL
+        AND (? IS NULL OR prediction_id = ?)
+        AND (? IS NULL OR EXISTS (SELECT 1 FROM json_each(prediction_sales_dates) WHERE value = ?))
+      ORDER BY prediction_generated_at DESC, id DESC LIMIT ? OFFSET ?`,
+      [predictionId || null, predictionId || null, salesDate || null, salesDate || null, limit, offset]).all();
+    return (rows.results || []).map(row => row.id);
   }
   async function claim({ id, kind = null, codeHash = null, leaseSeconds = 120 }) {
     idValue(id);
@@ -536,13 +566,21 @@ export function createPredictionJobStore({ database, objects }) {
     if (beforePublish) await beforePublish();
     // The lease can expire while R2 is awaited. Only this atomic statement may
     // publish the pointer; a losing worker's orphan object is never a ready job.
+    const envelope = current.namespace === "official" && resultPayload?.kind === "prediction-batch-final-result"
+      ? resultPayload.envelope : null;
+    const indexed = envelope?.predictionId && envelope.predictionId === envelope.version?.predictionId &&
+      Array.isArray(envelope.reports) && envelope.reports.length &&
+      envelope.reports.every(report => report.predictionId === envelope.predictionId && /^\d{4}-\d{2}-\d{2}$/.test(report.salesDate));
     const row = await statement(
       `UPDATE prediction_jobs SET status = 'ready', result_object_key = ?, result_hash = ?,
+      prediction_id = ?, prediction_sales_dates = ?, prediction_generated_at = ?,
       completed_at = unixepoch(), updated_at = unixepoch(), owner_token = NULL, lease_until = NULL
       WHERE id = ? AND status = 'running' AND owner_token = ? AND fence = ?
         AND lease_until > unixepoch() AND expires_at > unixepoch()
       RETURNING *, unixepoch() AS database_now`,
-      [saved.objectKey, saved.contentHash, lease.jobId, lease.token, lease.fence],
+      [saved.objectKey, saved.contentHash, indexed ? envelope.predictionId : null,
+        indexed ? JSON.stringify([...new Set(envelope.reports.map(report => report.salesDate))].sort()) : null,
+        indexed ? envelope.version.generatedAt : null, lease.jobId, lease.token, lease.fence],
     ).first();
     if (row) return outcome(row);
     const latest = await load(lease.jobId);
@@ -572,6 +610,7 @@ export function createPredictionJobStore({ database, objects }) {
     read,
     readPrepared,
     readResult,
+    findPredictionVersions,
     claim,
     claimNext,
     listDispatchable,

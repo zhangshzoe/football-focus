@@ -1,3 +1,6 @@
+import { sourceRecovery } from "./source-recovery.js";
+const recovery = sourceRecovery();
+
 export type OfficialSourceIssueKind =
   | "access-blocked"
   | "manifest-unavailable"
@@ -10,6 +13,7 @@ export type OfficialSourceIssueKind =
   | "stale-data"
   | "empty-list"
   | "missing-market"
+  | "identity-conflict"
   | "unknown";
 export type OfficialSourceIssue = {
   source: "primary" | "mobile";
@@ -28,7 +32,10 @@ class OfficialResponseError extends Error {
 }
 export class OfficialSportteryError extends Error {
   readonly code:
-    "OFFICIAL_ACCESS_BLOCKED" | "OFFICIAL_MANIFEST_UNAVAILABLE" | "OFFICIAL_FETCH_FAILED";
+    | "OFFICIAL_ACCESS_BLOCKED"
+    | "OFFICIAL_MANIFEST_UNAVAILABLE"
+    | "OFFICIAL_FETCH_FAILED"
+    | "OFFICIAL_IDENTITY_CONFLICT";
   readonly sourceState: { manifestState: "unknown"; poolStatus: SportteryData["poolStatus"] };
   constructor(poolStatus: SportteryData["poolStatus"]) {
     super(
@@ -37,11 +44,13 @@ export class OfficialSportteryError extends Error {
     const primary = SPORTTERY_POOLS.map((pool) =>
       poolStatus[pool].issues?.filter((issue) => issue.source === "primary").at(-1),
     );
-    this.code = primary.every((issue) => issue?.kind === "access-blocked")
-      ? "OFFICIAL_ACCESS_BLOCKED"
-      : primary.every((issue) => issue?.kind === "manifest-unavailable")
-        ? "OFFICIAL_MANIFEST_UNAVAILABLE"
-        : "OFFICIAL_FETCH_FAILED";
+    this.code = primary.some((issue) => issue?.kind === "identity-conflict")
+      ? "OFFICIAL_IDENTITY_CONFLICT"
+      : primary.every((issue) => issue?.kind === "access-blocked")
+        ? "OFFICIAL_ACCESS_BLOCKED"
+        : primary.every((issue) => issue?.kind === "manifest-unavailable")
+          ? "OFFICIAL_MANIFEST_UNAVAILABLE"
+          : "OFFICIAL_FETCH_FAILED";
     this.sourceState = { manifestState: "unknown", poolStatus };
   }
 }
@@ -484,12 +493,17 @@ export async function fetchOfficialSporttery(
     SPORTTERY_POOLS.map((pool) => [pool, [] as OfficialSourceIssue[]]),
   ) as Record<SportteryPool, OfficialSourceIssue[]>;
   for (let attempt = 0; attempt < attempts; attempt++) {
+    if (attempt) await new Promise((resolve) => setTimeout(resolve, 250));
     // Keep request bursts modest: five simultaneous uncached requests can
     // trigger the official gateway's rate/Bot protection.
     for (let index = 0; index < SPORTTERY_POOLS.length; index += 2) {
       const pools = SPORTTERY_POOLS.slice(index, index + 2);
       const settled = await Promise.allSettled(
-        pools.map((pool) => fetchPool(pool, timeoutMs, Boolean(options.serverHeaders))),
+        pools.map((pool) =>
+          options.serverHeaders
+            ? recovery.run(pool, () => fetchPool(pool, timeoutMs, true))
+            : fetchPool(pool, timeoutMs, false),
+        ),
       );
       pools.forEach((pool, offset) => {
         const result = settled[offset];
@@ -505,9 +519,15 @@ export async function fetchOfficialSporttery(
   // A successfully read empty list is authoritative, not a reason to revive
   // fixtures from an earlier attempt or the calculator endpoint.
   const missingPools = SPORTTERY_POOLS.filter((pool) => !collected[pool].length);
-  if (missingPools.length) {
+  // The calculator shares the protected gateway. Do not use it to evade a block.
+  if (
+    missingPools.length &&
+    !missingPools.some((pool) => issues[pool].some((issue) => issue.kind === "access-blocked"))
+  ) {
     try {
-      const mobile = await fetchMobileCalculator(timeoutMs);
+      const mobile = options.serverHeaders
+        ? await recovery.run("mobile", () => fetchMobileCalculator(timeoutMs))
+        : await fetchMobileCalculator(timeoutMs);
       const mobileRows = rowsOf(mobile);
       missingPools.forEach((pool) => {
         const rows = mobileRows.filter((row) =>
@@ -578,6 +598,31 @@ export async function fetchOfficialSporttery(
       new Map(rowsOf(byPool[pool]).map((row) => [row.matchId, row])),
     ]),
   ) as Record<SportteryPool, Map<string, OfficialMatchRow>>;
+  const identities = new Map<string, string>();
+  for (const pool of SPORTTERY_POOLS) {
+    // Inspect raw rows too: Map construction must not hide conflicting duplicates.
+    for (const row of rowsOf(collected[pool].at(-1))) {
+      const identity = JSON.stringify([
+        row.businessDate,
+        row.matchDate,
+        row.matchTime,
+        row.homeTeamAbbName || row.homeTeamAllName,
+        row.awayTeamAbbName || row.awayTeamAllName,
+      ]);
+      if (identities.has(row.matchId) && identities.get(row.matchId) !== identity) {
+        poolStatus[pool] = {
+          status: "failed",
+          matchCount: null,
+          error: "同一官方ID的销售日、时间或球队身份冲突",
+          issues: [
+            { source: "primary", kind: "identity-conflict", detail: "官方身份冲突，禁止合并赔率" },
+          ],
+        };
+        throw new OfficialSportteryError(poolStatus);
+      }
+      identities.set(row.matchId, identity);
+    }
+  }
   const ids = new Set<string>();
   SPORTTERY_POOLS.forEach((pool) => maps[pool].forEach((_row, id) => ids.add(id)));
   const matches = Array.from(ids)

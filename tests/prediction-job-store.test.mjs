@@ -12,6 +12,7 @@ import {
   predictionJobSchemaSql,
 } from "../app/prediction-job-store.js";
 import { sqliteD1, researchDatabase } from "./helpers/cloud-sqlite-fixture.mjs";
+import { predictionRuntimeSchemaSql } from "../app/prediction-submission.js";
 
 const inputIdentity = {
   schemaVersion: 1,
@@ -107,6 +108,30 @@ async function waitForDatabaseSecond(sql, at) {
   }
   assert.fail("real database clock did not reach lease/expiry boundary");
 }
+
+test("admission is fenced by SQL after asynchronous prepared-object verification", async () => {
+  const f = fixture();
+  const token = "11111111-1111-4111-8111-111111111111";
+  try {
+    f.sql.exec(predictionRuntimeSchemaSql);
+    f.sql.prepare("INSERT INTO prediction_runtime_state VALUES ('submission-admission', ?, ?, ?)")
+      .run(JSON.stringify({token}), Date.now(), Date.now()+30000);
+    const prepared = await f.store.persistPrepared({namespace:"official", inputIdentity, payload});
+    const originalGet = f.objects.get;
+    f.objects.get = async (key) => {
+      const value = await originalGet(key);
+      f.sql.prepare("UPDATE prediction_runtime_state SET expires_at=0 WHERE key='submission-admission'").run();
+      return value;
+    };
+    const rejected = await f.store.enqueue({namespace:"official", inputIdentity, codeIdentity, prepared, admissionToken:token});
+    assert.equal(rejected.ok, false);
+    assert.equal(rejected.code, "PREPARATION_LEASE_EXPIRED");
+    assert.equal(f.sql.prepare("SELECT COUNT(*) AS count FROM prediction_jobs").get().count, 0);
+    f.objects.get = originalGet;
+    f.sql.prepare("UPDATE prediction_runtime_state SET expires_at=? WHERE key='submission-admission'").run(Date.now()+30000);
+    assert.equal((await f.store.enqueue({namespace:"official", inputIdentity, codeIdentity, prepared, admissionToken:token})).ok,true);
+  } finally { f.sql.close(); }
+});
 
 test("absolute business deadline is enforced by SQL even after R2 and database waits", async () => {
   const { store, sql } = fixture();

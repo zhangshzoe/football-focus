@@ -36,7 +36,10 @@ export async function POST(request: Request) {
   }
   try {
     const result = await getPredictionUnitRuntime().consumeOne(input);
-    return Response.json(result, { status: result.ok ? 200 : 503, headers });
+    return Response.json(result, {
+      status: !result.ok ? 503 : ["queued", "running"].includes(result.status) ? 202 : 200,
+      headers,
+    });
   } catch {
     return Response.json(
       { error: "后台任务存储暂不可用，未宣称计算已完成" },
