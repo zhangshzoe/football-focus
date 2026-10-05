@@ -5,6 +5,20 @@ export const predictionRuntimeSchemaSql = `CREATE TABLE prediction_runtime_state
   updated_at INTEGER NOT NULL, expires_at INTEGER NOT NULL)`;
 const failure = (code) => Object.assign(new Error(code), { code });
 
+// Safe, read-only public projection. Never expose tokens, internal logs or jobs.
+export function predictionConsumerReadiness(beat, buildIdentity, now = Date.now()) {
+  const available = !!beat && beat.expires_at > now &&
+    beat.value?.build === buildIdentity && beat.value?.trigger === "service" &&
+    ["running", "checked"].includes(beat.value?.status);
+  return {
+    available,
+    code: available ? null : "INDEPENDENT_CONSUMER_UNAVAILABLE",
+    message: available
+      ? "后台可接收预测任务；提交后仍需核验实时官方数据。"
+      : "后台预测执行程序未就绪，暂不能生成新预测。请稍后检查状态；刷新比赛不能启动后台。",
+  };
+}
+
 export function predictionSubmission({
   database,
   runtime,
@@ -52,13 +66,7 @@ export function predictionSubmission({
         return { ...state, reused: true };
     }
     const beat = await read("consumer-heartbeat");
-    if (
-      !beat ||
-      beat.expires_at <= now ||
-      beat.value.build !== buildIdentity ||
-      beat.value.trigger !== "service" ||
-      !["running", "checked"].includes(beat.value.status)
-    )
+    if (!predictionConsumerReadiness(beat, buildIdentity, now).available)
       throw failure("INDEPENDENT_CONSUMER_UNAVAILABLE");
     // Global admission lease: at most one source preparation every 10 seconds,
     // with 30 seconds for a stalled preparation. Atomic across Worker instances.

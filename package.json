@@ -6,8 +6,8 @@
     "node": ">=22.13.0"
   },
   "scripts": {
-    "dev": "vinext dev",
-    "dev:mobile": "vinext dev --host 0.0.0.0",
+    "dev": "node scripts/start-prediction-dev.mjs",
+    "dev:mobile": "node scripts/start-prediction-dev.mjs --hostname 0.0.0.0",
     "build": "vinext build",
     "start": "vinext start",
     "mobile:url": "node scripts/mobile-access.mjs",

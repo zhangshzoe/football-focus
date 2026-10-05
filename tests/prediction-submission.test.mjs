@@ -2,9 +2,23 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { DatabaseSync } from "node:sqlite";
 import { sqliteD1 } from "./helpers/cloud-sqlite-fixture.mjs";
-import { predictionSubmission, predictionRuntimeSchemaSql } from "../app/prediction-submission.js";
+import { predictionSubmission, predictionRuntimeSchemaSql, predictionConsumerReadiness } from "../app/prediction-submission.js";
 import { predictionJobSchemaSql } from "../app/prediction-job-store.js";
 import { readPredictionRequest } from "../app/prediction-request-body.js";
+
+test("public readiness matches admission without leaking heartbeat internals", () => {
+  const now = Date.now();
+  const beat = { expires_at: now + 90000, value: { build: "current", trigger: "service", status: "checked", secret: "do-not-expose" } };
+  assert.equal(predictionConsumerReadiness(beat, "current", now).available, true);
+  for (const altered of [null, { ...beat, expires_at: now },
+    ...[{ build: "old" }, { trigger: "manual" }, { trigger: "scheduled" }, { status: "failed" }]
+      .map((value) => ({ ...beat, value: { ...beat.value, ...value } }))]) {
+    const result = predictionConsumerReadiness(altered, "current", now);
+    assert.equal(result.available, false);
+    assert.equal(result.code, "INDEPENDENT_CONSUMER_UNAVAILABLE");
+    assert.doesNotMatch(JSON.stringify(result), /do-not-expose|expires_at|current/);
+  }
+});
 
 test("public submission body is bounded before buffering and rejects malformed JSON", async () => {
   assert.deepEqual(

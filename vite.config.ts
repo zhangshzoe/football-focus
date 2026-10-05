@@ -4,8 +4,7 @@ import { defineConfig } from "vite";
 import hostingConfig from "./.openai/hosting.json";
 import { forwardCodeHashes } from "./scripts/forward-research-files.mjs";
 import { predictionBuildIdentity } from "./scripts/prediction-build-identity.mjs";
-
-const SITE_CREATOR_PLACEHOLDER_DATABASE_ID = "00000000-0000-4000-8000-000000000000";
+import { localPredictionDatabase } from "./scripts/local-prediction-bindings.mjs";
 
 const { d1, r2 } = hostingConfig;
 
@@ -18,9 +17,8 @@ const localBindingConfig = {
   d1_databases: d1
     ? [
         {
+          ...localPredictionDatabase,
           binding: d1,
-          database_name: "site-creator-d1",
-          database_id: SITE_CREATOR_PLACEHOLDER_DATABASE_ID,
         },
       ]
     : [],
@@ -34,7 +32,7 @@ const localBindingConfig = {
     : [],
 };
 
-export default defineConfig(async () => {
+export default defineConfig(async ({ command }) => {
   // Keep Wrangler and Miniflare state project-local. These are non-secret tool
   // settings; application environment belongs in ignored `.env*` files.
   process.env.WRANGLER_WRITE_LOGS ??= "false";
@@ -50,15 +48,21 @@ export default defineConfig(async () => {
       __FF_FORWARD_CODE_HASHES__: JSON.stringify(await forwardCodeHashes()),
       __FF_PREDICTION_BUILD_IDENTITY__: JSON.stringify(await predictionBuildIdentity()),
     },
-    server: isCodexSeatbeltSandbox
-      ? { watch: { useFsEvents: false, usePolling: true } }
-      : undefined,
+    server: { strictPort: true,
+      ...(isCodexSeatbeltSandbox ? { watch: { useFsEvents: false, usePolling: true } } : {}),
+    },
     plugins: [
       vinext(),
       sites(),
       cloudflare({
         viteEnvironment: { name: "rsc", childEnvironments: ["ssr"] },
-        config: localBindingConfig,
+        config: {
+          ...localBindingConfig,
+          // Only the local server receives the supervisor's in-memory token.
+          // Production secrets remain managed by Sites, never bundled.
+          ...(command === "serve" && process.env.RESEARCH_CAPTURE_TOKEN
+            ? { vars: { RESEARCH_CAPTURE_TOKEN: process.env.RESEARCH_CAPTURE_TOKEN } } : {}),
+        },
       }),
     ],
   };

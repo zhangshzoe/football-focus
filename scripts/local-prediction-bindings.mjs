@@ -1,0 +1,6 @@
+// These are local emulator identities, never production resource IDs.
+export const localPredictionDatabase = {
+  binding: "DB",
+  database_name: "site-creator-d1",
+  database_id: "00000000-0000-4000-8000-000000000000",
+};

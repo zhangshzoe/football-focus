@@ -1,7 +1,9 @@
 export const predictionVersionMessage = (status) =>
   ({
     loading: "正在读取服务端预测版本…",
-    "not-found": "今日尚无合格的服务端预测，等待后台采集。",
+    "not-found": "今日尚无合格的服务端预测。",
+    "consumer-unavailable": "后台预测执行程序未就绪，暂不能生成新预测。请稍后检查状态；刷新比赛不能启动后台。",
+    "runtime-unavailable": "后台预测状态读取失败，暂不能确认可生成。请稍后检查状态。",
     expired: "服务端预测已过期，等待新的合格版本。",
     "version-changed": "模型构建已更新，等待当前版本的预测。",
     incomplete: "当前预测未覆盖完整比赛范围，暂不可用于新组合。",

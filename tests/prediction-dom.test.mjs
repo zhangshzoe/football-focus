@@ -14,6 +14,10 @@ async function componentUrl(file){
  if(moduleUrls.has(file.href))return moduleUrls.get(file.href);
  const pending=(async()=>{
   let source=await readFile(file,"utf8");
+  // CSS modules are compiled by Vite in browser/build tests; expose their class
+  // names here so this JS-only harness can still exercise real component logic.
+  source=source.replace(/^import (\w+) from ["']([^"']+\.module\.css)["'];?\s*$/gm,
+    (_,name)=>`const ${name}=new Proxy({}, {get:(_target,key)=>String(key)});\n`);
   source=source.replace(/^import ["'][^"']+\.css["'];?\s*$/gm,"");
   let output=ts.transpileModule(source,{fileName:file.pathname,compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX}}).outputText;
   const imports=[...output.matchAll(/\bfrom\s+(["'])([^"']+)\1/g)];
@@ -369,6 +373,33 @@ test("prediction page waits for a queued generation without saving zero coverage
   for(let i=0;i<60&&!saved?.matches?.length;i++)await act(async()=>{saved=await storage.readBrowserData("ff-today-predictions-v3",null);await new Promise(resolve=>setTimeout(resolve,10))});
   assert.equal(saved.predictionId,version.predictionId);assert.equal(saved.matches.length,1);
   assert.deepEqual(errors.map(error=>error.message),[]);
+ }finally{await act(async()=>root.unmount());restore()}
+});
+
+test("offline consumer is visible and checking status never submits a prediction",async()=>{
+ const Home=await load("../app/predictions/page.tsx");
+ const {dom,restore}=installDom(),container=dom.window.document.getElementById("test-root");
+ Object.defineProperty(dom.window,"indexedDB",{value:new IDBFactory()});
+ const date=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai"}).format(new Date());
+ const now=new Date().toISOString();let reads=0,posts=0,available=false;
+ globalThis.fetch=async(url,options={})=>{
+  const route=String(url);if(options.method==="POST")posts++;
+  if(route==="/api/sporttery")return Response.json({matches:[{...fixture("周一001"),salesDate:date,matchDate:date,officialMatchId:"1",matchId:"1",odds:[2,3,4],form:[],tag:"测试",risk:"测试",matchStatus:"Selling"}],fetchedAt:now});
+  if(route.startsWith("/api/prediction-versions")){reads++;return Response.json({status:"not-found",eligible:false,submission:{available,code:available?null:"INDEPENDENT_CONSUMER_UNAVAILABLE"}})}
+  if(route==="/api/model-audit"||route==="/api/calibration")return Response.json({});
+  throw Error(`Unexpected read ${route}`);
+ };
+ const root=createRoot(container),button=text=>[...container.querySelectorAll("button")].find(b=>b.textContent===text);
+ const flush=async condition=>{for(let i=0;i<80&&!condition();i++)await act(async()=>{await new Promise(r=>setTimeout(r,10))});assert.ok(condition())};
+ try{
+  await act(async()=>root.render(h(Home)));
+  await flush(()=>button("生成当前预测")&&container.textContent.includes("后台预测执行程序未就绪"));
+  assert.equal(button("生成当前预测").disabled,true);
+  const before=reads;available=true;
+  await act(async()=>button("检查状态 / 读取结果").click());
+  await flush(()=>reads>before&&!button("生成当前预测").disabled);
+  assert.equal(posts,0);
+  assert.doesNotMatch(container.textContent,/等待后台采集/);
  }finally{await act(async()=>root.unmount());restore()}
 });
 

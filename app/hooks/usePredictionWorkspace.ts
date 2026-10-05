@@ -67,6 +67,7 @@ export function usePredictionWorkspace(
   const [researchAiProvider, setResearchAiProvider] = useState("");
   const [predictionRetryNonce, setPredictionRetryNonce] = useState(0);
   const [predictionManualNonce, setPredictionManualNonce] = useState(0);
+  const [predictionReadNonce, setPredictionReadNonce] = useState(0);
   const [predictionRepairing, setPredictionRepairing] = useState(false);
   const predictionRetryHandledRef = useRef(0);
   const predictionManualHandledRef = useRef(0);
@@ -217,9 +218,12 @@ export function usePredictionWorkspace(
           signal: predictionController.signal,
         }).then((result) => {
           readStatus = result.status;
-          if (active) setPredictionReadStatus(result.status);
+          if (!result.eligible && result.submission?.available === false)
+            readStatus = result.submission.code === "INDEPENDENT_CONSUMER_UNAVAILABLE"
+              ? "consumer-unavailable" : "runtime-unavailable";
+          if (active) setPredictionReadStatus(readStatus);
           if (result.status !== "ready" || !result.eligible || !result.snapshot)
-            throw new Error(predictionVersionMessage(result.status));
+            throw new Error(predictionVersionMessage(readStatus));
           const snapshot = result.snapshot;
           return {
             reports: snapshot.matches,
@@ -361,6 +365,7 @@ export function usePredictionWorkspace(
     liveMatches,
     predictionRetryNonce,
     predictionManualNonce,
+    predictionReadNonce,
     predictionSalesDate,
   ]);
   useEffect(() => {
@@ -709,6 +714,7 @@ export function usePredictionWorkspace(
     researchAiProvider,
     retryUnavailablePredictionData,
     generatePredictionNow,
+    refreshPredictionVersion: () => setPredictionReadNonce((value) => value + 1),
     predictionRepairing,
     reviewTodayWithAi,
     reviewResearchWithAi,
