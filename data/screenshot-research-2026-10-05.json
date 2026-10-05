@@ -1,0 +1,727 @@
+{
+  "schemaVersion": 1,
+  "sourceType": "user-screenshot",
+  "sourceUrl": "https://plzx.zgzcw.com/",
+  "sourceFilename": "1EEAE8BE-EC98-4EE4-ADF6-04DA6E432A3C.jpeg",
+  "sourceDateText": "10-06（年份未提供）",
+  "sourceUpdatedAt": null,
+  "importedAt": "2026-10-05T11:59:49.257Z",
+  "modelVersion": "multi-market-poisson-v6-exact-settlement",
+  "methodology": "欧赔去水、让球盘与大小球联合泊松拟合；未加入伤停、首发及近期表现；未使用体彩官方数据",
+  "matches": [
+    {
+      "id": "screenshot-20261005-1",
+      "home": "塞浦路斯",
+      "away": "拉脱维亚",
+      "researchOnly": true,
+      "officialMappingStatus": "unverified",
+      "sourceUpdatedAt": null,
+      "companies": [
+        {
+          "companyId": 2,
+          "name": "36",
+          "win": 1.57,
+          "draw": 3.75,
+          "lose": 6,
+          "handicap": -1,
+          "homePrice": 0.97,
+          "awayPrice": 0.82,
+          "total": 2.25,
+          "overPrice": 0.85,
+          "underPrice": 0.95
+        },
+        {
+          "companyId": 3,
+          "name": "SB",
+          "win": 1.55,
+          "draw": 3.9,
+          "lose": 6.6,
+          "handicap": -1,
+          "homePrice": 1.01,
+          "awayPrice": 0.88,
+          "total": 2.25,
+          "overPrice": 0.88,
+          "underPrice": 1
+        },
+        {
+          "companyId": 22,
+          "name": "平",
+          "win": 1.56,
+          "draw": 3.92,
+          "lose": 6.77,
+          "handicap": -1,
+          "homePrice": 1,
+          "awayPrice": 0.89,
+          "total": 2.25,
+          "overPrice": 0.88,
+          "underPrice": 0.99
+        }
+      ],
+      "had": [
+        61.435548513217654,
+        23.536663049786167,
+        15.02778843699615
+      ],
+      "scores": [
+        {
+          "score": "1:0",
+          "probability": 15.422052568645169
+        },
+        {
+          "score": "2:0",
+          "probability": 13.108744683348398
+        },
+        {
+          "score": "1:1",
+          "probability": 10.79543679805162
+        },
+        {
+          "score": "2:1",
+          "probability": 9.176121278343876
+        }
+      ],
+      "totalGoalProbabilities": [
+        9.071795628614808,
+        21.772309508675537,
+        26.126771410410644,
+        20.901417128328518,
+        12.540850276997109,
+        6.019608132958612,
+        2.4078432531834446,
+        1.159404660831297
+      ],
+      "picks": [
+        {
+          "goals": 2,
+          "probability": 26.126771410410644
+        },
+        {
+          "goals": 1,
+          "probability": 21.772309508675537
+        }
+      ],
+      "coverage": 47.89908091908618,
+      "under25": 56.97087654770098,
+      "over25": 43.029123452298975,
+      "under3": 56.97087654770098,
+      "push3": 20.901417128328514,
+      "over3": 22.127706323970457,
+      "expectedGoals": [
+        1.699999622255274,
+        0.699999999989955
+      ]
+    },
+    {
+      "id": "screenshot-20261005-2",
+      "home": "法国",
+      "away": "比利时",
+      "researchOnly": true,
+      "officialMappingStatus": "unverified",
+      "sourceUpdatedAt": null,
+      "companies": [
+        {
+          "companyId": 2,
+          "name": "36",
+          "win": 1.48,
+          "draw": 4.75,
+          "lose": 5.75,
+          "handicap": -1.25,
+          "homePrice": 1,
+          "awayPrice": 0.85,
+          "total": 3.25,
+          "overPrice": 1.05,
+          "underPrice": 0.8
+        },
+        {
+          "companyId": 3,
+          "name": "SB",
+          "win": 1.47,
+          "draw": 4.8,
+          "lose": 6.5,
+          "handicap": -1.25,
+          "homePrice": 1.03,
+          "awayPrice": 0.86,
+          "total": 3,
+          "overPrice": 0.87,
+          "underPrice": 1.01
+        },
+        {
+          "companyId": 22,
+          "name": "平",
+          "win": 1.47,
+          "draw": 4.8,
+          "lose": 6.49,
+          "handicap": -1.25,
+          "homePrice": 1.02,
+          "awayPrice": 0.88,
+          "total": 3,
+          "overPrice": 0.86,
+          "underPrice": 1
+        }
+      ],
+      "had": [
+        65.57947021471446,
+        18.924901034617008,
+        15.49562875066856
+      ],
+      "scores": [
+        {
+          "score": "2:0",
+          "probability": 9.814728837813199
+        },
+        {
+          "score": "2:1",
+          "probability": 9.814728837813199
+        },
+        {
+          "score": "1:0",
+          "probability": 8.724203411389512
+        },
+        {
+          "score": "1:1",
+          "probability": 8.724203411389512
+        }
+      ],
+      "totalGoalProbabilities": [
+        3.8774237383953385,
+        12.60162714978485,
+        20.477644118400377,
+        22.184114461600412,
+        18.024593000050334,
+        11.715985450032719,
+        6.346158785434389,
+        4.772453296301621
+      ],
+      "picks": [
+        {
+          "goals": 3,
+          "probability": 22.184114461600412
+        },
+        {
+          "goals": 2,
+          "probability": 20.477644118400377
+        }
+      ],
+      "coverage": 42.66175858000079,
+      "under25": 36.95669500658057,
+      "over25": 63.04330499341947,
+      "under3": 36.95669500658057,
+      "push3": 22.184114461600412,
+      "over3": 40.85919053181906,
+      "expectedGoals": [
+        2.2499916656157772,
+        0.999999999231987
+      ]
+    },
+    {
+      "id": "screenshot-20261005-3",
+      "home": "罗马尼亚",
+      "away": "瑞典",
+      "researchOnly": true,
+      "officialMappingStatus": "unverified",
+      "sourceUpdatedAt": null,
+      "companies": [
+        {
+          "companyId": 2,
+          "name": "36",
+          "win": 4.1,
+          "draw": 3.9,
+          "lose": 1.8,
+          "handicap": 0.75,
+          "homePrice": 0.9,
+          "awayPrice": 0.9,
+          "total": 3,
+          "overPrice": 0.92,
+          "underPrice": 0.87
+        },
+        {
+          "companyId": 3,
+          "name": "SB",
+          "win": 4.2,
+          "draw": 4.25,
+          "lose": 1.72,
+          "handicap": 0.75,
+          "homePrice": 0.97,
+          "awayPrice": 0.92,
+          "total": 3,
+          "overPrice": 0.95,
+          "underPrice": 0.93
+        },
+        {
+          "companyId": 22,
+          "name": "平",
+          "win": 4.55,
+          "draw": 4.14,
+          "lose": 1.74,
+          "handicap": 0.75,
+          "homePrice": 0.96,
+          "awayPrice": 0.94,
+          "total": 3,
+          "overPrice": 0.95,
+          "underPrice": 0.93
+        }
+      ],
+      "had": [
+        23.227368045348783,
+        21.94916668214774,
+        54.823465272503505
+      ],
+      "scores": [
+        {
+          "score": "1:1",
+          "probability": 10.027399258943156
+        },
+        {
+          "score": "1:2",
+          "probability": 9.776714277469576
+        },
+        {
+          "score": "0:1",
+          "probability": 8.356166049119295
+        },
+        {
+          "score": "0:2",
+          "probability": 8.147261897891314
+        }
+      ],
+      "totalGoalProbabilities": [
+        4.285213358522716,
+        13.498422079346556,
+        21.260014774970827,
+        22.323015513719366,
+        17.579374717054,
+        11.07500607174402,
+        5.81437818766561,
+        4.164575296976937
+      ],
+      "picks": [
+        {
+          "goals": 3,
+          "probability": 22.323015513719366
+        },
+        {
+          "goals": 2,
+          "probability": 21.260014774970827
+        }
+      ],
+      "coverage": 43.583030288690196,
+      "under25": 39.04365021284009,
+      "over25": 60.95634978715989,
+      "under3": 39.04365021284009,
+      "push3": 22.32301551371937,
+      "over3": 38.63333427344053,
+      "expectedGoals": [
+        1.1999999932723124,
+        1.949998249190834
+      ]
+    },
+    {
+      "id": "screenshot-20261005-4",
+      "home": "意大利",
+      "away": "土耳其",
+      "researchOnly": true,
+      "officialMappingStatus": "unverified",
+      "sourceUpdatedAt": null,
+      "companies": [
+        {
+          "companyId": 2,
+          "name": "36",
+          "win": 1.4,
+          "draw": 5.5,
+          "lose": 6.5,
+          "handicap": -1.25,
+          "homePrice": 0.82,
+          "awayPrice": 1.02,
+          "total": 3,
+          "overPrice": 0.92,
+          "underPrice": 0.92
+        },
+        {
+          "companyId": 3,
+          "name": "SB",
+          "win": 1.37,
+          "draw": 5.2,
+          "lose": 8.2,
+          "handicap": -1.5,
+          "homePrice": 1.05,
+          "awayPrice": 0.84,
+          "total": 3,
+          "overPrice": 0.93,
+          "underPrice": 0.95
+        },
+        {
+          "companyId": 22,
+          "name": "平",
+          "win": 1.38,
+          "draw": 5.29,
+          "lose": 7.93,
+          "handicap": -1.5,
+          "homePrice": 1.05,
+          "awayPrice": 0.83,
+          "total": 3,
+          "overPrice": 0.91,
+          "underPrice": 0.98
+        }
+      ],
+      "had": [
+        69.96442931278793,
+        17.76445077114595,
+        12.27111991606611
+      ],
+      "scores": [
+        {
+          "score": "2:0",
+          "probability": 11.33439853593772
+        },
+        {
+          "score": "1:0",
+          "probability": 9.855998726902364
+        },
+        {
+          "score": "2:1",
+          "probability": 9.63423875554706
+        },
+        {
+          "score": "3:0",
+          "probability": 8.689705544218917
+        }
+      ],
+      "totalGoalProbabilities": [
+        4.285216837783637,
+        13.498433039018455,
+        21.260032036454064,
+        22.32303363827677,
+        17.579388990142952,
+        11.075015063790062,
+        5.814382908489781,
+        4.164497486044287
+      ],
+      "picks": [
+        {
+          "goals": 3,
+          "probability": 22.32303363827677
+        },
+        {
+          "goals": 2,
+          "probability": 21.260032036454064
+        }
+      ],
+      "coverage": 43.58306567473083,
+      "under25": 39.04368191325616,
+      "over25": 60.95631808674385,
+      "under3": 39.04368191325616,
+      "push3": 22.32303363827677,
+      "over3": 38.63328444846707,
+      "expectedGoals": [
+        2.2999894501079328,
+        0.8499999998921154
+      ]
+    },
+    {
+      "id": "screenshot-20261005-5",
+      "home": "北爱尔兰",
+      "away": "格鲁吉亚",
+      "researchOnly": true,
+      "officialMappingStatus": "unverified",
+      "sourceUpdatedAt": null,
+      "companies": [
+        {
+          "companyId": 2,
+          "name": "36",
+          "win": 2.45,
+          "draw": 2.87,
+          "lose": 3.2,
+          "handicap": -0.25,
+          "homePrice": 1,
+          "awayPrice": 0.8,
+          "total": 2,
+          "overPrice": 1.02,
+          "underPrice": 0.77
+        },
+        {
+          "companyId": 3,
+          "name": "SB",
+          "win": 2.44,
+          "draw": 2.95,
+          "lose": 3.3,
+          "handicap": -0.25,
+          "homePrice": 1.07,
+          "awayPrice": 0.82,
+          "total": 2,
+          "overPrice": 1.08,
+          "underPrice": 0.8
+        },
+        {
+          "companyId": 22,
+          "name": "平",
+          "win": 2.45,
+          "draw": 2.98,
+          "lose": 3.46,
+          "handicap": -0.25,
+          "homePrice": 1.06,
+          "awayPrice": 0.85,
+          "total": 2,
+          "overPrice": 1.1,
+          "underPrice": 0.81
+        }
+      ],
+      "had": [
+        39.909490349633934,
+        30.636028688393036,
+        29.45448096197305
+      ],
+      "scores": [
+        {
+          "score": "1:0",
+          "probability": 14.8868811592715
+        },
+        {
+          "score": "0:0",
+          "probability": 13.533528326610453
+        },
+        {
+          "score": "1:1",
+          "probability": 13.39819304334435
+        },
+        {
+          "score": "0:1",
+          "probability": 12.180175493949408
+        }
+      ],
+      "totalGoalProbabilities": [
+        13.533528326610453,
+        27.06705665322091,
+        27.06705665322091,
+        18.044704435480607,
+        9.022352217740305,
+        3.6089408870961224,
+        1.2029802956987075,
+        0.45338053093203146
+      ],
+      "picks": [
+        {
+          "goals": 1,
+          "probability": 27.06705665322091
+        },
+        {
+          "goals": 2,
+          "probability": 27.06705665322091
+        }
+      ],
+      "coverage": 54.13411330644182,
+      "under25": 67.66764163305227,
+      "over25": 32.33235836694777,
+      "under3": 67.66764163305227,
+      "push3": 18.044704435480607,
+      "over3": 14.287653931467169,
+      "expectedGoals": [
+        1.0999999976009247,
+        0.8999999997842499
+      ]
+    },
+    {
+      "id": "screenshot-20261005-6",
+      "home": "黑山",
+      "away": "亚美尼亚",
+      "researchOnly": true,
+      "officialMappingStatus": "unverified",
+      "sourceUpdatedAt": null,
+      "companies": [
+        {
+          "companyId": 2,
+          "name": "36",
+          "win": 1.5,
+          "draw": 4.5,
+          "lose": 5.75,
+          "handicap": -1,
+          "homePrice": 0.85,
+          "awayPrice": 0.95,
+          "total": 2.75,
+          "overPrice": 0.9,
+          "underPrice": 0.9
+        },
+        {
+          "companyId": 3,
+          "name": "SB",
+          "win": 1.48,
+          "draw": 4.6,
+          "lose": 6.2,
+          "handicap": -1,
+          "homePrice": 0.8,
+          "awayPrice": 1.09,
+          "total": 2.75,
+          "overPrice": 0.9,
+          "underPrice": 0.98
+        },
+        {
+          "companyId": 22,
+          "name": "平",
+          "win": 1.5,
+          "draw": 4.5,
+          "lose": 6.4,
+          "handicap": -1,
+          "homePrice": 0.84,
+          "awayPrice": 1.06,
+          "total": 2.75,
+          "overPrice": 0.93,
+          "underPrice": 0.93
+        }
+      ],
+      "had": [
+        64.0120837368723,
+        20.371368579359483,
+        15.616547683768239
+      ],
+      "scores": [
+        {
+          "score": "2:0",
+          "probability": 10.997883715026273
+        },
+        {
+          "score": "1:0",
+          "probability": 10.72964264880612
+        },
+        {
+          "score": "2:1",
+          "probability": 9.898095343523647
+        },
+        {
+          "score": "1:1",
+          "probability": 9.65667838392551
+        }
+      ],
+      "totalGoalProbabilities": [
+        5.233972023807864,
+        15.440217470233197,
+        22.77432076859397,
+        22.394748755784065,
+        16.516127207390745,
+        9.744515052360542,
+        4.791053234077265,
+        3.105045487752363
+      ],
+      "picks": [
+        {
+          "goals": 2,
+          "probability": 22.77432076859397
+        },
+        {
+          "goals": 3,
+          "probability": 22.394748755784065
+        }
+      ],
+      "coverage": 45.16906952437803,
+      "under25": 43.44851026263503,
+      "over25": 56.551489737365,
+      "under3": 43.44851026263503,
+      "push3": 22.394748755784065,
+      "over3": 34.15674098158093,
+      "expectedGoals": [
+        2.0499969649932606,
+        0.89999999978425
+      ]
+    },
+    {
+      "id": "screenshot-20261005-7",
+      "home": "波黑",
+      "away": "波兰",
+      "researchOnly": true,
+      "officialMappingStatus": "unverified",
+      "sourceUpdatedAt": null,
+      "companies": [
+        {
+          "companyId": 2,
+          "name": "36",
+          "win": 2.87,
+          "draw": 3.5,
+          "lose": 2.35,
+          "handicap": 0.25,
+          "homePrice": 0.77,
+          "awayPrice": 1.02,
+          "total": 2.5,
+          "overPrice": 0.85,
+          "underPrice": 0.95
+        },
+        {
+          "companyId": 3,
+          "name": "SB",
+          "win": 2.89,
+          "draw": 3.45,
+          "lose": 2.4,
+          "handicap": 0.25,
+          "homePrice": 0.8,
+          "awayPrice": 1.09,
+          "total": 2.5,
+          "overPrice": 0.9,
+          "underPrice": 0.98
+        },
+        {
+          "companyId": 22,
+          "name": "平",
+          "win": 2.99,
+          "draw": 3.42,
+          "lose": 2.46,
+          "handicap": 0.25,
+          "homePrice": 0.81,
+          "awayPrice": 1.12,
+          "total": 2.5,
+          "overPrice": 0.93,
+          "underPrice": 0.96
+        }
+      ],
+      "had": [
+        33.51141336613841,
+        26.013611366951068,
+        40.47497526691058
+      ],
+      "scores": [
+        {
+          "score": "1:1",
+          "probability": 12.363962340076075
+        },
+        {
+          "score": "0:1",
+          "probability": 9.89116987206086
+        },
+        {
+          "score": "1:0",
+          "probability": 8.831401671482912
+        },
+        {
+          "score": "1:2",
+          "probability": 8.654773638053252
+        }
+      ],
+      "totalGoalProbabilities": [
+        7.065121337186328,
+        18.722571543543772,
+        24.807407295195496,
+        21.913209777422686,
+        14.51750147754253,
+        7.694275783097542,
+        3.3983051375347477,
+        1.8816076484769715
+      ],
+      "picks": [
+        {
+          "goals": 2,
+          "probability": 24.807407295195496
+        },
+        {
+          "goals": 3,
+          "probability": 21.913209777422686
+        }
+      ],
+      "coverage": 46.72061707261818,
+      "under25": 50.595100175925594,
+      "over25": 49.40489982407447,
+      "under3": 50.595100175925594,
+      "push3": 21.91320977742269,
+      "over3": 27.491690046651797,
+      "expectedGoals": [
+        1.2499999891200961,
+        1.3999999591384154
+      ]
+    }
+  ]
+}

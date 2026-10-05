@@ -6,6 +6,7 @@ import MarketPredictionTable from "./MarketPredictionTable";
 import { useOfficialMatches } from "../hooks/useOfficialMatches";
 import { usePredictionWorkspace } from "../hooks/usePredictionWorkspace";
 import styles from "./PredictionGenerationNotice.module.css";
+import ScreenshotPredictionReport from "./ScreenshotPredictionReport";
 export default function PredictionWorkspace({
   view,
 }: {
@@ -41,6 +42,7 @@ export default function PredictionWorkspace({
   return (
     <SiteShell view={view}>
       <OfficialSourceNotice official={official} predictionPage />
+      <ScreenshotPredictionReport />
       {dataState === "success" && !predictionRows.length && (
         <section className={styles.notice} aria-label="生成服务端预测" aria-busy={predictionLoading}>
           <div role="status" aria-live="polite">
