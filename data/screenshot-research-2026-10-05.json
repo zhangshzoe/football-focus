@@ -109,7 +109,148 @@
       "expectedGoals": [
         1.699999622255274,
         0.699999999989955
-      ]
+      ],
+      "marketAnalysis": {
+        "direction": "主队方向增强",
+        "summary": "三家公司均由主让0.75升至主让1，主胜赔率下降；模型主胜最高，但赢球不等于让球盘全赢。",
+        "companies": [
+          {
+            "name": "36",
+            "opening": {
+              "win": 1.72,
+              "draw": 3.5,
+              "lose": 5,
+              "handicap": -0.75,
+              "total": 2.25
+            },
+            "current": {
+              "win": 1.57,
+              "draw": 3.75,
+              "lose": 6,
+              "handicap": -1,
+              "total": 2.25
+            },
+            "homeSettlement": {
+              "fullWin": 34.82579084938354,
+              "halfWin": 0,
+              "push": 26.609757663834117,
+              "halfLoss": 0,
+              "fullLoss": 38.56445148678232
+            },
+            "awaySettlement": {
+              "fullWin": 38.56445148678232,
+              "halfWin": 0,
+              "push": 26.609757663834117,
+              "halfLoss": 0,
+              "fullLoss": 34.82579084938354
+            },
+            "overSettlement": {
+              "fullWin": 43.029123452298975,
+              "halfWin": 0,
+              "push": 0,
+              "halfLoss": 26.126771410410644,
+              "fullLoss": 30.84410513729034
+            },
+            "underSettlement": {
+              "fullWin": 30.84410513729034,
+              "halfWin": 26.126771410410644,
+              "push": 0,
+              "halfLoss": 0,
+              "fullLoss": 43.029123452298975
+            }
+          },
+          {
+            "name": "SB",
+            "opening": {
+              "win": 1.61,
+              "draw": 3.65,
+              "lose": 4.9,
+              "handicap": -0.75,
+              "total": 2.25
+            },
+            "current": {
+              "win": 1.55,
+              "draw": 3.9,
+              "lose": 6.6,
+              "handicap": -1,
+              "total": 2.25
+            },
+            "homeSettlement": {
+              "fullWin": 34.82579084938354,
+              "halfWin": 0,
+              "push": 26.609757663834117,
+              "halfLoss": 0,
+              "fullLoss": 38.56445148678232
+            },
+            "awaySettlement": {
+              "fullWin": 38.56445148678232,
+              "halfWin": 0,
+              "push": 26.609757663834117,
+              "halfLoss": 0,
+              "fullLoss": 34.82579084938354
+            },
+            "overSettlement": {
+              "fullWin": 43.029123452298975,
+              "halfWin": 0,
+              "push": 0,
+              "halfLoss": 26.126771410410644,
+              "fullLoss": 30.84410513729034
+            },
+            "underSettlement": {
+              "fullWin": 30.84410513729034,
+              "halfWin": 26.126771410410644,
+              "push": 0,
+              "halfLoss": 0,
+              "fullLoss": 43.029123452298975
+            }
+          },
+          {
+            "name": "平",
+            "opening": {
+              "win": 1.74,
+              "draw": 3.54,
+              "lose": 4.64,
+              "handicap": -0.75,
+              "total": 2.25
+            },
+            "current": {
+              "win": 1.56,
+              "draw": 3.92,
+              "lose": 6.77,
+              "handicap": -1,
+              "total": 2.25
+            },
+            "homeSettlement": {
+              "fullWin": 34.82579084938354,
+              "halfWin": 0,
+              "push": 26.609757663834117,
+              "halfLoss": 0,
+              "fullLoss": 38.56445148678232
+            },
+            "awaySettlement": {
+              "fullWin": 38.56445148678232,
+              "halfWin": 0,
+              "push": 26.609757663834117,
+              "halfLoss": 0,
+              "fullLoss": 34.82579084938354
+            },
+            "overSettlement": {
+              "fullWin": 43.029123452298975,
+              "halfWin": 0,
+              "push": 0,
+              "halfLoss": 26.126771410410644,
+              "fullLoss": 30.84410513729034
+            },
+            "underSettlement": {
+              "fullWin": 30.84410513729034,
+              "halfWin": 26.126771410410644,
+              "push": 0,
+              "halfLoss": 0,
+              "fullLoss": 43.029123452298975
+            }
+          }
+        ]
+      }
     },
     {
       "id": "screenshot-20261005-2",
@@ -211,7 +352,148 @@
       "expectedGoals": [
         2.2499916656157772,
         0.999999999231987
-      ]
+      ],
+      "marketAnalysis": {
+        "direction": "主队方向增强",
+        "summary": "三家公司均由主让1升至主让1.25。36大小球由3升至3.25，另外两家维持3；大小球盘口存在分歧。",
+        "companies": [
+          {
+            "name": "36",
+            "opening": {
+              "win": 1.53,
+              "draw": 4.2,
+              "lose": 5.25,
+              "handicap": -1,
+              "total": 3
+            },
+            "current": {
+              "win": 1.48,
+              "draw": 4.75,
+              "lose": 5.75,
+              "handicap": -1.25,
+              "total": 3.25
+            },
+            "homeSettlement": {
+              "fullWin": 42.58613292328151,
+              "halfWin": 0,
+              "push": 0,
+              "halfLoss": 22.993337291432976,
+              "fullLoss": 34.42052978528555
+            },
+            "awaySettlement": {
+              "fullWin": 34.42052978528555,
+              "halfWin": 22.993337291432976,
+              "push": 0,
+              "halfLoss": 0,
+              "fullLoss": 42.58613292328151
+            },
+            "overSettlement": {
+              "fullWin": 40.85919053181906,
+              "halfWin": 0,
+              "push": 0,
+              "halfLoss": 22.184114461600412,
+              "fullLoss": 36.95669500658057
+            },
+            "underSettlement": {
+              "fullWin": 36.95669500658057,
+              "halfWin": 22.184114461600412,
+              "push": 0,
+              "halfLoss": 0,
+              "fullLoss": 40.85919053181906
+            }
+          },
+          {
+            "name": "SB",
+            "opening": {
+              "win": 1.56,
+              "draw": 4.5,
+              "lose": 5.6,
+              "handicap": -1,
+              "total": 3
+            },
+            "current": {
+              "win": 1.47,
+              "draw": 4.8,
+              "lose": 6.5,
+              "handicap": -1.25,
+              "total": 3
+            },
+            "homeSettlement": {
+              "fullWin": 42.58613292328151,
+              "halfWin": 0,
+              "push": 0,
+              "halfLoss": 22.993337291432976,
+              "fullLoss": 34.42052978528555
+            },
+            "awaySettlement": {
+              "fullWin": 34.42052978528555,
+              "halfWin": 22.993337291432976,
+              "push": 0,
+              "halfLoss": 0,
+              "fullLoss": 42.58613292328151
+            },
+            "overSettlement": {
+              "fullWin": 40.85919053181906,
+              "halfWin": 0,
+              "push": 22.184114461600412,
+              "halfLoss": 0,
+              "fullLoss": 36.95669500658057
+            },
+            "underSettlement": {
+              "fullWin": 36.95669500658057,
+              "halfWin": 0,
+              "push": 22.184114461600412,
+              "halfLoss": 0,
+              "fullLoss": 40.85919053181906
+            }
+          },
+          {
+            "name": "平",
+            "opening": {
+              "win": 1.54,
+              "draw": 4.36,
+              "lose": 5.22,
+              "handicap": -1,
+              "total": 3
+            },
+            "current": {
+              "win": 1.47,
+              "draw": 4.8,
+              "lose": 6.49,
+              "handicap": -1.25,
+              "total": 3
+            },
+            "homeSettlement": {
+              "fullWin": 42.58613292328151,
+              "halfWin": 0,
+              "push": 0,
+              "halfLoss": 22.993337291432976,
+              "fullLoss": 34.42052978528555
+            },
+            "awaySettlement": {
+              "fullWin": 34.42052978528555,
+              "halfWin": 22.993337291432976,
+              "push": 0,
+              "halfLoss": 0,
+              "fullLoss": 42.58613292328151
+            },
+            "overSettlement": {
+              "fullWin": 40.85919053181906,
+              "halfWin": 0,
+              "push": 22.184114461600412,
+              "halfLoss": 0,
+              "fullLoss": 36.95669500658057
+            },
+            "underSettlement": {
+              "fullWin": 36.95669500658057,
+              "halfWin": 0,
+              "push": 22.184114461600412,
+              "halfLoss": 0,
+              "fullLoss": 40.85919053181906
+            }
+          }
+        ]
+      }
     },
     {
       "id": "screenshot-20261005-3",
@@ -313,7 +595,148 @@
       "expectedGoals": [
         1.1999999932723124,
         1.949998249190834
-      ]
+      ],
+      "marketAnalysis": {
+        "direction": "客队方向略增强",
+        "summary": "36由主受让0.5升至受让0.75，另外两家维持受让0.75；三家公司大小球均由2.75升至3。",
+        "companies": [
+          {
+            "name": "36",
+            "opening": {
+              "win": 4.1,
+              "draw": 3.7,
+              "lose": 1.8,
+              "handicap": 0.5,
+              "total": 2.75
+            },
+            "current": {
+              "win": 4.1,
+              "draw": 3.9,
+              "lose": 1.8,
+              "handicap": 0.75,
+              "total": 3
+            },
+            "homeSettlement": {
+              "fullWin": 45.17653472749655,
+              "halfWin": 0,
+              "push": 0,
+              "halfLoss": 22.783489473222332,
+              "fullLoss": 32.03997579928112
+            },
+            "awaySettlement": {
+              "fullWin": 32.03997579928112,
+              "halfWin": 22.783489473222332,
+              "push": 0,
+              "halfLoss": 0,
+              "fullLoss": 45.17653472749655
+            },
+            "overSettlement": {
+              "fullWin": 38.63333427344053,
+              "halfWin": 0,
+              "push": 22.32301551371937,
+              "halfLoss": 0,
+              "fullLoss": 39.04365021284009
+            },
+            "underSettlement": {
+              "fullWin": 39.04365021284009,
+              "halfWin": 0,
+              "push": 22.32301551371937,
+              "halfLoss": 0,
+              "fullLoss": 38.63333427344053
+            }
+          },
+          {
+            "name": "SB",
+            "opening": {
+              "win": 4.2,
+              "draw": 4.15,
+              "lose": 1.75,
+              "handicap": 0.75,
+              "total": 2.75
+            },
+            "current": {
+              "win": 4.2,
+              "draw": 4.25,
+              "lose": 1.72,
+              "handicap": 0.75,
+              "total": 3
+            },
+            "homeSettlement": {
+              "fullWin": 45.17653472749655,
+              "halfWin": 0,
+              "push": 0,
+              "halfLoss": 22.783489473222332,
+              "fullLoss": 32.03997579928112
+            },
+            "awaySettlement": {
+              "fullWin": 32.03997579928112,
+              "halfWin": 22.783489473222332,
+              "push": 0,
+              "halfLoss": 0,
+              "fullLoss": 45.17653472749655
+            },
+            "overSettlement": {
+              "fullWin": 38.63333427344053,
+              "halfWin": 0,
+              "push": 22.32301551371937,
+              "halfLoss": 0,
+              "fullLoss": 39.04365021284009
+            },
+            "underSettlement": {
+              "fullWin": 39.04365021284009,
+              "halfWin": 0,
+              "push": 22.32301551371937,
+              "halfLoss": 0,
+              "fullLoss": 38.63333427344053
+            }
+          },
+          {
+            "name": "平",
+            "opening": {
+              "win": 4.17,
+              "draw": 3.96,
+              "lose": 1.75,
+              "handicap": 0.75,
+              "total": 2.75
+            },
+            "current": {
+              "win": 4.55,
+              "draw": 4.14,
+              "lose": 1.74,
+              "handicap": 0.75,
+              "total": 3
+            },
+            "homeSettlement": {
+              "fullWin": 45.17653472749655,
+              "halfWin": 0,
+              "push": 0,
+              "halfLoss": 22.783489473222332,
+              "fullLoss": 32.03997579928112
+            },
+            "awaySettlement": {
+              "fullWin": 32.03997579928112,
+              "halfWin": 22.783489473222332,
+              "push": 0,
+              "halfLoss": 0,
+              "fullLoss": 45.17653472749655
+            },
+            "overSettlement": {
+              "fullWin": 38.63333427344053,
+              "halfWin": 0,
+              "push": 22.32301551371937,
+              "halfLoss": 0,
+              "fullLoss": 39.04365021284009
+            },
+            "underSettlement": {
+              "fullWin": 39.04365021284009,
+              "halfWin": 0,
+              "push": 22.32301551371937,
+              "halfLoss": 0,
+              "fullLoss": 38.63333427344053
+            }
+          }
+        ]
+      }
     },
     {
       "id": "screenshot-20261005-4",
@@ -415,7 +838,148 @@
       "expectedGoals": [
         2.2999894501079328,
         0.8499999998921154
-      ]
+      ],
+      "marketAnalysis": {
+        "direction": "主队方向增强",
+        "summary": "SB、平加深主队让球，36维持主让1.25；三家公司主胜赔率下降，但两家公司大小球由3.25降至3。",
+        "companies": [
+          {
+            "name": "36",
+            "opening": {
+              "win": 1.45,
+              "draw": 5,
+              "lose": 6.25,
+              "handicap": -1.25,
+              "total": 3.25
+            },
+            "current": {
+              "win": 1.4,
+              "draw": 5.5,
+              "lose": 6.5,
+              "handicap": -1.25,
+              "total": 3
+            },
+            "homeSettlement": {
+              "fullWin": 46.77020860714889,
+              "halfWin": 0,
+              "push": 0,
+              "halfLoss": 23.19422070563904,
+              "fullLoss": 30.035570687212072
+            },
+            "awaySettlement": {
+              "fullWin": 30.035570687212072,
+              "halfWin": 23.19422070563904,
+              "push": 0,
+              "halfLoss": 0,
+              "fullLoss": 46.77020860714889
+            },
+            "overSettlement": {
+              "fullWin": 38.63328444846707,
+              "halfWin": 0,
+              "push": 22.32303363827677,
+              "halfLoss": 0,
+              "fullLoss": 39.04368191325616
+            },
+            "underSettlement": {
+              "fullWin": 39.04368191325616,
+              "halfWin": 0,
+              "push": 22.32303363827677,
+              "halfLoss": 0,
+              "fullLoss": 38.63328444846707
+            }
+          },
+          {
+            "name": "SB",
+            "opening": {
+              "win": 1.49,
+              "draw": 4.8,
+              "lose": 6.1,
+              "handicap": -1.25,
+              "total": 3.25
+            },
+            "current": {
+              "win": 1.37,
+              "draw": 5.2,
+              "lose": 8.2,
+              "handicap": -1.5,
+              "total": 3
+            },
+            "homeSettlement": {
+              "fullWin": 46.77020860714889,
+              "halfWin": 0,
+              "push": 0,
+              "halfLoss": 0,
+              "fullLoss": 53.22979139285111
+            },
+            "awaySettlement": {
+              "fullWin": 53.22979139285111,
+              "halfWin": 0,
+              "push": 0,
+              "halfLoss": 0,
+              "fullLoss": 46.77020860714889
+            },
+            "overSettlement": {
+              "fullWin": 38.63328444846707,
+              "halfWin": 0,
+              "push": 22.32303363827677,
+              "halfLoss": 0,
+              "fullLoss": 39.04368191325616
+            },
+            "underSettlement": {
+              "fullWin": 39.04368191325616,
+              "halfWin": 0,
+              "push": 22.32303363827677,
+              "halfLoss": 0,
+              "fullLoss": 38.63328444846707
+            }
+          },
+          {
+            "name": "平",
+            "opening": {
+              "win": 1.53,
+              "draw": 4.41,
+              "lose": 5.29,
+              "handicap": -1,
+              "total": 3
+            },
+            "current": {
+              "win": 1.38,
+              "draw": 5.29,
+              "lose": 7.93,
+              "handicap": -1.5,
+              "total": 3
+            },
+            "homeSettlement": {
+              "fullWin": 46.77020860714889,
+              "halfWin": 0,
+              "push": 0,
+              "halfLoss": 0,
+              "fullLoss": 53.22979139285111
+            },
+            "awaySettlement": {
+              "fullWin": 53.22979139285111,
+              "halfWin": 0,
+              "push": 0,
+              "halfLoss": 0,
+              "fullLoss": 46.77020860714889
+            },
+            "overSettlement": {
+              "fullWin": 38.63328444846707,
+              "halfWin": 0,
+              "push": 22.32303363827677,
+              "halfLoss": 0,
+              "fullLoss": 39.04368191325616
+            },
+            "underSettlement": {
+              "fullWin": 39.04368191325616,
+              "halfWin": 0,
+              "push": 22.32303363827677,
+              "halfLoss": 0,
+              "fullLoss": 38.63328444846707
+            }
+          }
+        ]
+      }
     },
     {
       "id": "screenshot-20261005-5",
@@ -517,7 +1081,148 @@
       "expectedGoals": [
         1.0999999976009247,
         0.8999999997842499
-      ]
+      ],
+      "marketAnalysis": {
+        "direction": "主队方向略增强",
+        "summary": "36、平由平手转为主让0.25，SB维持主让0.25；两家公司大小球由2.25降至2，低进球倾向增强。",
+        "companies": [
+          {
+            "name": "36",
+            "opening": {
+              "win": 2.5,
+              "draw": 3.2,
+              "lose": 2.8,
+              "handicap": 0,
+              "total": 2.25
+            },
+            "current": {
+              "win": 2.45,
+              "draw": 2.87,
+              "lose": 3.2,
+              "handicap": -0.25,
+              "total": 2
+            },
+            "homeSettlement": {
+              "fullWin": 39.90949034963396,
+              "halfWin": 0,
+              "push": 0,
+              "halfLoss": 30.636028688393036,
+              "fullLoss": 29.454480961973058
+            },
+            "awaySettlement": {
+              "fullWin": 29.454480961973058,
+              "halfWin": 30.636028688393036,
+              "push": 0,
+              "halfLoss": 0,
+              "fullLoss": 39.90949034963396
+            },
+            "overSettlement": {
+              "fullWin": 32.33235836694777,
+              "halfWin": 0,
+              "push": 27.06705665322091,
+              "halfLoss": 0,
+              "fullLoss": 40.60058497983136
+            },
+            "underSettlement": {
+              "fullWin": 40.60058497983136,
+              "halfWin": 0,
+              "push": 27.06705665322091,
+              "halfLoss": 0,
+              "fullLoss": 32.33235836694777
+            }
+          },
+          {
+            "name": "SB",
+            "opening": {
+              "win": 2.37,
+              "draw": 3.25,
+              "lose": 3.15,
+              "handicap": -0.25,
+              "total": 2
+            },
+            "current": {
+              "win": 2.44,
+              "draw": 2.95,
+              "lose": 3.3,
+              "handicap": -0.25,
+              "total": 2
+            },
+            "homeSettlement": {
+              "fullWin": 39.90949034963396,
+              "halfWin": 0,
+              "push": 0,
+              "halfLoss": 30.636028688393036,
+              "fullLoss": 29.454480961973058
+            },
+            "awaySettlement": {
+              "fullWin": 29.454480961973058,
+              "halfWin": 30.636028688393036,
+              "push": 0,
+              "halfLoss": 0,
+              "fullLoss": 39.90949034963396
+            },
+            "overSettlement": {
+              "fullWin": 32.33235836694777,
+              "halfWin": 0,
+              "push": 27.06705665322091,
+              "halfLoss": 0,
+              "fullLoss": 40.60058497983136
+            },
+            "underSettlement": {
+              "fullWin": 40.60058497983136,
+              "halfWin": 0,
+              "push": 27.06705665322091,
+              "halfLoss": 0,
+              "fullLoss": 32.33235836694777
+            }
+          },
+          {
+            "name": "平",
+            "opening": {
+              "win": 2.65,
+              "draw": 3.19,
+              "lose": 2.71,
+              "handicap": 0,
+              "total": 2.25
+            },
+            "current": {
+              "win": 2.45,
+              "draw": 2.98,
+              "lose": 3.46,
+              "handicap": -0.25,
+              "total": 2
+            },
+            "homeSettlement": {
+              "fullWin": 39.90949034963396,
+              "halfWin": 0,
+              "push": 0,
+              "halfLoss": 30.636028688393036,
+              "fullLoss": 29.454480961973058
+            },
+            "awaySettlement": {
+              "fullWin": 29.454480961973058,
+              "halfWin": 30.636028688393036,
+              "push": 0,
+              "halfLoss": 0,
+              "fullLoss": 39.90949034963396
+            },
+            "overSettlement": {
+              "fullWin": 32.33235836694777,
+              "halfWin": 0,
+              "push": 27.06705665322091,
+              "halfLoss": 0,
+              "fullLoss": 40.60058497983136
+            },
+            "underSettlement": {
+              "fullWin": 40.60058497983136,
+              "halfWin": 0,
+              "push": 27.06705665322091,
+              "halfLoss": 0,
+              "fullLoss": 32.33235836694777
+            }
+          }
+        ]
+      }
     },
     {
       "id": "screenshot-20261005-6",
@@ -619,7 +1324,148 @@
       "expectedGoals": [
         2.0499969649932606,
         0.89999999978425
-      ]
+      ],
+      "marketAnalysis": {
+        "direction": "主队方向略增强",
+        "summary": "三家公司维持主让1和大小球2.75，主胜赔率小幅下降。需要区分主胜与赢两球以上。",
+        "companies": [
+          {
+            "name": "36",
+            "opening": {
+              "win": 1.55,
+              "draw": 4.2,
+              "lose": 5.5,
+              "handicap": -1,
+              "total": 2.75
+            },
+            "current": {
+              "win": 1.5,
+              "draw": 4.5,
+              "lose": 5.75,
+              "handicap": -1,
+              "total": 2.75
+            },
+            "homeSettlement": {
+              "fullWin": 39.826772912745575,
+              "halfWin": 0,
+              "push": 24.18531082412669,
+              "halfLoss": 0,
+              "fullLoss": 35.987916263127744
+            },
+            "awaySettlement": {
+              "fullWin": 35.987916263127744,
+              "halfWin": 0,
+              "push": 24.18531082412669,
+              "halfLoss": 0,
+              "fullLoss": 39.826772912745575
+            },
+            "overSettlement": {
+              "fullWin": 34.15674098158093,
+              "halfWin": 22.394748755784065,
+              "push": 0,
+              "halfLoss": 0,
+              "fullLoss": 43.44851026263503
+            },
+            "underSettlement": {
+              "fullWin": 43.44851026263503,
+              "halfWin": 0,
+              "push": 0,
+              "halfLoss": 22.394748755784065,
+              "fullLoss": 34.15674098158093
+            }
+          },
+          {
+            "name": "SB",
+            "opening": {
+              "win": 1.49,
+              "draw": 4.2,
+              "lose": 5.2,
+              "handicap": -1,
+              "total": 2.75
+            },
+            "current": {
+              "win": 1.48,
+              "draw": 4.6,
+              "lose": 6.2,
+              "handicap": -1,
+              "total": 2.75
+            },
+            "homeSettlement": {
+              "fullWin": 39.826772912745575,
+              "halfWin": 0,
+              "push": 24.18531082412669,
+              "halfLoss": 0,
+              "fullLoss": 35.987916263127744
+            },
+            "awaySettlement": {
+              "fullWin": 35.987916263127744,
+              "halfWin": 0,
+              "push": 24.18531082412669,
+              "halfLoss": 0,
+              "fullLoss": 39.826772912745575
+            },
+            "overSettlement": {
+              "fullWin": 34.15674098158093,
+              "halfWin": 22.394748755784065,
+              "push": 0,
+              "halfLoss": 0,
+              "fullLoss": 43.44851026263503
+            },
+            "underSettlement": {
+              "fullWin": 43.44851026263503,
+              "halfWin": 0,
+              "push": 0,
+              "halfLoss": 22.394748755784065,
+              "fullLoss": 34.15674098158093
+            }
+          },
+          {
+            "name": "平",
+            "opening": {
+              "win": 1.52,
+              "draw": 4.2,
+              "lose": 5.57,
+              "handicap": -1,
+              "total": 2.75
+            },
+            "current": {
+              "win": 1.5,
+              "draw": 4.5,
+              "lose": 6.4,
+              "handicap": -1,
+              "total": 2.75
+            },
+            "homeSettlement": {
+              "fullWin": 39.826772912745575,
+              "halfWin": 0,
+              "push": 24.18531082412669,
+              "halfLoss": 0,
+              "fullLoss": 35.987916263127744
+            },
+            "awaySettlement": {
+              "fullWin": 35.987916263127744,
+              "halfWin": 0,
+              "push": 24.18531082412669,
+              "halfLoss": 0,
+              "fullLoss": 39.826772912745575
+            },
+            "overSettlement": {
+              "fullWin": 34.15674098158093,
+              "halfWin": 22.394748755784065,
+              "push": 0,
+              "halfLoss": 0,
+              "fullLoss": 43.44851026263503
+            },
+            "underSettlement": {
+              "fullWin": 43.44851026263503,
+              "halfWin": 0,
+              "push": 0,
+              "halfLoss": 22.394748755784065,
+              "fullLoss": 34.15674098158093
+            }
+          }
+        ]
+      }
     },
     {
       "id": "screenshot-20261005-7",
@@ -721,7 +1567,148 @@
       "expectedGoals": [
         1.2499999891200961,
         1.3999999591384154
-      ]
+      ],
+      "marketAnalysis": {
+        "direction": "变盘相对偏向主队",
+        "summary": "让球与大小球盘口维持不变；三家公司客胜赔率均上升，两家主胜赔率下降。模型仍以客胜为最高项，但仅40.5%。",
+        "companies": [
+          {
+            "name": "36",
+            "opening": {
+              "win": 3.3,
+              "draw": 3.5,
+              "lose": 2.1,
+              "handicap": 0.25,
+              "total": 2.5
+            },
+            "current": {
+              "win": 2.87,
+              "draw": 3.5,
+              "lose": 2.35,
+              "handicap": 0.25,
+              "total": 2.5
+            },
+            "homeSettlement": {
+              "fullWin": 33.51141336613841,
+              "halfWin": 26.013611366951064,
+              "push": 0,
+              "halfLoss": 0,
+              "fullLoss": 40.47497526691058
+            },
+            "awaySettlement": {
+              "fullWin": 40.47497526691058,
+              "halfWin": 0,
+              "push": 0,
+              "halfLoss": 26.013611366951064,
+              "fullLoss": 33.51141336613841
+            },
+            "overSettlement": {
+              "fullWin": 49.40489982407447,
+              "halfWin": 0,
+              "push": 0,
+              "halfLoss": 0,
+              "fullLoss": 50.595100175925594
+            },
+            "underSettlement": {
+              "fullWin": 50.595100175925594,
+              "halfWin": 0,
+              "push": 0,
+              "halfLoss": 0,
+              "fullLoss": 49.40489982407447
+            }
+          },
+          {
+            "name": "SB",
+            "opening": {
+              "win": 2.84,
+              "draw": 3.65,
+              "lose": 2.37,
+              "handicap": 0.25,
+              "total": 2.5
+            },
+            "current": {
+              "win": 2.89,
+              "draw": 3.45,
+              "lose": 2.4,
+              "handicap": 0.25,
+              "total": 2.5
+            },
+            "homeSettlement": {
+              "fullWin": 33.51141336613841,
+              "halfWin": 26.013611366951064,
+              "push": 0,
+              "halfLoss": 0,
+              "fullLoss": 40.47497526691058
+            },
+            "awaySettlement": {
+              "fullWin": 40.47497526691058,
+              "halfWin": 0,
+              "push": 0,
+              "halfLoss": 26.013611366951064,
+              "fullLoss": 33.51141336613841
+            },
+            "overSettlement": {
+              "fullWin": 49.40489982407447,
+              "halfWin": 0,
+              "push": 0,
+              "halfLoss": 0,
+              "fullLoss": 50.595100175925594
+            },
+            "underSettlement": {
+              "fullWin": 50.595100175925594,
+              "halfWin": 0,
+              "push": 0,
+              "halfLoss": 0,
+              "fullLoss": 49.40489982407447
+            }
+          },
+          {
+            "name": "平",
+            "opening": {
+              "win": 3.34,
+              "draw": 3.39,
+              "lose": 2.14,
+              "handicap": 0.25,
+              "total": 2.5
+            },
+            "current": {
+              "win": 2.99,
+              "draw": 3.42,
+              "lose": 2.46,
+              "handicap": 0.25,
+              "total": 2.5
+            },
+            "homeSettlement": {
+              "fullWin": 33.51141336613841,
+              "halfWin": 26.013611366951064,
+              "push": 0,
+              "halfLoss": 0,
+              "fullLoss": 40.47497526691058
+            },
+            "awaySettlement": {
+              "fullWin": 40.47497526691058,
+              "halfWin": 0,
+              "push": 0,
+              "halfLoss": 26.013611366951064,
+              "fullLoss": 33.51141336613841
+            },
+            "overSettlement": {
+              "fullWin": 49.40489982407447,
+              "halfWin": 0,
+              "push": 0,
+              "halfLoss": 0,
+              "fullLoss": 50.595100175925594
+            },
+            "underSettlement": {
+              "fullWin": 50.595100175925594,
+              "halfWin": 0,
+              "push": 0,
+              "halfLoss": 0,
+              "fullLoss": 49.40489982407447
+            }
+          }
+        ]
+      }
     }
   ]
 }

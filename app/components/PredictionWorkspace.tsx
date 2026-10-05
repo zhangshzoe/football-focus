@@ -42,7 +42,7 @@ export default function PredictionWorkspace({
   return (
     <SiteShell view={view}>
       <OfficialSourceNotice official={official} predictionPage />
-      <ScreenshotPredictionReport />
+      <ScreenshotPredictionReport market={view === "market-predictions"} />
       {dataState === "success" && !predictionRows.length && (
         <section className={styles.notice} aria-label="生成服务端预测" aria-busy={predictionLoading}>
           <div role="status" aria-live="polite">
