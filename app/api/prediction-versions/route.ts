@@ -3,6 +3,7 @@ import { createPredictionJobStore } from "../../prediction-job-store.js";
 import { currentPredictionBuildIdentity } from "../../prediction-build-identity.js";
 import { readServerPredictionVersion } from "../../server-prediction-versions.js";
 import { predictionConsumerReadiness } from "../../prediction-submission.js";
+import { authorizedManualPrediction } from "../../prediction-manual-auth.js";
 
 export const dynamic = "force-dynamic";
 const headers = { "Cache-Control": "no-store, max-age=0" };
@@ -28,6 +29,9 @@ export async function GET(request: Request) {
           row ? { ...row, value: JSON.parse(row.value_json) } : null,
           currentPredictionBuildIdentity().sourceHash,
         );
+        if (authorizedManualPrediction(request, env.PREDICTION_OPERATOR_EMAIL))
+          submission = { available: true, code: null, executionMode: "manual",
+            message: "可手动生成预测；计算期间请保持页面打开。数据与结果仍需通过服务器核验。" };
       } catch {
         submission = { available: false, code: "PREDICTION_RUNTIME_UNAVAILABLE",
           message: "后台预测状态读取失败，暂不能确认可生成。请稍后检查状态。" };

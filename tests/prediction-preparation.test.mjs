@@ -564,3 +564,30 @@ test("source and exact official handicap failures are rejected before any fit", 
     assert.equal(state.fits, 0);
   });
 });
+
+
+test("manual operator steps compute one frozen child, then aggregate without refetching", async () => {
+  await runFixture(async ({ fixture }) => {
+    const f = durableFixture();
+    try {
+      const batch = JSON.parse(JSON.stringify(await route.prepareOfficialPredictionBatch(fixture.ids, true)));
+      const runtime = createPredictionBatchRuntime({ store: f.store, codeIdentity,
+        project: route.projectPreparedOfficialReports,
+        finalize: async (prepared, reports) => (await route.completePreparedOfficialPrediction(prepared, reports)).json() });
+      const submitted = await runtime.enqueue(batch);
+      for (let i = 0; i < submitted.children.length; i++) {
+        const step = await runtime.executeStep(submitted.job.id);
+        assert.equal(step.status, "running");
+        assert.equal("reports" in step, false);
+        const ready = await Promise.all(submitted.children.map(child => f.store.read(child.id)));
+        assert.equal(ready.filter(row => row.status === "ready").length, i + 1);
+      }
+      const ready = await runtime.executeStep(submitted.job.id);
+      assert.equal(ready.status, "ready");
+      assert.equal(ready.reports.length, batch.units.length);
+      const writes = f.writes.length;
+      assert.deepEqual(await runtime.executeStep(submitted.job.id), ready);
+      assert.equal(f.writes.length, writes);
+    } finally { f.sql.close(); }
+  });
+});

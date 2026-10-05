@@ -162,3 +162,14 @@ test("storage and source failures are not empty successful predictions", async (
     f.sql.close();
   }
 });
+
+
+test("trusted manual operator admission works without service heartbeat and preserves throttling", async () => {
+  const f = fixture();
+  try {
+    const service = predictionSubmission({...f.config, manualExecutionAuthorized:true});
+    assert.equal((await service.submit(["1"])).status, "queued");
+    await assert.rejects(service.submit(["2"]), {code:"PREDICTION_RATE_LIMITED"});
+    assert.equal(f.calls(), 1);
+  } finally {f.sql.close();}
+});

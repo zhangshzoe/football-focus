@@ -198,6 +198,7 @@ export function usePredictionWorkspace(
     setPredictionError("");
     const readOrGenerate = submit
       ? requestPredictionResult({
+          timeoutMs: 300000,
           forceRefresh,
           fixtureIds: predictionMatches.map((match) =>
             String(match.officialMatchId || match.matchId || ""),
@@ -207,8 +208,8 @@ export function usePredictionWorkspace(
             if (active)
               setRepairNotice(
                 job.status === "queued"
-                  ? "步骤 3/3：预测已排队，等待独立后台计算；尚未完成。"
-                  : "步骤 3/3：后台正在计算，尚未完成官方预测核验。",
+                  ? "步骤 3/3：预测已排队，正在启动分场计算，请保持页面打开。"
+                  : "步骤 3/3：正在分场计算并核验结果，请保持页面打开。",
               );
           },
         })

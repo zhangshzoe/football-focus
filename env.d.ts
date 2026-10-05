@@ -7,6 +7,7 @@ declare module "cloudflare:workers" {
     DB?: import("@cloudflare/workers-types/index").D1Database;
     RESEARCH_OBJECTS?: import("@cloudflare/workers-types/index").R2Bucket;
     RESEARCH_CAPTURE_TOKEN?: string;
+    PREDICTION_OPERATOR_EMAIL?: string;
   };
 }
 

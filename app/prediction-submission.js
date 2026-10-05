@@ -25,6 +25,7 @@ export function predictionSubmission({
   prepare,
   buildIdentity,
   clock = Date.now,
+  manualExecutionAuthorized = false,
 }) {
   const read = async (key) => {
     const row = await database
@@ -66,7 +67,7 @@ export function predictionSubmission({
         return { ...state, reused: true };
     }
     const beat = await read("consumer-heartbeat");
-    if (!predictionConsumerReadiness(beat, buildIdentity, now).available)
+    if (!manualExecutionAuthorized && !predictionConsumerReadiness(beat, buildIdentity, now).available)
       throw failure("INDEPENDENT_CONSUMER_UNAVAILABLE");
     // Global admission lease: at most one source preparation every 10 seconds,
     // with 30 seconds for a stalled preparation. Atomic across Worker instances.

@@ -347,5 +347,26 @@ export function createPredictionBatchRuntime({
       after,
     });
   }
-  return { enqueue, consumeOne, readStatus, listDispatchable };
+  // Explicit operator POST only: compute at most one frozen child per request.
+  // This does not run from submission, GET, heartbeat or page refresh.
+  async function executeStep(id) {
+    try {
+      const prepared = await readPrepared(id);
+      if (!prepared.ok) return prepared;
+      if (prepared.status === "ready") return readStatus(id);
+      if (prepared.status === "failed") return failure({ code: prepared.job.failureCode }, id);
+      for (const child of prepared.payload.children) {
+        const state = await unitRuntime.readStatus(child.id);
+        if (!state.ok) return failure({ code: state.code }, id);
+        if (state.status !== "ready") {
+          const computed = await unitRuntime.consumeOne({ id: child.id });
+          if (!computed.ok) return failure({ code: computed.code }, id);
+          return { ok: true, jobId: id, status: "running" };
+        }
+      }
+      const completed = await consumeOne({ id });
+      return completed.ok && completed.status === "ready" ? readStatus(id) : completed;
+    } catch (error) { return failure(error, id); }
+  }
+  return { enqueue, consumeOne, readStatus, listDispatchable, executeStep };
 }

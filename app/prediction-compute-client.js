@@ -1,5 +1,5 @@
 // HTTP lifecycle only. This module never performs or simulates model work.
-// The server must run a genuinely independent consumer before returning 202.
+// Consumers run in separate requests; manual mode requires explicit operator POSTs.
 export class PredictionRequestError extends Error {
   /** @param {string} message @param {{code?: string, status?: number, sourceState?: unknown}} [options] */
   constructor(message, { code = "PREDICTION_RESPONSE_INVALID", status, sourceState } = {}) {
@@ -206,6 +206,8 @@ export async function requestPredictionResult(options = {}) {
     remaining();
     if (response.status !== 202) return assertReady(response, data);
     const job = pendingJob(data);
+    const manual = data.executionMode === "manual";
+    const executionEndpoint = `${endpoint.startsWith("/") ? "" : address.origin}/api/prediction-execution`;
     const statusEndpoint = `${endpoint.startsWith("/") ? "" : address.origin}/api/prediction-jobs?jobId=${encodeURIComponent(job.jobId)}`;
     // Never follow a caller/server supplied status URL to another origin.
     for (;;) {
@@ -213,11 +215,12 @@ export async function requestPredictionResult(options = {}) {
       await wait(Math.min(pollIntervalMs, remaining()), controller.signal);
       remaining();
       response = await withSignal(
-        fetcher(statusEndpoint, {
-          method: "GET",
+        fetcher(manual ? executionEndpoint : statusEndpoint, {
+          method: manual ? "POST" : "GET",
           headers,
           cache: "no-store",
           signal: controller.signal,
+          ...(manual ? { body: JSON.stringify({ id: job.jobId }) } : {}),
         }),
         controller.signal,
       );

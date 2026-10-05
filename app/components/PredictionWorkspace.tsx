@@ -48,7 +48,7 @@ export default function PredictionWorkspace({
               ? predictionReadStatus === "submitting" ? "正在生成当前预测…" : "正在读取预测状态…"
               : predictionError || "当前没有可读取的服务端预测版本。"}</strong>
             <p>{predictionLoading && predictionReadStatus === "submitting"
-              ? repairNotice || "正在核验官方数据；完成后将自动显示结果。关闭页面不会取消已提交的后台任务。"
+              ? repairNotice || "正在核验官方数据；完成后将自动显示结果。计算期间请保持页面打开。"
               : "生成预测与 AI 文字复核是两个步骤。先生成赔率模型预测，再按需进行 AI 复核。"}</p>
           </div>
           <div className={styles.actions}>
@@ -79,7 +79,7 @@ export default function PredictionWorkspace({
           coverage={predictionCoverage}
           unavailableMatches={unavailablePredictions}
           loading={predictionLoading}
-          error={predictionError}
+            error={dataState === "success" && !predictionRows.length ? "" : predictionError}
           aiError={predictionAiError}
           fetchedAt={predictionMeta.fetchedAt}
           sourceUrl={predictionMeta.sourceUrl}
@@ -112,7 +112,7 @@ export default function PredictionWorkspace({
             coverage={predictionCoverage}
             unavailableMatches={unavailablePredictions}
             loading={predictionLoading}
-            error={predictionError}
+            error={dataState === "success" && !predictionRows.length ? "" : predictionError}
             aiError={predictionAiError}
             fetchedAt={predictionMeta.fetchedAt}
             sourceUrl={predictionMeta.sourceUrl}

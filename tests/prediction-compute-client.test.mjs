@@ -260,3 +260,17 @@ test("in-process capture cannot certify pending, missing reports or source failu
   assert.match(runtime, /return waitForPredictionBatch\(/);
   assert.doesNotMatch(runtime, /predictOfficial\(|runtime\.consumeOne\(/);
 });
+
+
+test("explicit manual submission uses separate POST steps and keeps the batch identity", async () => {
+  const calls = [];
+  const responses = [Response.json({jobId:"job-test", status:"queued", executionMode:"manual"}, {status:202}),
+    Response.json({jobId:"job-test", status:"running"}, {status:202}),
+    Response.json({...ready, jobId:"job-test"})];
+  const result = await requestPredictionResult({...options, fixtureIds:["fixture"], fetcher: async (url, init) => {
+    calls.push({url, init}); return responses.shift();
+  }});
+  assert.equal(result.predictionId, ready.predictionId);
+  assert.ok(calls.slice(1).every(call => call.url === "/api/prediction-execution" && call.init.method === "POST"));
+  assert.ok(calls.slice(1).every(call => JSON.parse(call.init.body).id === "job-test"));
+});

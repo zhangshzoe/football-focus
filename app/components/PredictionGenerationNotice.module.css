@@ -9,7 +9,7 @@
   border-radius: 12px;
   background: #fff9ea;
   color: #81500a;
-  font-size: 14px;
+  font-size: 16px;
   line-height: 1.6;
 }
 .notice p { margin: 4px 0 0; }
@@ -30,5 +30,6 @@
 .actions button:focus-visible { outline: 3px solid #074f8c; outline-offset: 3px; }
 @media (max-width: 600px) {
   .notice { align-items: stretch; flex-direction: column; padding: 16px; }
-  .actions button { flex: 1; }
+  .actions { display: grid; grid-template-columns: 1fr; }
+  .actions button { width: 100%; min-width: 0; }
 }
