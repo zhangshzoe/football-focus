@@ -38,10 +38,10 @@ type TrialDatabase = {
     };
   };
 };
-// The desktop dev server does not apply Sites migrations to its local D1.
-// Keep development records in an ignored file; production uses migrated D1.
-const database = () =>
-  process.env.NODE_ENV === "production" ? (env.DB as TrialDatabase | undefined) : undefined;
+// The dev startup now applies the same migrations to an isolated local D1.
+// Prefer that binding: Worker node:fs cannot persist to the host checkout.
+// The filesystem fallback is only for runtimes with no D1 binding.
+const database = () => env.DB as TrialDatabase | undefined;
 
 function accountId(request: Request) {
   return (

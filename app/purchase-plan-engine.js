@@ -1,11 +1,11 @@
 import {calculateTicketEconomics,ticketSensitivity,summarizeTicketPortfolio,settleTicket,ticketFixtureKey} from "./ticket-economics.js";
-import {assessRecommendation,selectRecommendationPortfolio,DEFAULT_RECOMMENDATION_POLICY,RESEARCH_MARKETS} from "./recommendation-policy.js";
+import {assessRecommendation,selectRecommendationPortfolio,normalizeRecommendationPolicy,DEFAULT_RECOMMENDATION_POLICY,RESEARCH_MARKETS} from "./recommendation-policy.js";
 import {mergePurchaseBatches,purchaseBatchIdentity} from "./purchase-batch-policy.js";
 import {summarizePurchaseHistorySamples} from "./purchase-history-samples.js";
 import {calculatePortfolioScenarioRisk} from "./portfolio-scenario-risk.js";
 export const PURCHASE_PLAN_STORAGE_KEY = "ff-daily-purchase-plans-v1";
-export const PURCHASE_PLAN_VERSION = 18;
-export const PURCHASE_DECISION_POLICY = "robust-ev-diversified-portfolio-v3";
+export const PURCHASE_PLAN_VERSION = 19;
+export const PURCHASE_DECISION_POLICY = "probability-first-return-constrained-v4";
 export const PURCHASE_PLAN_DEFINITIONS = [
   {
     id: "score-double-3",
@@ -638,11 +638,15 @@ function choosePlan(groups, definition, { excludedTickets = new Set(), rejection
       }),
     )
     .filter((group) => group.length)
-    .sort((a,b)=>Math.max(...b.map(leg=>leg.picks.reduce((s,p)=>s+p.probability*p.odd/100,0)/leg.picks.length))-Math.max(...a.map(leg=>leg.picks.reduce((s,p)=>s+p.probability*p.odd/100,0)/leg.picks.length)))
+    .sort((a,b)=>policy.selectionMode==="robust-ev"
+      ? Math.max(...b.map(leg=>leg.picks.reduce((s,p)=>s+p.probability*p.odd/100,0)/leg.picks.length))-Math.max(...a.map(leg=>leg.picks.reduce((s,p)=>s+p.probability*p.odd/100,0)/leg.picks.length))
+      : Math.max(...b.map(leg=>leg.probability))-Math.max(...a.map(leg=>leg.probability)))
     .slice(0,12);
   let evaluated=0;
   const viableCandidates = [];
-  const rank=(a,b)=>b.expectedROI-a.expectedROI||b.expectedProfit-a.expectedProfit||b.probability-a.probability||ticketKey(a.items).localeCompare(ticketKey(b.items));
+  const rank=(a,b)=>policy.selectionMode==="robust-ev"
+    ? b.expectedROI-a.expectedROI||b.expectedProfit-a.expectedProfit||b.probability-a.probability||ticketKey(a.items).localeCompare(ticketKey(b.items))
+    : b.probability-a.probability||ticketKey(a.items).localeCompare(ticketKey(b.items));
   for (const fixtureSet of combinations(variants, definition.matches)) {
     if(evaluated>=6000){rejections.searchTruncated=true;break;}
     const walk = (index, legs) => {
@@ -667,8 +671,8 @@ function choosePlan(groups, definition, { excludedTickets = new Set(), rejection
         ...economics,
       };
       if(economics.expectedProfit===null||economics.expectedProfit===undefined){rejections.missingProbability=(rejections.missingProbability||0)+1;return;}
-      if(economics.expectedProfit<=1e-8){rejections.nonPositiveEV=(rejections.nonPositiveEV||0)+1;return;}
-      rejections.positiveEV=(rejections.positiveEV||0)+1;
+      if(economics.expectedProfit<=1e-8){rejections.nonPositiveEV=(rejections.nonPositiveEV||0)+1;if(policy.selectionMode==="robust-ev")return;}
+      else rejections.positiveEV=(rejections.positiveEV||0)+1;
       const assessment=assessRecommendation(legs,policy);
       if(!assessment.eligible){rejections[assessment.reason]=(rejections[assessment.reason]||0)+1;return;}
       if (candidate.minWinningProfit < 0) return;
@@ -713,6 +717,7 @@ export function generatePurchasePlans({
   riskPolicy = DEFAULT_RECOMMENDATION_POLICY,
   priorPlans = /** @type {Array<object>} */ ([]),
 }) {
+  riskPolicy = normalizeRecommendationPolicy(riskPolicy);
   const decisionAt = Date.parse(generatedAt);
   if (!Number.isFinite(decisionAt)) throw new Error("方案生成时间无效，拒绝生成可售组合");
   const officialByKey = new Map(
@@ -763,7 +768,7 @@ export function generatePurchasePlans({
         rule: definition.rule,
         status: "unavailable",
         reasonCode:definition.markets.every(m=>RESEARCH_MARKETS.has(m))?"research_only":localRejections.evaluated>0?"no-robust-plan":"insufficient-data",
-        reason: definition.markets.every(m=>RESEARCH_MARKETS.has(m))?"半全场采用简化时间分配模型，尚未独立验证；保留研究和历史结算，暂停新正式票。":localRejections.evaluated>0?"候选未同时满足模型收益余量、概率下调压力测试及返奖约束，本类型不投注。":"合规玩法、预测、场次数或官方赔率不足；无法评估本类型，不补造方案。",
+        reason: definition.markets.every(m=>RESEARCH_MARKETS.has(m))?"半全场采用简化时间分配模型，尚未独立验证；保留研究和历史结算，暂停新正式票。":localRejections.evaluated>0?(riskPolicy.selectionMode==="robust-ev"?"候选未同时满足模型收益余量、概率下调压力测试及返奖约束，本类型不投注。":"候选未满足整票命中返奖约束，本类型不投注（期望收益仅作提示）。"):"合规玩法、预测、场次数或官方赔率不足；无法评估本类型，不补造方案。",
         items: [],
         combinedOdd: 0,
         estimatedProbability: 0,
@@ -790,7 +795,9 @@ export function generatePurchasePlans({
       minWinningReturn: found.minWinningReturn,
       maxWinningReturn: found.maxWinningReturn,
       decision: {
-        objective: definition.alternative
+        objective: riskPolicy.selectionMode!=="robust-ev"
+          ? "整票命中返奖约束内优先命中概率（有界搜索）；期望收益与压力结果仅作风险提示"
+          : definition.alternative
           ? "同一模型稳健候选的确定性备选（有界搜索）"
           : Number.isFinite(definition.targetNetProfit)
             ? "目标命中盈利为筛选门槛，稳健正EV后按ROI排序"
@@ -827,7 +834,7 @@ export function generatePurchasePlans({
   const portfolioScenarios={current:calculatePortfolioScenarioRisk(scenarioInput),day:priorPlans.length?calculatePortfolioScenarioRisk({...scenarioInput,priorPlans}):null};
   return {
     portfolioScenarios,
-    riskSelection,decisionPolicy:PURCHASE_DECISION_POLICY,decisionSummary:{coverage,evaluated:(Boolean(rejectionCounts.evaluated)||coverage.expectedEligibleCount===0)&&coverage.missingEligibleCount===0&&selection.priorState!=="invalid",noBet:(rejectionCounts.evaluated>0||coverage.expectedEligibleCount===0)&&coverage.missingEligibleCount===0&&selection.priorState!=="invalid"&&!finalPlans.some(p=>p.status==="pending"),modelEligibleCount:selection.modelEligibleCount,selectionStatus:selection.priorState==="invalid"?"data-risk-invalid":coverage.missingEligibleCount&&!selection.selected?"incomplete-evaluation":selection.selected?"selected":selection.modelEligibleCount?"risk-constrained":"no-model-advantage",rejectionCounts,perDefinition,searchScope:"bounded-official-market-candidates-not-global-optimum"},portfolio:selectionPortfolio,
+    riskSelection,decisionPolicy:riskPolicy.selectionMode==="robust-ev"?"robust-ev-diversified-portfolio-v3":PURCHASE_DECISION_POLICY,decisionSummary:{coverage,evaluated:(Boolean(rejectionCounts.evaluated)||coverage.expectedEligibleCount===0)&&coverage.missingEligibleCount===0&&selection.priorState!=="invalid",noBet:(rejectionCounts.evaluated>0||coverage.expectedEligibleCount===0)&&coverage.missingEligibleCount===0&&selection.priorState!=="invalid"&&!finalPlans.some(p=>p.status==="pending"),modelEligibleCount:selection.modelEligibleCount,selectionStatus:selection.priorState==="invalid"?"data-risk-invalid":coverage.missingEligibleCount&&!selection.selected?"incomplete-evaluation":selection.selected?"selected":selection.modelEligibleCount?"risk-constrained":"no-qualified-candidates",rejectionCounts,perDefinition,searchScope:"bounded-official-market-candidates-not-global-optimum"},portfolio:selectionPortfolio,
     version: PURCHASE_PLAN_VERSION,
     date,
     generatedAt,

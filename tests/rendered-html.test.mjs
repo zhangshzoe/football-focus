@@ -663,8 +663,8 @@ test("new fixed tickets exclude negative minimum profit and show per-match expec
  const set=generatePurchasePlans({date:"2026-09-08",reports,officialMatches,generatedAt:"2026-09-08T17:00:00+08:00"});
  assert.equal(set.plans.find(plan=>plan.id==="total-double-2").status,"unavailable");
  assert.equal(set.decisionSummary.coverage.missingEligibleCount,0);
- assert.equal(set.decisionSummary.noBet,true);
- assert.ok(set.decisionSummary.rejectionCounts.nonPositiveEV>0);
+ assert.equal(set.decisionSummary.noBet,false,"单选命中后不亏的组合不再因负期望被排除");
+ assert.ok(set.decisionSummary.rejectionCounts.nonPositiveEV>0,"负期望仍保留为审计指标");
  assert.ok(set.plans.filter(plan=>plan.id.startsWith("twofold-")).every(plan=>plan.status==="unavailable"),"低赔率不得被包装成2倍盈利票");
  assert.ok(set.plans.filter(plan=>plan.status!=="unavailable").every(plan=>plan.minWinningProfit>=0));
 });

@@ -26,11 +26,17 @@ const { normalizeCompany } = await load("app/prediction-input.js");
 const { buildTeamHistoryIndex } = await load("app/team-history.js");
 const {hashForwardSource,forwardCodeHashes} = await load("scripts/forward-research-files.mjs");
 
-test("frozen implementation hashes are portable across LF and Windows CRLF checkouts",async()=>{
+test("frozen research hashes remain portable and distinguish the new purchase selector",async()=>{
  assert.equal(hashForwardSource("export const version=1;\n"),hashForwardSource("export const version=1;\r\n"));
  assert.notEqual(hashForwardSource("export const version=1;\n"),hashForwardSource("export const version=2;\n"));
  const active=JSON.parse(await readFile(join(projectRoot,"data/generated-forward-validation-index.json"),"utf8"));
- assert.deepEqual(await forwardCodeHashes(projectRoot),active.manifest.codeHashes,"Line ending normalization must preserve the already frozen source identity");
+ const current=await forwardCodeHashes(projectRoot);
+ // marketMetadata fingerprints the whole purchase engine, including its selector.
+ // Keep the prior manifest immutable: a new rule is not the frozen experiment.
+ const {marketMetadata:currentPurchase,...currentModel}=current;
+ const {marketMetadata:frozenPurchase,...frozenModel}=active.manifest.codeHashes;
+ assert.deepEqual(currentModel,frozenModel,"Prediction implementation did not change");
+ assert.notEqual(currentPurchase,frozenPurchase,"New purchase rules must not masquerade as the prior frozen experiment");
 });
 
 const sourceFiles = {

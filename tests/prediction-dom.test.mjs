@@ -14,6 +14,7 @@ async function componentUrl(file){
  if(moduleUrls.has(file.href))return moduleUrls.get(file.href);
  const pending=(async()=>{
   let source=await readFile(file,"utf8");
+  if(file.pathname.endsWith(".json"))return dataUrl(`export default ${JSON.stringify(JSON.parse(source))};`);
   // CSS modules are compiled by Vite in browser/build tests; expose their class
   // names here so this JS-only harness can still exercise real component logic.
   source=source.replace(/^import (\w+) from ["']([^"']+\.module\.css)["'];?\s*$/gm,
@@ -26,7 +27,7 @@ async function componentUrl(file){
    if(specifier.startsWith(".")){
     const base=new URL(specifier,file);
     let dependency;
-    for(const suffix of /\.(?:[cm]?js|tsx?)$/.test(base.pathname)?[""]:[".tsx",".ts",".js"]){
+    for(const suffix of /\.(?:[cm]?js|tsx?|json)$/.test(base.pathname)?[""]:[".tsx",".ts",".js"]){
      const candidate=new URL(base.href+suffix);
      try{await readFile(candidate);dependency=candidate;break}catch(error){if(error.code!=="ENOENT")throw error}
     }

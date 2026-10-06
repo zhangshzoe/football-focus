@@ -1,9 +1,10 @@
 import {calculateTicketEconomics,ticketFixtureKey,ticketPickLabel,ticketSensitivity,summarizeTicketPortfolio} from "./ticket-economics.js";
 
 // Paper simulation limits, not a suggestion about anyone's real-money budget.
-export const DEFAULT_RECOMMENDATION_POLICY=Object.freeze({version:"paper-risk-v2",dailyBudget:100,maxFixtureStake:25,maxLeagueStake:50,maxTickets:5,maxSharedFixturesPerPair:1,maxTicketsPerFixture:2,minExpectedROI:0.05,stressChange:0.1});
+export const DEFAULT_RECOMMENDATION_POLICY=Object.freeze({version:"paper-risk-v3-probability",selectionMode:"probability-first",dailyBudget:100,maxFixtureStake:25,maxLeagueStake:50,maxTickets:5,maxSharedFixturesPerPair:1,maxTicketsPerFixture:2,minExpectedROI:0.05,stressChange:0.1});
 export function normalizeRecommendationPolicy(input=DEFAULT_RECOMMENDATION_POLICY){
   const policy={...DEFAULT_RECOMMENDATION_POLICY,...input,version:DEFAULT_RECOMMENDATION_POLICY.version};
+  if(!["probability-first","robust-ev"].includes(policy.selectionMode))throw new Error("推荐选择模式无效");
   for(const key of ["dailyBudget","maxFixtureStake","maxLeagueStake"]){if(typeof policy[key]!=="number"||!Number.isFinite(policy[key])||policy[key]<0||policy[key]>10000)throw new Error("模拟额度须在0–10000元之间");}
   if(!Number.isInteger(policy.maxTickets)||policy.maxTickets<0||policy.maxTickets>20)throw new Error("每日模拟票数须在0–20之间");
   if(!Number.isInteger(policy.maxSharedFixturesPerPair)||policy.maxSharedFixturesPerPair<0||policy.maxSharedFixturesPerPair>1||!Number.isInteger(policy.maxTicketsPerFixture)||policy.maxTicketsPerFixture<1||policy.maxTicketsPerFixture>20)throw new Error("共享场次与单场票数设置无效");
@@ -20,10 +21,12 @@ export function assessRecommendation(items,policy=DEFAULT_RECOMMENDATION_POLICY)
     if(items.some(leg=>RESEARCH_MARKETS.has(leg.market)))return {eligible:false,reason:"research_only"};
     const economics=calculateTicketEconomics(items);
     if(economics.status!=="ready"||economics.expectedROI===null)return {eligible:false,reason:"input_invalid"};
-    if(economics.expectedROI<=0)return {eligible:false,reason:"non_positive_ev",economics};
-    if(economics.expectedROI<policy.minExpectedROI)return {eligible:false,reason:"insufficient_margin",economics};
     const sensitivity=ticketSensitivity(items,policy.stressChange);
-    if(sensitivity.low.status!=="ready"||sensitivity.low.expectedProfit===null||sensitivity.low.expectedProfit<0)return {eligible:false,reason:"stress_failed",economics,sensitivity};
+    if(policy.selectionMode==="robust-ev"){
+      if(economics.expectedROI<=0)return {eligible:false,reason:"non_positive_ev",economics};
+      if(economics.expectedROI<policy.minExpectedROI)return {eligible:false,reason:"insufficient_margin",economics};
+      if(sensitivity.low.status!=="ready"||sensitivity.low.expectedProfit===null||sensitivity.low.expectedProfit<0)return {eligible:false,reason:"stress_failed",economics,sensitivity};
+    }
     return {eligible:true,economics,sensitivity};
   }catch{return {eligible:false,reason:"input_invalid"};}
 }
@@ -45,7 +48,9 @@ export function selectRecommendationPortfolio(plans,{policy=DEFAULT_RECOMMENDATI
   }catch{return {plans:plans.map(p=>({...p,status:"unavailable",items:[],rejectionCode:"prior_invalid",reason:REJECTION_LABELS.prior_invalid})),policy,priorState:"invalid",selected:0,modelEligibleCount:0,portfolio:summarizeTicketPortfolio([])};}}
   const priorStake=spent;
   const candidates=plans.filter(p=>p.status!=="unavailable"&&p.items?.length).flatMap(plan=>[plan,...(plan.candidateAlternatives||[]).map(alternative=>({...alternative,id:plan.id,title:plan.title,rule:plan.rule}))]).map(plan=>({plan,assessment:assessRecommendation(plan.items,policy)}));
-  candidates.sort((a,b)=>(b.assessment.sensitivity?.low.expectedROI??-Infinity)-(a.assessment.sensitivity?.low.expectedROI??-Infinity)||(b.assessment.economics?.expectedROI??-Infinity)-(a.assessment.economics?.expectedROI??-Infinity)||canonicalTicketKey(a.plan.items).localeCompare(canonicalTicketKey(b.plan.items))||a.plan.id.localeCompare(b.plan.id));
+  candidates.sort((a,b)=>policy.selectionMode==="probability-first"
+    ? (b.plan.estimatedProbability??b.plan.items.reduce((p,i)=>p*(i.picks||[]).reduce((s,x)=>s+x.probability/100,0),1))-(a.plan.estimatedProbability??a.plan.items.reduce((p,i)=>p*(i.picks||[]).reduce((s,x)=>s+x.probability/100,0),1))||canonicalTicketKey(a.plan.items).localeCompare(canonicalTicketKey(b.plan.items))||a.plan.id.localeCompare(b.plan.id)
+    : (b.assessment.sensitivity?.low.expectedROI??-Infinity)-(a.assessment.sensitivity?.low.expectedROI??-Infinity)||(b.assessment.economics?.expectedROI??-Infinity)-(a.assessment.economics?.expectedROI??-Infinity)||canonicalTicketKey(a.plan.items).localeCompare(canonicalTicketKey(b.plan.items))||a.plan.id.localeCompare(b.plan.id));
   for(const {plan,assessment} of candidates){
     if(accepted.has(plan.id))continue;
     let reason=assessment.reason;const stake=assessment.economics?.totalStake||0,key=canonicalTicketKey(plan.items);
@@ -59,6 +64,10 @@ export function selectRecommendationPortfolio(plans,{policy=DEFAULT_RECOMMENDATI
     if(reason)decisions.set(plan.id,{code:reason,reason:REJECTION_LABELS[reason]});
     else{add(plan);decisions.delete(plan.id);const {candidateAlternatives,...frozenPlan}=plan;accepted.set(plan.id,{...frozenPlan,sensitivity:assessment.sensitivity,selectionRole:"risk-screened-paper-portfolio"});}
   }
-  const output=plans.map(plan=>accepted.get(plan.id)||(!decisions.has(plan.id)?plan:{...plan,status:"unavailable",items:[],rejectionCode:decisions.get(plan.id).code,reason:decisions.get(plan.id).reason}));
+  const output=plans.map(plan=>{
+    // Search alternatives are transient, not additional frozen or purchased tickets.
+    const {candidateAlternatives,...frozenPlan}=plan;
+    return accepted.get(plan.id)||(!decisions.has(plan.id)?frozenPlan:{...frozenPlan,status:"unavailable",items:[],rejectionCode:decisions.get(plan.id).code,reason:decisions.get(plan.id).reason});
+  });
   return {plans:output,policy,priorState:"verified",priorStake,dailyStake:spent,selected:accepted.size,modelEligibleCount:new Set(candidates.filter(c=>c.assessment.eligible).map(c=>c.plan.id)).size,rejected:Object.fromEntries(decisions),portfolio:summarizeTicketPortfolio(output)};
 }

@@ -74,12 +74,22 @@ test("new POST rejects missing, lower and unsupported versions without silently 
  }
 });
 
-test("current POST rejects half-full, negative EV, insufficient margin and stress-failing tickets",async()=>{
+test("explicit robust POST rejects half-full, negative EV, insufficient margin and stress-failing tickets",async()=>{
  const route=await loadRoute();
- await rejected(route,trial({plans:[plan("half-full-double-2",[leg("a",{market:"halfFull",pick:"胜胜"}),leg("b",{market:"halfFull",pick:"胜胜"})])]}),/半全场.*研究/);
- await rejected(route,trial({plans:[plan("score-single-2",[leg("a",{probability:30}),leg("b",{probability:30})])]}),/期望收益不为正/);
- await rejected(route,trial({plans:[plan("score-single-2",[leg("a",{probability:50,odd:2.04}),leg("b",{probability:50,odd:2.04})])]}),/收益余量不足/);
- await rejected(route,trial({plans:[plan("score-single-2",[leg("a",{probability:50,odd:2.1}),leg("b",{probability:50,odd:2.1})])]}),/概率下调后优势消失/);
+ const strict=overrides=>trial({...overrides,riskSelection:{policy:{...DEFAULT_RECOMMENDATION_POLICY,selectionMode:"robust-ev"}}});
+ await rejected(route,strict({plans:[plan("half-full-double-2",[leg("a",{market:"halfFull",pick:"胜胜"}),leg("b",{market:"halfFull",pick:"胜胜"})])]}),/半全场.*研究/);
+ await rejected(route,strict({plans:[plan("score-single-2",[leg("a",{probability:30}),leg("b",{probability:30})])]}),/期望收益不为正/);
+ await rejected(route,strict({plans:[plan("score-single-2",[leg("a",{probability:50,odd:2.04}),leg("b",{probability:50,odd:2.04})])]}),/收益余量不足/);
+ await rejected(route,strict({plans:[plan("score-single-2",[leg("a",{probability:50,odd:2.1}),leg("b",{probability:50,odd:2.1})])]}),/概率下调后优势消失/);
+});
+
+test("current probability-first POST saves negative-EV ticket without changing frozen picks",async()=>{
+ const route=await loadRoute(),value=trial({plans:[plan("score-single-2",[leg("a",{probability:30}),leg("b",{probability:30})])]});
+ const response=await post(route,value);
+ assert.equal(response.status,200,JSON.stringify(await response.json()));
+ assert.equal(route.db.writes.length,1);
+ const saved=JSON.parse(route.db.writes[0][4]);
+ assert.deepEqual(saved.plans[0].items,value.plans[0].items);
 });
 
 test("over-budget original cannot be saved by substituting an unpersisted cheap alternative",async()=>{
