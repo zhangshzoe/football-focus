@@ -798,7 +798,9 @@ test("17:00 snapshot persists purchase drafts and the recommendation page expose
  assert.match(purchaseCapture,/generatePurchasePlans/);
  assert.match(purchaseCapture,/verifyPurchasePlanCompletion/);
  assert.match(purchaseCapture,/priorPlans:slot==="2100"\?earlier\.plans:\[\]/);
- assert.match(api,/purchasePlans:plan\?\.plans\|\|raw\.purchasePlans/);
+ const projection=await readFile(new URL("../app/raw-snapshot-projection.js",import.meta.url),"utf8");
+ assert.match(api,/projectRawPredictionSnapshot as toSnapshot/);
+ assert.match(projection.replace(/\s/g,""),/purchasePlans:plan\?\.plans\|\|raw\.purchasePlans/);
  assert.match(component,/每日固定组合票/);
  assert.match(component,/17:00 场次/);
  assert.match(component,/21:00 场次/);
@@ -967,10 +969,12 @@ test("pre-match snapshots are append-only and keep prediction layers separate",a
  assert.match(capture,/oddsBaseline/);
  assert.match(capture,/intelligenceOutput/);
  assert.match(capture,/fusionOutput/);
- assert.match(api,/snapshotOddsProjection\(report\)/);
- assert.match(api,/report\.layers\?\.intelligenceOutput\?\.scores\|\|report\.intelligenceScores\|\|\[\]/);
- assert.match(api,/report\.layers\?\.fusionOutput\?\.fullScoreDistribution\|\|report\.fullScoreDistribution/);
- assert.doesNotMatch(api,/oddsScores:\(report\.scores\|\|\[\]\)/);
+ const projection=(await readFile(new URL("../app/raw-snapshot-projection.js",import.meta.url),"utf8")).replace(/\s/g,"");
+ assert.match(api,/projectRawPredictionSnapshot as toSnapshot/);
+ assert.match(projection,/snapshotOddsProjection\(report\)/);
+ assert.match(projection,/report\.layers\?\.intelligenceOutput\?\.scores\|\|report\.intelligenceScores\|\|\[\]/);
+ assert.match(projection,/report\.layers\?\.fusionOutput\?\.fullScoreDistribution\|\|report\.fullScoreDistribution/);
+ assert.doesNotMatch(projection,/oddsScores:\(report\.scores\|\|\[\]\)/);
  assert.match(page,/void savePredictionSet\(saved\)/);
  assert.match(storage,/if\(history\.some\(item=>item\.historyRecordId===saved\.historyRecordId\)\)return history/);
  assert.match(storage,/\.\.\.history/);

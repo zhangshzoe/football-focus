@@ -164,7 +164,9 @@ test("disk, bundled, migrated, purchase forecasts and evaluation paths use the s
     new URL("../scripts/audit-prediction-history.mjs", import.meta.url),
     "utf8",
   );
-  assert.match(api, /\.\.\.snapshotOddsProjection\(report\)/);
+  const projection=await readFile(new URL("../app/raw-snapshot-projection.js",import.meta.url),"utf8");
+  assert.match(api, /projectRawPredictionSnapshot as toSnapshot/);
+  assert.match(projection, /\.\.\.snapshotOddsProjection\(report\)/);
   assert.match(api, /snapshots\.map\(projectSnapshotOddsLayers\)/);
   assert.match(api, /mergedEvaluationSnapshots=.*\.map\(projectSnapshotOddsLayers\)/);
   assert.match(api, /evaluationSnapshots=mergedEvaluationSnapshots\.filter/);

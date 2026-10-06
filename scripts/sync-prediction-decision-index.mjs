@@ -8,13 +8,16 @@ import {readCaptureAttempts} from "./read-capture-attempts.mjs";
 import {syncForwardValidationIndex} from "./sync-forward-validation-index.mjs";
 import {projectSnapshotOddsLayers} from "../app/snapshot-probability-layers.js";
 import {retainsPurchaseSnapshot} from "../app/purchase-snapshot-retention.js";
+import {projectRawPredictionSnapshot,projectOfficialDecisionSnapshots} from "../app/raw-snapshot-projection.js";
+import {readLocalCaptureReceipt} from "./local-capture-receipts.mjs";
+import {isProbabilitySlotSnapshot} from "../app/slot-probability-observations.js";
 import {syncTotalGoalsValidation} from "./sync-total-goals-validation.mjs";
 
 const baseUrl=process.env.FOOTBALL_FOCUS_URL||"http://localhost:3000";
 const response=await fetch(`${baseUrl}/api/prediction-snapshots`,{cache:"no-store"});
 const data=await response.json().catch(()=>({}));
 if(!response.ok)throw new Error(data.error||"盘后快照读取失败");
-const formalSourceSnapshots=(data.snapshots||[]).map(projectSnapshotOddsLayers).filter(snapshot=>snapshot.storageOrigin==="server");
+let formalSourceSnapshots=(data.snapshots||[]).map(projectSnapshotOddsLayers).filter(snapshot=>snapshot.storageOrigin==="server");
 const bundlePath=join(process.cwd(),"data","generated-prediction-snapshot-index.json");
 const migrationPath=join(process.cwd(),"data","migrated-browser-prediction-snapshots.json");
 const migration=JSON.parse(await readFile(migrationPath,"utf8").catch(()=>"{\"snapshots\":[]}"));
@@ -25,6 +28,7 @@ const today=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai",year:"nume
 const trackedResult=spawnSync("git",["ls-files","data/prediction-snapshots/*.json","data/purchase-plan-snapshots/*.json"],{cwd:process.cwd(),encoding:"utf8"});
 if(trackedResult.status!==0)throw new Error("无法确认快照的 Git 版本，拒绝生成线上索引");
 const tracked=new Set(String(trackedResult.stdout||"").split(/\r?\n/).filter(Boolean).map(value=>value.replaceAll("\\","/")));
+const diskPredictionSnapshots=[];
 const allowedPredictionIds=new Set(),predictionDirectory=join(process.cwd(),"data","prediction-snapshots");
 for(const name of await readdir(predictionDirectory).catch(()=>[])){
  const relative=`data/prediction-snapshots/${name}`;
@@ -34,8 +38,19 @@ for(const name of await readdir(predictionDirectory).catch(()=>[])){
   const record=JSON.parse(await readFile(join(predictionDirectory,name),"utf8"));
   const snapshotId=String(record.snapshotId||snapshotIdFromFileName(name));
   if(snapshotId)allowedPredictionIds.add(snapshotId);
+  if(record.immutable===true&&record.recordType==="raw-prediction-snapshot"){
+   const receipt=await readLocalCaptureReceipt(record);
+   if(!receipt)throw new Error(`不可变快照缺少写入凭据：${snapshotId}`);
+   const projected=projectRawPredictionSnapshot(record,name);
+   if(projected)diskPredictionSnapshots.push({...projected,includedInStrictEvaluation:receipt.includedInStrictEvaluation});
+  }
  }catch{/* 损坏文件不会进入线上索引。 */}
 }
+// The local Worker may serve its previous bundle rather than host filesystem.
+// Project verified immutable disk inputs using the same read-only API projector.
+const diskFormal=projectOfficialDecisionSnapshots(diskPredictionSnapshots);
+const diskDates=new Set(diskFormal.map(snapshot=>snapshot.date));
+formalSourceSnapshots=[...formalSourceSnapshots.filter(snapshot=>!diskDates.has(snapshot.date)),...diskFormal];
 const formalSnapshots=formalSourceSnapshots.map(snapshot=>({...snapshot,matches:(snapshot.matches||[]).filter(match=>allowedPredictionIds.has(String(match.selectedSnapshotId||"")))})).filter(snapshot=>snapshot.matches.length);
 const days=formalSnapshots.map(snapshot=>({date:snapshot.date,snapshotId:snapshot.snapshotId,matchCount:snapshot.matches.length,matches:snapshot.matches.map(match=>({officialMatchId:match.officialMatchId,id:match.id,home:match.home,away:match.away,kickoffAt:match.kickoffAt,decisionTargetAt:match.decisionTargetAt,selectedSnapshotId:match.selectedSnapshotId,selectedScheduledAt:match.selectedScheduledAt,selectedCapturedAt:match.selectedCapturedAt,decisionPolicy:match.decisionPolicy}))}));
 const directory=join(process.cwd(),"data","analysis");await mkdir(directory,{recursive:true});
@@ -61,10 +76,10 @@ for(const name of await readdir(purchaseDirectory).catch(()=>[])){
 // 本地服务可能只读到上一次打包的索引；正式票以已落盘的不可变文件为准。
 const purchasePlanSnapshots=Array.from(new Map(diskPurchaseSnapshots.map(snapshot=>[String(snapshot.snapshotId),snapshot])).values()).sort((left,right)=>String(right.capturedAt||"").localeCompare(String(left.capturedAt||"")));
 const previousBundle=JSON.parse(await readFile(bundlePath,"utf8").catch(()=>"null"));
-const evaluationSnapshots=(data.evaluationSnapshots||[]).map(projectSnapshotOddsLayers).filter(snapshot=>allowedPredictionIds.has(String(snapshot.snapshotId))).map(snapshot=>({...snapshot,matches:(snapshot.matches||[]).map(({companies,aiSummary,aiRisk,intelligenceScores,...match})=>match)}));
+const evaluationSnapshots=[...new Map([...(data.evaluationSnapshots||[]),...diskPredictionSnapshots].map(snapshot=>[snapshot.snapshotId,snapshot])).values()].filter(snapshot=>snapshot.includedInStrictEvaluation!==false).map(projectSnapshotOddsLayers).filter(snapshot=>allowedPredictionIds.has(String(snapshot.snapshotId))).map(snapshot=>({...snapshot,matches:(snapshot.matches||[]).map(({companies,aiSummary,aiRisk,intelligenceScores,...match})=>match)}));
 // Descriptive slot evidence includes delayed/excluded batches. It must never
 // be silently promoted into the separate strict evaluation sample.
-const probabilitySlotSnapshots=(data.probabilitySlotSnapshots||[]).map(projectSnapshotOddsLayers).filter(snapshot=>allowedPredictionIds.has(String(snapshot.snapshotId))).map(snapshot=>({...snapshot,matches:(snapshot.matches||[]).map(({companies,aiSummary,aiRisk,intelligenceScores,...match})=>match)}));
+const probabilitySlotSnapshots=[...new Map([...(data.probabilitySlotSnapshots||[]),...diskPredictionSnapshots.filter(isProbabilitySlotSnapshot)].map(snapshot=>[snapshot.snapshotId,snapshot])).values()].map(projectSnapshotOddsLayers).filter(snapshot=>allowedPredictionIds.has(String(snapshot.snapshotId))).map(snapshot=>({...snapshot,matches:(snapshot.matches||[]).map(({companies,aiSummary,aiRisk,intelligenceScores,...match})=>match)}));
 const captureAttempts=await readCaptureAttempts();
 const bundleBody={schemaVersion:5,captureAttempts,evaluationSnapshots,probabilitySlotSnapshots,formalSnapshotCount:formalSnapshots.length,migratedSnapshotCount:migratedSnapshots.length,snapshots,resultCache,purchasePlanSnapshots};
 const bundleUnchanged=previousBundle&&JSON.stringify({...previousBundle,generatedAt:undefined})===JSON.stringify({...bundleBody,generatedAt:undefined});

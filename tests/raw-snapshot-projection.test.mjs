@@ -1,0 +1,21 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import {projectRawPredictionSnapshot,projectOfficialDecisionSnapshots} from '../app/raw-snapshot-projection.js';
+import {readLocalCaptureReceipt} from '../scripts/local-capture-receipts.mjs';
+test('verified raw decision snapshot projects without altering immutable input',async()=>{
+ const raw=JSON.parse(await readFile(new URL('../data/prediction-snapshots/2026-10-06_2130.raw.json',import.meta.url),'utf8'));
+ const before=JSON.stringify(raw),receipt=await readLocalCaptureReceipt(raw);
+ assert.equal(receipt.includedInStrictEvaluation,true);
+ const projected=projectRawPredictionSnapshot(raw,'2026-10-06_2130.raw.json');
+ assert.equal(projected.snapshotId,raw.snapshotId);
+ assert.equal(projected.matches.length,raw.reports.length);
+ assert.deepEqual(projected.matches.map(m=>m.officialMatchId),raw.reports.map(m=>m.officialMatchId));
+ assert.ok(projected.matches.every(m=>m.fullScoreDistribution.length&&m.totalGoalProbabilities.length===8&&m.halfFullProbabilities.length===9));
+ const days=projectOfficialDecisionSnapshots([projected]);
+ assert.equal(days[0].matches.length,10);
+ assert.ok(days[0].matches.every(m=>m.selectedSnapshotId===raw.snapshotId));
+ assert.deepEqual(projectOfficialDecisionSnapshots([{...projected,includedInStrictEvaluation:false}]),[]);
+ assert.equal(JSON.stringify(raw),before);
+ assert.equal(projectRawPredictionSnapshot(raw,'invalid.json'),null);
+});
