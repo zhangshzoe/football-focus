@@ -33,27 +33,27 @@ export default function PredictionMarketSignals({row}:Props){
   const strength=Math.abs(signal.strength)<1?"偏弱":Math.abs(signal.strength)<2.5?"中等":"较强";
   return <section className="market-signal-panel">
     <div className="market-signal-summary">
-      <div><small>模型最高概率方向</small><strong>{signal.direction}</strong><span className={`signal-strength ${strength==="较强"?"strong":""}`} title="外围报价变动幅度，不是预测置信度">报价变动{strength}</span></div>
+      <div><small>机构市场倾向（推断）</small><strong>{signal.direction}</strong><span className={`signal-strength ${strength==="较强"?"strong":""}`}>{strength}</span></div>
       <p>{signal.narrative}</p>
     </div>
     <div className="market-price-grid">
       <div><small>中国体彩 胜平负</small><b>{signal.officialOdds.length===3?`胜 ${number(signal.officialOdds[0])} · 平 ${number(signal.officialOdds[1])} · 负 ${number(signal.officialOdds[2])}`:"暂缺"}</b></div>
       <div><small>中国体彩 让球胜平负</small><b>{signal.hhadAvailable&&signal.officialHhadOdds.length===3?<><span className={`handicap-value ${Number(signal.officialHandicap)>0?"positive":Number(signal.officialHandicap)<0?"negative":"neutral"}`}>{handicapText(signal.officialHandicap)}</span>{` · 让胜 ${number(signal.officialHhadOdds[0])} · 让平 ${number(signal.officialHhadOdds[1])} · 让负 ${number(signal.officialHhadOdds[2])}`}</>:"不可用（缺少官方让球或玩法资格）"}</b></div>
-      <div className="fair-price"><small>模型公平赔率</small><b>主 {number(signal.fairOdds[0])} · 平 {number(signal.fairOdds[1])} · 客 {number(signal.fairOdds[2])}</b><em>已去除返还率，仅供模型比较，非可投注赔率</em></div>
+      <div className="fair-price"><small>三公司 + 体彩中和公平赔率</small><b>主 {number(signal.fairOdds[0])} · 平 {number(signal.fairOdds[1])} · 客 {number(signal.fairOdds[2])}</b><em>已去除返还率，仅供模型比较，非可投注赔率</em></div>
     </div>
     <div className="market-ev-grid">
-      <div><small>胜平负 EV（模型概率×体彩赔率−1）</small><b><span className={(signal.hadEv?.[0]||0)>=(signal.evThreshold||.05)?"ev-positive":""}>胜 {evText(signal.hadEv?.[0])}</span><span className={(signal.hadEv?.[1]||0)>=(signal.evThreshold||.05)?"ev-positive":""}>平 {evText(signal.hadEv?.[1])}</span><span className={(signal.hadEv?.[2]||0)>=(signal.evThreshold||.05)?"ev-positive":""}>负 {evText(signal.hadEv?.[2])}</span></b><em>标色仅为模型EV提示；正EV不保证盈利，应核验概率误差</em></div>
+      <div><small>胜平负 EV（模型概率×体彩赔率−1）</small><b><span className={(signal.hadEv?.[0]||0)>=(signal.evThreshold||.05)?"ev-positive":""}>胜 {evText(signal.hadEv?.[0])}</span><span className={(signal.hadEv?.[1]||0)>=(signal.evThreshold||.05)?"ev-positive":""}>平 {evText(signal.hadEv?.[1])}</span><span className={(signal.hadEv?.[2]||0)>=(signal.evThreshold||.05)?"ev-positive":""}>负 {evText(signal.hadEv?.[2])}</span></b><em>正EV且超过 {(signal.evThreshold||.05)*100}% 才进入价值筛选</em></div>
       <div><small>让球胜平负 EV</small>{signal.hhadAvailable?<><b><span className={(signal.hhadEv?.[0]||0)>=(signal.evThreshold||.05)?"ev-positive":""}>让胜 {evText(signal.hhadEv?.[0])}</span><span className={(signal.hhadEv?.[1]||0)>=(signal.evThreshold||.05)?"ev-positive":""}>让平 {evText(signal.hhadEv?.[1])}</span><span className={(signal.hhadEv?.[2]||0)>=(signal.evThreshold||.05)?"ev-positive":""}>让负 {evText(signal.hhadEv?.[2])}</span></b><em>EV为模型估算值，不代表命中保证</em></>:<b>不可计算</b>}</div>
     </div>
     <div className="market-cross-grid">
-      <div><small>外围亚盘去水结算权重比</small><b>主队侧 {number(signal.asianHomeProbability,1)}% · 客队侧 {number(signal.asianAwayProbability,1)}%</b><em>不是全赢概率；较初盘主队侧 {signal.asianMovement>=0?"+":""}{number(signal.asianMovement,1)} 个百分点</em></div>
+      <div><small>外围亚盘去水概率</small><b>主队侧 {number(signal.asianHomeProbability,1)}% · 客队侧 {number(signal.asianAwayProbability,1)}%</b><em>较初盘主队侧 {signal.asianMovement>=0?"+":""}{number(signal.asianMovement,1)}%</em></div>
       <div><small>多盘口校准后的体彩让球概率</small>{signal.hhadAvailable?<><b>让胜 {number(signal.modeledHhad?.[0],1)}% · 让平 {number(signal.modeledHhad?.[1],1)}% · 让负 {number(signal.modeledHhad?.[2],1)}%</b><em>同时约束欧赔、亚盘、大小球和体彩固定让球</em></>:<><b>不可用</b><em>未使用 0 球让步替代缺失的官方让球</em></>}</div>
-      <div><small>大小球市场结算权重比</small><b>大球侧 {number(signal.overProbability,1)}% · 小球侧 {number(100-signal.overProbability,1)}%</b><em>不是全赢概率 · {signal.fitAgreement}</em></div>
+      <div><small>大小球市场</small><b>大球侧 {number(signal.overProbability,1)}% · 小球侧 {number(100-signal.overProbability,1)}%</b><em>{signal.fitAgreement}</em></div>
       <div><small>历史赛果校准</small><b>{signal.calibrationSampleSize?`${signal.calibrationSampleSize} 场 · 概率温度 ${number(signal.probabilityTemperature||1,2)}`:"有效样本不足，使用盘口基线"}</b><em>{signal.calibrationSampleSize?`总球均值 ${number(signal.historicalMeanTotalGoals||0,2)} · 离散度 ${number(signal.goalDispersion||1,2)} · 低比分ρ ${number(signal.lowScoreRho||0,2)} · 半场占比 ${number((signal.firstHalfGoalShare||.45)*100,1)}%`:"Dixon–Coles 低比分修正先影子验证，不用短样本直接上线"}</em></div>
     </div>
     <div className="handicap-meaning"><b>盘口含义</b><span>{signal.handicapMeaning}</span>{signal.handicapExpectation&&<strong>{signal.handicapExpectation}</strong>}{signal.institutionAction&&<em>{signal.institutionAction}</em>}</div>
     <div className="odds-movement-wrap">
-      <div className="movement-title"><b>三家公司初盘 → 即盘（无变更时间，不视为时序）</b><span><i className="legend down"/>降赔 · <i className="legend up"/>升赔 · 盘口同时显示当前水位</span></div>
+      <div className="movement-title"><b>三家公司变盘（初盘 → 即盘）</b><span><i className="legend down"/>降赔 · <i className="legend up"/>升赔 · 盘口同时显示当前水位</span></div>
       <div className="odds-movement-table">
         <div className="movement-row heading"><span>公司</span><span>主胜</span><span>平</span><span>客胜</span><span>亚洲让球</span><span>大小球</span></div>
         {row.companies.map(company=><div className="movement-row" key={company.companyId}>

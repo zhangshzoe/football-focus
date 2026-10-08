@@ -2,9 +2,9 @@ import { sites } from "@openai/sites-vite-plugin";
 import vinext from "vinext";
 import { defineConfig } from "vite";
 import hostingConfig from "./.openai/hosting.json";
-import { forwardCodeHashes } from "./scripts/forward-research-files.mjs";
-import { predictionBuildIdentity } from "./scripts/prediction-build-identity.mjs";
-import { localPredictionDatabase } from "./scripts/local-prediction-bindings.mjs";
+
+const SITE_CREATOR_PLACEHOLDER_DATABASE_ID =
+  "00000000-0000-4000-8000-000000000000";
 
 const { d1, r2 } = hostingConfig;
 
@@ -17,8 +17,9 @@ const localBindingConfig = {
   d1_databases: d1
     ? [
         {
-          ...localPredictionDatabase,
           binding: d1,
+          database_name: "site-creator-d1",
+          database_id: SITE_CREATOR_PLACEHOLDER_DATABASE_ID,
         },
       ]
     : [],
@@ -32,7 +33,7 @@ const localBindingConfig = {
     : [],
 };
 
-export default defineConfig(async ({ command }) => {
+export default defineConfig(async () => {
   // Keep Wrangler and Miniflare state project-local. These are non-secret tool
   // settings; application environment belongs in ignored `.env*` files.
   process.env.WRANGLER_WRITE_LOGS ??= "false";
@@ -43,26 +44,15 @@ export default defineConfig(async ({ command }) => {
   const { cloudflare } = await import("@cloudflare/vite-plugin");
 
   return {
-    // Build-time identity of actual source, not a caller-supplied model version.
-    define: {
-      __FF_FORWARD_CODE_HASHES__: JSON.stringify(await forwardCodeHashes()),
-      __FF_PREDICTION_BUILD_IDENTITY__: JSON.stringify(await predictionBuildIdentity()),
-    },
-    server: { strictPort: true,
-      ...(isCodexSeatbeltSandbox ? { watch: { useFsEvents: false, usePolling: true } } : {}),
-    },
+    server: isCodexSeatbeltSandbox
+      ? { watch: { useFsEvents: false, usePolling: true } }
+      : undefined,
     plugins: [
       vinext(),
       sites(),
       cloudflare({
         viteEnvironment: { name: "rsc", childEnvironments: ["ssr"] },
-        config: {
-          ...localBindingConfig,
-          // Only the local server receives the supervisor's in-memory token.
-          // Production secrets remain managed by Sites, never bundled.
-          ...(command === "serve" && process.env.RESEARCH_CAPTURE_TOKEN
-            ? { vars: { RESEARCH_CAPTURE_TOKEN: process.env.RESEARCH_CAPTURE_TOKEN } } : {}),
-        },
+        config: localBindingConfig,
       }),
     ],
   };

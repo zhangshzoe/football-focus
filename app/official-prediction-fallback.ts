@@ -6,11 +6,7 @@ const HALF_FULL_LABELS=["胜胜","胜平","胜负","平胜","平平","平负","�
 
 const finite=(value:unknown,fallback=0)=>Number.isFinite(Number(value))?Number(value):fallback;
 const clamp=(value:number,min:number,max:number)=>Math.min(max,Math.max(min,value));
-const marketOdds=(match:any,key:string)=>{
- const values=match?.marketOdds?.[key],observed=Date.parse(match?.marketSource?.[key]?.observedAt||""),now=Date.now();
- const count=({"胜平负":3,"让球胜平负":3,"比分":31,"总进球数":8,"半全场":9} as Record<string,number>)[key];
- return Number.isFinite(observed)&&observed<=now&&now-observed<=300000&&match?.quoteState!=="stale"&&match?.marketStatus?.[key]==="available"&&match?.marketEligibility?.[key]?.qualification==="qualified"&&Array.isArray(values)&&values.length===count&&values.every((value:unknown)=>Number.isFinite(Number(value))&&Number(value)>1)?values.map(Number):[];
-};
+const marketOdds=(match:any,key:string)=>Array.isArray(match?.marketOdds?.[key])?match.marketOdds[key].map((value:unknown)=>finite(value)):[];
 const deVig=(odds:number[])=>{const inverse=odds.map(value=>value>1?1/value:0),sum=inverse.reduce((total,value)=>total+value,0);return sum>0?inverse.map(value=>value/sum):[]};
 const points=(labels:string[],probabilities:number[])=>labels.map((score,index)=>({score,probability:(probabilities[index]||0)*100})).filter(point=>point.probability>0);
 const factorial=(value:number)=>{let result=1;for(let index=2;index<=value;index++)result*=index;return result};
@@ -30,10 +26,8 @@ function expectedGoals(match:any,had:number[],total:number[]){
  return{home:expectedTotal*homeShare,away:expectedTotal*(1-homeShare),total:expectedTotal};
 }
 
-export function buildOfficialPredictionFallback(matches:any[],generatedAt:string,sourceError?:{code?:string;status?:number}){
- const sourceVerified=!["OFFICIAL_ACCESS_BLOCKED","OFFICIAL_MANIFEST_UNAVAILABLE","OFFICIAL_FETCH_FAILED"].includes(sourceError?.code||"")&&sourceError?.status!==409;
- const observed=Date.parse(generatedAt),fresh=sourceVerified&&Number.isFinite(observed)&&observed<=Date.now()&&Date.now()-observed<=300000;
- const eligible=matches.filter(match=>fresh&&match.quoteState!=="stale"&&marketOdds(match,"胜平负").length===3&&marketOdds(match,"胜平负").every((odd:number)=>odd>1));
+export function buildOfficialPredictionFallback(matches:any[],generatedAt:string){
+ const eligible=matches.filter(match=>deVig(marketOdds(match,"胜平负")).length===3);
  const fingerprint=eligible.map(match=>({id:match.officialMatchId||match.matchId||match.id,updatedAt:match.updatedAt,markets:match.marketOdds}));
  const digest=hash(JSON.stringify(fingerprint)),predictionId=`official-browser-${digest}`,inputSnapshotId=`official-five-market-${digest}`;
  const version={predictionId,inputSnapshotId,baseModelVersion:"official-five-market-browser-v1",calibrationVersion:"cal-none",generatedAt};
@@ -50,6 +44,6 @@ export function buildOfficialPredictionFallback(matches:any[],generatedAt:string
    expectedGoals:{home:xg.home,away:xg.away},scores,fullScoreDistribution,oddsScores:fullScoreDistribution,hadProbabilities:points(["胜","平","负"],had),hhadProbabilities,totalGoalProbabilities,halfFullProbabilities,missingCompanies:[1,2,3],intelligenceCoverage:0,appliedIntelligenceWeight:0,
   };
  });
- const unavailableMatches=matches.filter(match=>!reports.some(report=>report.officialMatchId===String(match.officialMatchId||match.matchId||""))).map(match=>({id:match.id,officialMatchId:match.officialMatchId||match.matchId,salesDate:match.salesDate,matchDate:match.matchDate,kickoffAt:match.kickoffAt,time:match.time,league:match.league,home:match.home,away:match.away,reason:!sourceVerified?"本次官方清单或比赛身份未通过核验，暂停备用预测":!fresh||match.quoteState==="stale"?"官方报价已过期或本次未核验，暂停备用预测":"缺少当前已核验且可售的体彩胜平负官方赔率"}));
+ const unavailableMatches=matches.filter(match=>!reports.some(report=>report.officialMatchId===String(match.officialMatchId||match.matchId||""))).map(match=>({id:match.id,officialMatchId:match.officialMatchId||match.matchId,salesDate:match.salesDate,matchDate:match.matchDate,kickoffAt:match.kickoffAt,time:match.time,league:match.league,home:match.home,away:match.away,reason:"缺少可去水的体彩胜平负官方赔率"}));
  return{version,reports,unavailableMatches,coverage:{officialMatches:matches.length,predictedMatches:reports.length,unavailableMatches:unavailableMatches.length}};
 }

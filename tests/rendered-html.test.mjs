@@ -2,26 +2,20 @@ import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
 import test from "node:test";
 import ts from "typescript";
-import {register} from "node:module";
-import {calculatePurchaseLegReturns,deduplicatePurchasePlans,generatePurchasePlans,PURCHASE_PLAN_DEFINITIONS,PURCHASE_PLAN_MODULES,MARKET_META,settlePurchasePlan,summarizePurchasePlanModules,summarizePurchasePlanDefinitions,summarizePurchasePlanDays} from "../app/purchase-plan-engine.js";
-import {DEFAULT_RECOMMENDATION_POLICY,assessRecommendation,canonicalTicketKey} from "../app/recommendation-policy.js";
-import {calculateTicketEconomics,ticketFixtureKey} from "../app/ticket-economics.js";
-async function readWorkspaceSource(){return (await Promise.all(["football-workspace.ts","hooks/useOfficialMatches.ts","hooks/usePredictionWorkspace.ts","components/MatchesWorkspace.tsx","components/PredictionWorkspace.tsx","components/OfficialSourceNotice.tsx"].map(path=>readFile(new URL("../app/"+path,import.meta.url),"utf8")))).join("\n")}
-const completePoints=(labels,weights)=>{const missing=labels.filter(label=>!Object.hasOwn(weights,label)),remaining=100-Object.values(weights).reduce((sum,p)=>sum+p,0);assert.ok(remaining>=-1e-8);return labels.map(score=>({score,probability:Object.hasOwn(weights,score)?weights[score]:missing.length?remaining/missing.length:0}));};
-const scoreGridFixture=weights=>completePoints(Array.from({length:169},(_,index)=>`${Math.floor(index/13)}:${index%13}`),weights);
+import {calculatePurchaseLegReturns,deduplicatePurchasePlans,generatePurchasePlans,PURCHASE_PLAN_DEFINITIONS,PURCHASE_PLAN_MODULES,settlePurchasePlan,summarizePurchasePlanModules,summarizePurchasePlanDefinitions,summarizePurchasePlanDays} from "../app/purchase-plan-engine.js";
 
 test("daily snapshot summary excludes missing dates and unsettled tickets from returns",()=>{
  const days=summarizePurchasePlanDays([
-  {snapshotId:"summary-early",date:"2026-09-25",generatedAt:"2026-09-25T17:00:00+08:00",plans:[{status:"won",stake:2,simulatedReturn:20,items:[{}]},{status:"awaiting_result",stake:2,items:[{}]}]},
-  {snapshotId:"summary-late",date:"2026-09-25",generatedAt:"2026-09-25T21:00:00+08:00",plans:[{status:"lost",stake:4,simulatedReturn:0,items:[{}]}]},
-  {snapshotId:"summary-none",date:"2026-09-26",generatedAt:"2026-09-26T17:00:00+08:00",plans:[{status:"unavailable",items:[]}]},
+  {date:"2026-09-25",plans:[{status:"won",stake:2,simulatedReturn:20,items:[{}]},{status:"awaiting_result",stake:2,items:[{}]}]},
+  {date:"2026-09-25",plans:[{status:"lost",stake:4,simulatedReturn:0,items:[{}]}]},
+  {date:"2026-09-26",plans:[{status:"unavailable",items:[]}]},
  ]);
- assert.deepEqual(days["2026-09-25"],{date:"2026-09-25",batches:2,tickets:3,pending:1,settled:2,refunded:0,won:1,rate:50,stake:6,returned:20,net:14});
+ assert.deepEqual(days["2026-09-25"],{date:"2026-09-25",batches:2,tickets:3,pending:1,settled:2,won:1,rate:50,stake:6,returned:20,net:14});
  assert.equal(days["2026-09-26"].tickets,0);
  assert.equal(days["2026-09-27"],undefined);
 });
 import {teamIdentity} from "../app/team-identity.js";
-import {decisionTargetAt,selectOfficialDecisionRows,selectDecisionObservations} from "../app/snapshot-decision-policy.js";
+import {decisionTargetAt,selectOfficialDecisionRows} from "../app/snapshot-decision-policy.js";
 import {snapshotIdFromFileName} from "../app/snapshot-file-policy.js";
 import {buildArchiveRecoverySnapshots} from "../app/archive-recovery.js";
 
@@ -34,7 +28,7 @@ test("official snapshot timing follows weekday and weekend decision rules",()=>{
  const rows=selectOfficialDecisionRows([{snapshotId:"early",date:"2026-09-14",capturedAt:"2026-09-14T13:20:00.000Z",matches:[match]},{snapshotId:"chosen",date:"2026-09-14",capturedAt:"2026-09-14T13:30:00.000Z",matches:[match]},{snapshotId:"late",date:"2026-09-14",capturedAt:"2026-09-14T13:31:00.000Z",matches:[match]}]);
  assert.equal(rows.length,1);assert.equal(rows[0].snapshot.snapshotId,"chosen");
  const delayedScheduled=selectOfficialDecisionRows([{snapshotId:"scheduled",date:"2026-09-14",scheduledAt:"2026-09-14T21:30:00+08:00",capturedAt:"2026-09-14T13:32:00.000Z",matches:[match]}]);
- assert.equal(delayedScheduled.length,0);
+ assert.equal(delayedScheduled.length,1);assert.equal(delayedScheduled[0].snapshot.snapshotId,"scheduled");
 });
 
 test("legacy and immutable raw snapshot filenames share the same online index identity",()=>{
@@ -43,99 +37,34 @@ test("legacy and immutable raw snapshot filenames share the same online index id
  assert.equal(snapshotIdFromFileName("2026-09-22_2130.supplement.ai.json"),"");
 });
 
-const cloudReadTypes=[];
-const workerEnv={
- ASSETS:{fetch:async()=>new Response("Not found",{status:404})},
- DB:{prepare(sql){
-  if(sql==="SELECT id FROM research_capture_records WHERE record_type = ? ORDER BY observed_at DESC, id DESC LIMIT 1")return {bind(type){assert.ok(["replay-index","source-attempt"].includes(type));return {async first(){return null;}};}};
-  assert.match(sql,/^SELECT id, observed_at FROM research_capture_records /);
-  return {
-   bind(type){
-    assert.ok(["raw","purchase","source-attempt","replay-index"].includes(type));
-    return {async all(){cloudReadTypes.push(type);return {results:[]};}};
-   },
-  };
- }},
- RESEARCH_OBJECTS:{async get(){return null;},async put(){throw new Error("Read-only recovery must not write");}},
-};
-globalThis.__footballRenderedWorkerEnv=workerEnv;
-const moduleUrl=source=>`data:text/javascript;base64,${Buffer.from(source).toString("base64")}`;
-const cloudEnvUrl=moduleUrl("export const env=globalThis.__footballRenderedWorkerEnv;");
-register(moduleUrl(`export async function resolve(specifier,context,nextResolve){
- if(specifier==="cloudflare:workers")return {url:${JSON.stringify(cloudEnvUrl)},shortCircuit:true};
- return nextResolve(specifier,context);
-}`),import.meta.url);
-
 async function render(path="/"){
  const workerUrl=new URL("../dist/server/index.js",import.meta.url);
  workerUrl.searchParams.set("test",`${process.pid}-${Date.now()}-${path}`);
  const {default:worker}=await import(workerUrl.href);
- return worker.fetch(new Request(`http://localhost${path}`,{headers:{accept:"text/html"}}),workerEnv,{waitUntil(){},passThroughOnException(){}});
+ return worker.fetch(new Request(`http://localhost${path}`,{headers:{accept:"text/html"}}),{ASSETS:{fetch:async()=>new Response("Not found",{status:404})}},{waitUntil(){},passThroughOnException(){}});
 }
-
-test("production total-goals API serves precomputed diagnostic summary without raw replay inputs",async()=>{
- const response=await render("/api/total-goals-validation"),data=await response.json();
- assert.equal(response.status,200);
- assert.equal(data.report.schemaVersion,1);
- assert.equal(data.report.promotionEligible,false);
- assert.ok(Array.isArray(data.report.cohorts));
- assert.ok(Array.isArray(data.report.tickets.rows));
- assert.equal(data.storageOrigin,"bundled-offline-index");
- assert.equal(data.indexReadStatus,"cloud-report-missing");
- assert.equal(Object.hasOwn(data,"observations"),false);
- assert.equal(Object.hasOwn(data,"purchases"),false);
- assert.match(response.headers.get("cache-control"),/no-store/);
-});
-
-test("total-goals API marks missing cloud reports and rejects corrupt or retired pipeline summaries",async()=>{
- const index=JSON.parse(await readFile(new URL("../data/generated-total-goals-validation-index.json",import.meta.url),"utf8"));
- const routeSource=await readFile(new URL("../app/api/total-goals-validation/route.ts",import.meta.url),"utf8");
- const previous=process.env.NODE_ENV;process.env.NODE_ENV="production";
- try{
-  for(const scenario of ["missing","corrupt","retired","valid","cloud-valid-bundle-retired"]){
-   const cloudReport=structuredClone(index.report);
-   if(scenario==="retired")cloudReport.pipelineVersion="retired-pipeline";
-   const payload=scenario==="missing"?{}:{totalGoalsValidation:scenario==="corrupt"?{schemaVersion:1,cohorts:[],tickets:{rows:[]}}:cloudReport};
-   const storeUrl=moduleUrl(`export function getCloudResearchStore(){return {async latest(type){return {payload:type==="replay-index"?${JSON.stringify(payload)}:{status:"failed"}}}}}`);
-   const bundledReport=structuredClone(index.report);if(scenario==="cloud-valid-bundle-retired")bundledReport.pipelineVersion="retired-pipeline";
-   const source=routeSource.replace('import { NextResponse } from "next/server";','const NextResponse={json:(body,init={})=>new Response(JSON.stringify(body),{...init,headers:{"Content-Type":"application/json",...(init.headers||{})}})};')
-    .replace('import index from "../../../data/generated-total-goals-validation-index.json";',`const index=${JSON.stringify({report:bundledReport})};`)
-    .replace('from "../../cloud-research-binding"',`from ${JSON.stringify(storeUrl)}`)
-    .replace('from "../../total-goals-validation-contract.js"',`from ${JSON.stringify(new URL("../app/total-goals-validation-contract.js",import.meta.url).href)}`)
-    .replace('from "../../prediction-model.js"',`from ${JSON.stringify(new URL("../app/prediction-model.js",import.meta.url).href)}`);
-   const {GET}=await import(moduleUrl(ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText)+`#${scenario}`);
-   const response=await GET(),body=await response.json();
-   assert.deepEqual(body.report,index.report);
-   if(scenario==="valid"||scenario==="cloud-valid-bundle-retired"){assert.equal(response.status,200);assert.equal(body.storageOrigin,"cloud-background-index");}
-   else if(scenario==="missing"){assert.equal(response.status,200);assert.equal(body.indexReadStatus,"cloud-report-missing");}
-   else{assert.equal(response.status,503);assert.equal(body.storageOrigin,"bundled-offline-index");assert.equal(body.indexReadStatus,"cloud-unavailable");}
-  }
- }finally{if(previous===undefined)delete process.env.NODE_ENV;else process.env.NODE_ENV=previous;}
-});
 
 test("official outage research stays separate from purchasable and archived forecasts",async()=>{
  const [route,page,report,review]=await Promise.all([
   readFile(new URL("../app/api/predictions/route.ts",import.meta.url),"utf8"),
-  readWorkspaceSource(),
+  readFile(new URL("../app/page.tsx",import.meta.url),"utf8"),
   readFile(new URL("../app/components/AiPredictionReport.tsx",import.meta.url),"utf8"),
   readFile(new URL("../app/api/predictions/ai/route.ts",import.meta.url),"utf8")
  ]);
- assert.match(route,/mode:\s*"research-only"/);
- assert.match(route,/officialMappingStatus:\s*"unmatched",\s*marketEligibility:\s*\{\}/);
- assert.match(route,/officialOdds:\s*\[\],\s*officialHandicap:\s*"",\s*officialHhadOdds:\s*\[\]/);
- assert.match(route,/if\s*\(kickoff\s*<=\s*now\)\s*return\s*\[\]/);
+ assert.match(route,/mode:"research-only"/);
+ assert.match(route,/officialMappingStatus:"unmatched",marketEligibility:\{\}/);
+ assert.match(route,/officialOdds:\[\],officialHandicap:"",officialHhadOdds:\[\]/);
+ assert.match(route,/if\(kickoff<=now\)return\[\]/);
  assert.match(page,/setResearchRows\(rows\)/);
- assert.match(page,/researchOnly\s+rows=\{researchRows\}/);
- assert.match(page,/matches:\s*predictionRows\.map\(/);
+ assert.match(page,/researchOnly rows=\{researchRows\}/);
+ assert.match(page,/matches:predictionRows\.map\(/);
  assert.match(report,/不参与选号、每日固定票或正式赛前复盘/);
- assert.match(review,/外围研究不能混入官方预测版本/);
+ assert.match(review,/外围研究赛事不能混入官方预测版本/);
 });
 
 async function loadSportteryRoute(){
- // Each mock below is a different source incident. Circuit timing has its own
- // isolated tests; do not let one synthetic incident pause the next fixture.
- const sharedSource=(await readFile(new URL("../app/sporttery-official.ts",import.meta.url),"utf8")).replace('from "./source-recovery.js"',`from ${JSON.stringify(new URL("../app/source-recovery.js",import.meta.url).href)}`).replace('const recovery = sourceRecovery();','const recovery = {run: (_key, task) => task()};'),sharedJavascript=ts.transpileModule(sharedSource,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText,sharedUrl=`data:text/javascript;base64,${Buffer.from(sharedJavascript).toString("base64")}#${Date.now()}-${Math.random()}`;
- const source=(await readFile(new URL("../app/api/sporttery/route.ts",import.meta.url),"utf8")).replace(/import\s*\{\s*NextResponse\s*\}\s*from "next\/server";/,'const NextResponse={json:(body,init={})=>new Response(JSON.stringify(body),{...init,headers:{"Content-Type":"application/json",...(init.headers||{})}})};').replace('from "../../sporttery-official"',`from "${sharedUrl}"`);
+ const sharedSource=await readFile(new URL("../app/sporttery-official.ts",import.meta.url),"utf8"),sharedJavascript=ts.transpileModule(sharedSource,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText,sharedUrl=`data:text/javascript;base64,${Buffer.from(sharedJavascript).toString("base64")}#${Date.now()}-${Math.random()}`;
+ const source=(await readFile(new URL("../app/api/sporttery/route.ts",import.meta.url),"utf8")).replace('import {NextResponse} from "next/server";','const NextResponse={json:(body,init={})=>new Response(JSON.stringify(body),{...init,headers:{"Content-Type":"application/json",...(init.headers||{})}})};').replace('from "../../sporttery-official"',`from "${sharedUrl}"`);
  const javascript=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText;
  return import(`data:text/javascript;base64,${Buffer.from(javascript).toString("base64")}#${Date.now()}-${Math.random()}`);
 }
@@ -233,7 +162,7 @@ test("official markets never fall back to demo odds and tolerate independent poo
 
   globalThis.fetch=async url=>{
    const request=new URL(String(url)),pool=request.searchParams.get("poolCode");
-   if(pool)return new Response("unavailable",{status:502});
+   if(pool)return new Response("blocked",{status:567});
    assert.equal(request.searchParams.get("channel"),"c");
    const row={...officialRow("HAD"),hhad:officialRow("HHAD").hhad,crs:officialRow("CRS").crs,ttg:officialRow("TTG").ttg,hafu:officialRow("HAFU").hafu,poolList:["HAD","HHAD","CRS","TTG","HAFU"].map(poolCode=>({poolCode,poolStatus:"Selling",bettingAllup:1,bettingSingle:1}))};
    const payload=poolPayload([row]);
@@ -257,153 +186,47 @@ test("official markets never fall back to demo odds and tolerate independent poo
  }finally{globalThis.fetch=originalFetch}
 });
 
-test("control-only official payloads are unknown manifests, not stopped sales or zero fixtures",async()=>{
- const originalFetch=globalThis.fetch,{GET}=await loadSportteryRoute();
- try{
-  globalThis.fetch=async()=>Response.json({success:true,errorCode:"0",value:{vtoolsConfig:{offLineSaleStatus:1,offLineStopMessage:"抱歉，本彩种已停止销售"}}});
-  const response=await GET(new Request("http://localhost/api/sporttery")),data=await response.json();
-  assert.equal(response.status,502);assert.equal(data.code,"OFFICIAL_MANIFEST_UNAVAILABLE");
-  assert.equal(data.sourceState.manifestState,"unknown");assert.equal(data.matches,undefined);
-  assert.match(data.error,/不能据此认定停售或今日无比赛/);
-  for(const pool of ["HAD","HHAD","CRS","TTG","HAFU"]){
-   const state=data.sourceState.poolStatus[pool];assert.equal(state.status,"failed");assert.equal(state.matchCount,null);
-   assert.deepEqual(state.issues.map(issue=>[issue.source,issue.kind]),[["primary","manifest-unavailable"],["mobile","manifest-unavailable"]]);
-  }
- }finally{globalThis.fetch=originalFetch;}
-});
-
-test("partial empty lists and error text alone cannot establish empty coverage or HTTP blocking",async()=>{
- const originalFetch=globalThis.fetch,{GET}=await loadSportteryRoute();
- try{
-  globalThis.fetch=async url=>new URL(String(url)).searchParams.get("poolCode")==="CRS"?Promise.reject(new Error("message says 返回 567 but no HTTP response")):Response.json(poolPayload());
-  let response=await GET(new Request("http://localhost/api/sporttery")),data=await response.json();
-  assert.equal(response.status,502);assert.equal(data.code,"OFFICIAL_FETCH_FAILED");assert.equal(data.sourceState.manifestState,"unknown");
-  assert.equal(data.sourceState.poolStatus.CRS.issues[0].kind,"unknown");
-  assert.match(data.detail,/官方赛事清单无法完整核验/);assert.doesNotMatch(data.detail,/五个玩法均读取失败/);
-  globalThis.fetch=async()=>Response.json(poolPayload());
-  response=await GET(new Request("http://localhost/api/sporttery"));data=await response.json();
-  assert.equal(response.status,200);assert.equal(data.manifestState,"complete");assert.deepEqual(data.matches,[]);
- }finally{globalThis.fetch=originalFetch;}
-});
-
-test("official diagnostics distinguish network, timeout, unknown and schema failures",async()=>{
- const originalFetch=globalThis.fetch,{GET}=await loadSportteryRoute();
- try{
-  for(const [error,kind] of [[new TypeError("fetch failed"),"network-error"],[Object.assign(new Error("aborted"),{name:"AbortError"}),"timeout"],[new Error("unexpected"),"unknown"],["unexpected rejection","unknown"]]){
-   globalThis.fetch=async()=>{throw error};
-   const response=await GET(new Request("http://localhost/api/sporttery")),data=await response.json();
-   assert.equal(response.status,502);assert.equal(data.code,"OFFICIAL_FETCH_FAILED");
-   assert.equal(data.sourceState.poolStatus.HAD.issues[0].kind,kind);
-  }
-  globalThis.fetch=async url=>{
-   const pool=new URL(String(url)).searchParams.get("poolCode")||"HAD",row=officialRow(pool);
-   delete row.homeTeamAbbName;
-   return Response.json(poolPayload([row]));
-  };
-  const response=await GET(new Request("http://localhost/api/sporttery")),data=await response.json();
-  assert.equal(response.status,502);assert.equal(data.sourceState.manifestState,"unknown");
-  for(const state of Object.values(data.sourceState.poolStatus)){assert.equal(state.matchCount,null);assert.equal(state.issues[0].kind,"schema-invalid");}
- }finally{globalThis.fetch=originalFetch;}
-});
-
-test("primary HTTP blocks and mobile configuration failures retain independent diagnostics",async()=>{
- const originalFetch=globalThis.fetch,{GET}=await loadSportteryRoute();
- try{
-  globalThis.fetch=async url=>new URL(String(url)).searchParams.has("poolCode")?new Response("blocked",{status:567}):Response.json({success:true,value:{vtoolsConfig:{}}});
-  const response=await GET(new Request("http://localhost/api/sporttery")),data=await response.json();
-  assert.equal(response.status,503);assert.equal(data.code,"OFFICIAL_ACCESS_BLOCKED");
-  for(const state of Object.values(data.sourceState.poolStatus)){
-   assert.equal(state.issues[0].httpStatus,567);assert.equal(state.issues[0].kind,"access-blocked");
-   assert.equal(state.issues.some(issue=>issue.source==="mobile"),false,"A protected gateway must not be retried through its calculator channel");
-  }
- }finally{globalThis.fetch=originalFetch;}
-});
-
-test("mobile prediction summaries swipe and forecast tables keep fixed headers and first columns",async()=>{
+test("mobile prediction summaries swipe while forecast rows become readable cards",async()=>{
  const [report,table,styles,mobileStyles,page,archiveNav]=await Promise.all([
   readFile(new URL("../app/components/AiPredictionReport.tsx",import.meta.url),"utf8"),
   readFile(new URL("../app/components/MarketPredictionTable.tsx",import.meta.url),"utf8"),
   readFile(new URL("../app/reference-ui.css",import.meta.url),"utf8"),
   readFile(new URL("../app/mobile-ui.css",import.meta.url),"utf8"),
-  readFile(new URL("../app/components/SiteShell.tsx",import.meta.url),"utf8"),
+  readFile(new URL("../app/page.tsx",import.meta.url),"utf8"),
   readFile(new URL("../app/components/ArchiveNavLink.tsx",import.meta.url),"utf8"),
  ]);
  assert.match(report,/左右滑动查看 5 类预测/);
  assert.match(report,/role="region"/);
  assert.match(table,/左右滑动查看完整预测数据/);
- assert.doesNotMatch(table,/手机端按场次展示全部预测/);
- assert.doesNotMatch(table,/fetch\(/,"The display table must not repeat official requests");
+ assert.match(table,/手机端按场次展示全部预测/);
  assert.match(styles,/\.prediction-overview-grid\{display:flex!important/);
  assert.match(styles,/scroll-snap-type:x mandatory/);
  assert.match(styles,/touch-action:pan-x pan-y/);
  assert.match(styles,/\.market-forecast-table th:nth-child\(9\).*width:230px!important/);
- assert.doesNotMatch(mobileStyles,/\.market-forecast-table tr\{display:grid!important/);
- assert.match(mobileStyles,/\.market-forecast-wrap\{max-height:min\(70dvh,640px\)!important;overflow:auto!important/);
- assert.match(mobileStyles,/tbody td:first-child\{position:sticky!important;left:0/);
- assert.match(mobileStyles,/thead th:first-child\{position:sticky!important;top:0;left:0/);
+ assert.match(mobileStyles,/\.market-forecast-table tr\{display:grid!important/);
+ assert.match(mobileStyles,/\.market-forecast-table td:nth-child\(n\+10\)\{display:flex!important/);
  assert.match(mobileStyles,/\.topbar\.compact-nav nav a>span\{font-size:20px!important/);
- assert.match(page,/view: "matches", href: "\/matches", icon: "▣", label: "今日比赛"/);
+ assert.match(page,/<span aria-hidden="true">▣<\/span><b>今日比赛<\/b>/);
  assert.match(archiveNav,/<span aria-hidden="true">▤<\/span><b>盘后回溯<\/b>/);
-});
-
-test("repair uses each latest official list instead of reviving removed fixtures",async()=>{
- const originalFetch=globalThis.fetch,{GET}=await loadSportteryRoute(),counts=new Map();
- try{
-  globalThis.fetch=async url=>{
-   const pool=new URL(String(url)).searchParams.get("poolCode");assert.ok(pool,"valid empty official lists must not trigger another source");
-   const count=(counts.get(pool)||0)+1;counts.set(pool,count);
-   return Response.json(poolPayload(count===1?[officialRow(pool)]:[]));
-  };
-  const response=await GET(new Request("http://localhost/api/sporttery?repairMissing=1")),data=await response.json();
-  assert.equal(response.status,200);assert.equal(data.manifestState,"complete");assert.deepEqual(data.matches,[]);
-  for(const state of Object.values(data.poolStatus)){assert.equal(state.matchCount,0);assert.ok(Number.isFinite(Date.parse(state.observedAt)));assert.ok(Date.parse(state.observedAt)<=Date.parse(data.fetchedAt));}
-  assert.deepEqual([...counts.values()],[2,2,2,2,2]);
- }finally{globalThis.fetch=originalFetch;}
 });
 
 test("mobile prediction fallback derives a traceable baseline only from official markets",async()=>{
  const source=await readFile(new URL("../app/official-prediction-fallback.ts",import.meta.url),"utf8"),javascript=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText,{buildOfficialPredictionFallback}=await import(`data:text/javascript;base64,${Buffer.from(javascript).toString("base64")}#${Date.now()}-${Math.random()}`);
- const keys=["胜平负","让球胜平负","比分","总进球数","半全场"],match={id:"周六001",matchId:"m1",officialMatchId:"m1",salesDate:"2026-09-19",matchDate:"2026-09-19",time:"20:00:00",home:"主队",away:"客队",league:"测试联赛",handicap:"-1",quoteState:"fresh",marketStatus:Object.fromEntries(keys.map(key=>[key,"available"])),marketEligibility:Object.fromEntries(keys.map(key=>[key,{qualification:"qualified"}])),marketOdds:{"胜平负":[2.1,3.2,3.4],"让球胜平负":[3.1,3.4,1.9],"比分":[7.2],"总进球数":[20,8,3.3,3.2,5,10,18,25],"半全场":[3,12,30,5,6,10,20,11,8]}};
- const now=new Date().toISOString();match.marketSource=Object.fromEntries(keys.map(key=>[key,{observedAt:now}]));
- const fallback=buildOfficialPredictionFallback([match],now),report=fallback.reports[0];
+ const match={id:"周六001",matchId:"m1",officialMatchId:"m1",salesDate:"2026-09-19",matchDate:"2026-09-19",time:"20:00:00",home:"主队",away:"客队",league:"测试联赛",handicap:"-1",marketEligibility:{"让球胜平负":{qualification:"qualified"}},marketOdds:{"胜平负":[2.1,3.2,3.4],"让球胜平负":[3.1,3.4,1.9],"比分":[7.2],"总进球数":[20,8,3.3,3.2,5,10,18,25],"半全场":[3,12,30,5,6,10,20,11,8]}};
+ const fallback=buildOfficialPredictionFallback([match],"2026-09-19T05:00:00.000Z"),report=fallback.reports[0];
  assert.equal(fallback.reports.length,1);assert.match(fallback.version.predictionId,/^official-browser-/);assert.equal(report.companies.length,0);assert.equal(report.marketSignal.hhadAvailable,true);assert.equal(report.marketSignal.officialHandicap,"-1");assert.equal(report.marketSignal.officialOdds[0],2.1);assert.ok(report.scores.length>0);assert.ok(Math.abs(report.marketProbabilities.reduce((sum,value)=>sum+value,0)-100)<0.001);
- for(const [row,time,error] of [[{...match,quoteState:"stale"},now],[match,new Date(Date.now()-300001).toISOString()],[match,""],[match,new Date(Date.now()+60000).toISOString()],[{...match,marketEligibility:{}},now],...["OFFICIAL_ACCESS_BLOCKED","OFFICIAL_MANIFEST_UNAVAILABLE","OFFICIAL_FETCH_FAILED"].map(code=>[match,now,{code}]),[match,now,{status:409}]]){
-  const blocked=buildOfficialPredictionFallback([row],time,error);assert.equal(blocked.reports.length,0);assert.equal(blocked.coverage.unavailableMatches,1);
- }
- const partial=buildOfficialPredictionFallback([{...match,marketStatus:{...match.marketStatus,"总进球数":"failed","让球胜平负":"failed","半全场":"failed"}}],now).reports[0];
- assert.equal(partial.totalGoalProbabilities,undefined);assert.equal(partial.hhadProbabilities,undefined);assert.equal(partial.halfFullProbabilities,undefined);assert.deepEqual(partial.marketSignal.modeledTotalGoals,[]);assert.deepEqual(partial.marketSignal.officialHhadOdds,[]);
- const invalid=buildOfficialPredictionFallback([{...match,marketOdds:{...match.marketOdds,"总进球数":[0,8,3.3,3.2,5,10,18,25]}}],now).reports[0];assert.equal(invalid.totalGoalProbabilities,undefined);
- for(const observedAt of [undefined,"bad-time",new Date(Date.now()-300001).toISOString(),new Date(Date.now()+60000).toISOString()]){
-  const partial=buildOfficialPredictionFallback([{...match,marketSource:{...match.marketSource,"总进球数":{observedAt}}}],now).reports[0];
-  assert.equal(partial.totalGoalProbabilities,undefined);assert.deepEqual(partial.marketSignal.modeledTotalGoals,[]);
- }
- const short=buildOfficialPredictionFallback([{...match,marketOdds:{...match.marketOdds,"总进球数":[2,3],"半全场":[2,3]}}],now).reports[0];assert.deepEqual(short.marketSignal.modeledTotalGoals,[]);assert.deepEqual(short.marketSignal.modeledHalfFull,[]);
-});
-
-test("match-board merge keeps omitted or failed quotes unavailable for selection",async()=>{
- const page=await readWorkspaceSource(),snippet=page.slice(page.indexOf("export const matchCacheKey"),page.indexOf("export const fairMarketPoints")).replaceAll("export ",""),javascript=ts.transpileModule(snippet,{compilerOptions:{target:ts.ScriptTarget.ES2022}}).outputText;
- const {mergeOfficialMatches,oddsFor}=new Function(`${javascript};return {mergeOfficialMatches,oddsFor};`)();
- const match={id:"周六001",officialMatchId:"m1",salesDate:"2026-09-19",marketOdds:{"胜平负":[2,3,4]},marketStatus:{"胜平负":"available"},marketEligibility:{"胜平负":{qualification:"qualified"}}};
- assert.equal(oddsFor(mergeOfficialMatches([match],[])[0],"胜平负"),null);
- assert.equal(oddsFor(mergeOfficialMatches([match],[{...match,marketOdds:{"胜平负":null},marketStatus:{"胜平负":"failed"}}])[0],"胜平负"),null);
- assert.equal(oddsFor(mergeOfficialMatches([match],[{...match,marketEligibility:{"胜平负":{qualification:"unknown"}}}])[0],"胜平负"),null);
- assert.deepEqual(oddsFor(mergeOfficialMatches([match],[match])[0],"胜平负"),[2,3,4]);
- assert.equal(mergeOfficialMatches([],[match])[0].quoteState,"fresh");
- assert.doesNotMatch(page,/buildOfficialPredictionFallback\(/,"A failed server prediction must not create a new browser-only current version");
- assert.match(page,/新预测未完成：[\s\S]*没有服务端不可变版本/);
 });
 
 test("production match board has explicit official-data states and no demo fallback",async()=>{
- const page=await readWorkspaceSource();
- assert.match(page,/type DataState\s*=\s*"loading"[\s\S]*"success"[\s\S]*"stale"[\s\S]*"empty"[\s\S]*"error"/);
- assert.match(page,/liveMatches\.slice\(\)\.sort\(compareMatchesByDateAndSequence\)/);
- assert.match(page,/const compareMatchesByDateAndSequence\s*=/);
- assert.match(page,/const oddsFor[\s\S]*return null/);
+ const page=await readFile(new URL("../app/page.tsx",import.meta.url),"utf8");
+ assert.match(page,/type DataState="loading"\|"success"\|"stale"\|"empty"\|"error"/);
+ assert.match(page,/const allMatches=useMemo\(\(\)=>liveMatches\.slice\(\)\.sort\(compareMatchesByDateAndSequence\)/);
+ assert.match(page,/const compareMatchesByDateAndSequence=/);
+ assert.match(page,/const oddsFor=.*return null/);
  assert.match(page,/暂未开售或暂无官方赔率/);
  assert.match(page,/全部赔率选择和新预测已暂停/);
  assert.match(page,/internalError instanceof OfficialAccessBlockedError/);
- assert.match(page,/刷新不能解除限制/);
- assert.match(page,/<details>\s*<summary>查看读取失败详情<\/summary>/);
+ assert.match(page,/刷新无法解除访问限制/);
  assert.doesNotMatch(page,/liveMatches\.length\?liveMatches:demoMatches/);
  assert.doesNotMatch(page,/demoMatches|比赛研究样例/);
  assert.doesNotMatch(page,/const marketOdds:Record<Market,number\[\]>/);
@@ -449,7 +272,7 @@ test("post-match deviation rules distinguish strong reversals and total-goal ran
  const high=buildPostMatchReview(base,{fullScore:"4:1",handicap:"-1"});
  assert.equal(high.totalTopTwoMatched,false);
  assert.ok(high.causeTags.includes("大球偏离"));
- assert.ok(!high.improvementAreas.includes("总进球校准"));assert.equal(high.predictability,"未评估");
+ assert.ok(high.improvementAreas.includes("总进球校准"));
  const low=buildPostMatchReview(base,{fullScore:"0:0",handicap:"-1"});
  assert.ok(low.causeTags.includes("小球偏离"));
 });
@@ -459,21 +282,20 @@ test("historical calibration is wired into predictions without treating missing 
   readFile(new URL("../app/components/PredictionArchive.tsx",import.meta.url),"utf8"),
   readFile(new URL("../app/post-match-review.ts",import.meta.url),"utf8"),
   readFile(new URL("../app/api/predictions/route.ts",import.meta.url),"utf8"),
-  readWorkspaceSource(),
+  readFile(new URL("../app/page.tsx",import.meta.url),"utf8"),
   readFile(new URL("../app/api/predictions/ai/route.ts",import.meta.url),"utf8"),
   readFile(new URL("../app/calibration-service.ts",import.meta.url),"utf8"),
  ]);
  assert.match(archive,/probabilityTemperature/);
  assert.match(archive,/未参与调参的未来测试成绩/);
  assert.match(engine,/predictedGoalPoint&&!totalTopTwoMatched/);
- assert.match(engine,/单场结果不证明排序/);
+ assert.match(engine,/actualHalfFull&&halfFull\.length&&!halfFullMatched/);
  assert.match(predictions,/predictFromSnapshot/);
  assert.match(predictions,/goalDispersion/);
  assert.doesNotMatch(page,/PREDICTION_CALIBRATION_STORAGE_KEY/);
  assert.match(predictions,/getPublishedCalibration/);
  assert.match(calibration,/decisionTargetAt/);
- assert.match(calibration,/selectDecisionObservations/);
- assert.equal(selectDecisionObservations([]).policy,"actual_information_not_after_fixed_target_v2");
+ assert.match(calibration,/latest_not_after_official_target_v1/);
  assert.match(calibration,/selected\.slice\(0,\s*trainEnd\)/);
  assert.match(calibration,/selected\.slice\(trainEnd,\s*calibrationEnd\)/);
  assert.match(calibration,/selected\.slice\(calibrationEnd\)/);
@@ -481,10 +303,8 @@ test("historical calibration is wired into predictions without treating missing 
   assert.match(calibration,/promotionCandidate:\s*evaluation\.status\s*===\s*"validated"/);
   assert.match(calibration,/未来独立样本 ≥ 100/);
   assert.doesNotMatch(calibration,/flag:"wx"/);
- assert.match(ai,/resolveContextEvidence/);
- assert.match(ai,/applyEvidenceReviews/);
- assert.match(ai,/intelligenceWeightMultiplier:0/);
- assert.doesNotMatch(ai,/applyAiReviewVersion/);
+ assert.match(ai,/intelligenceCoverage/);
+ assert.match(ai,/只有盘口、没有独立赛前情报时必须返回0/);
 });
 
 test("small independent calibration samples keep temperature at one",async()=>{
@@ -492,7 +312,6 @@ test("small independent calibration samples keep temperature at one",async()=>{
  const source=(await readFile(new URL("../app/calibration-service.ts",import.meta.url),"utf8"))
   .replace('from "./prediction-model.js"',`from "${new URL("../app/prediction-model.js",import.meta.url).href}"`)
   .replace('from "./snapshot-decision-policy.js"',`from "${policyUrl}"`)
-  .replace('from "./probability-evaluation.js"',`from "${new URL("../app/probability-evaluation.js",import.meta.url).href}"`)
   .replace(/import\.meta\.glob<ModelCalibrationProfile>\([^;]+\);/,"{};");
  const javascript=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText;
  const {buildCalibrationEvaluation,MIN_TEMPERATURE_CALIBRATION_MATCHES}=await import(`data:text/javascript;base64,${Buffer.from(javascript).toString("base64")}`);
@@ -580,91 +399,54 @@ test("market probability highlights remain visible on zebra and hovered rows",as
  assert.match(table,/expandedExpectations/);
  assert.match(table,/aria-expanded=\{expanded\}/);
  assert.match(table,/展开全部/);
- assert.match(table,/前2\s*<br\s*\/>\s*概率和/);
- assert.match(table,/goalCoverage\s*>\s*50\s*\?\s*"goal-top2"/);
- assert.match(table,/rank\s*===\s*0\s*\?\s*"goal-prob-first"\s*:\s*rank\s*===\s*1\s*\?\s*"goal-prob-second"/);
- assert.match(table,/goalPicks\.map\(\(?item\)?\s*=>\s*item\.label\)\.join\(" \/ "\)/);
- assert.match(table,/SCORE_TOP_TWO_COVERAGE_THRESHOLD\s*=\s*25/);
- assert.match(table,/SCORE_SINGLE_PROBABILITY_THRESHOLD\s*=\s*15/);
- assert.match(table,/scoreTopTwoCoverage\s*>\s*SCORE_TOP_TWO_COVERAGE_THRESHOLD\s*\?\s*"score-coverage-high"/);
- assert.match(table,/item\?\.probability\s*\|\|\s*0\)\s*>\s*SCORE_SINGLE_PROBABILITY_THRESHOLD/);
+ assert.match(table,/前2<br\/>概率和/);
+ assert.match(table,/goalCoverage>50\?"goal-top2"/);
+ assert.match(table,/rank===0\?"goal-prob-first":rank===1\?"goal-prob-second"/);
+ assert.match(table,/goalPicks\.map\(item=>item\.label\)\.join\(" \/ "\)/);
+ assert.match(table,/SCORE_TOP_TWO_COVERAGE_THRESHOLD=25/);
+ assert.match(table,/SCORE_SINGLE_PROBABILITY_THRESHOLD=15/);
+ assert.match(table,/scoreTopTwoCoverage>SCORE_TOP_TWO_COVERAGE_THRESHOLD\?"score-coverage-high"/);
+ assert.match(table,/item\?\.probability\|\|0\)>SCORE_SINGLE_PROBABILITY_THRESHOLD/);
  assert.match(styles,/forecast-expectation\.expanded>span[^]*-webkit-line-clamp:unset!important/);
  assert.match(styles,/forecast-view-score td\.forecast-expectation\{text-align:left!important\}/);
 });
 
-test("daily purchase drafts preserve fixed definitions while screening the formal portfolio",()=>{
- const reports=Array.from({length:8},(_,index)=>({id:`周一00${index+1}`,officialMatchId:`official-${index+1}`,officialMappingStatus:"verified",salesDate:"2026-09-08",matchDate:"2026-09-08",kickoffAt:"2026-09-08T20:00:00+08:00",sourceFetchedAt:"2026-09-08T16:55:00+08:00",league:"测试联赛",home:`主队${index+1}`,away:`客队${index+1}`,matchStatus:"Selling",isMock:false,handicap:"-1",hadProbabilities:[{score:"胜",probability:70-index*.2},{score:"平",probability:16},{score:"负",probability:14+index*.2}],hhadProbabilities:[{score:"让胜",probability:35},{score:"让平",probability:35-index*.2},{score:"让负",probability:30+index*.2}],fullScoreDistribution:scoreGridFixture({"1:0":35-index*.2,"2:0":35,"1:1":16,"0:1":14+index*.2}),totalGoalProbabilities:completePoints(MARKET_META.total.labels,{"1球":49,"2球":51}),halfFullProbabilities:completePoints(MARKET_META.halfFull.labels,{"胜胜":36,"平胜":24,"平平":14})}));
+test("daily purchase drafts generate all fixed traceable ticket types and settle alternatives",()=>{
+ const reports=Array.from({length:8},(_,index)=>({id:`周一00${index+1}`,officialMatchId:`official-${index+1}`,officialMappingStatus:"verified",salesDate:"2026-09-08",matchDate:"2026-09-08",kickoffAt:"2026-09-08T20:00:00+08:00",sourceFetchedAt:"2026-09-08T16:55:00+08:00",league:"测试联赛",home:`主队${index+1}`,away:`客队${index+1}`,matchStatus:"Selling",isMock:false,handicap:"-1",hadProbabilities:[{score:"胜",probability:70-index*.2},{score:"平",probability:16},{score:"负",probability:14+index*.2}],hhadProbabilities:[{score:"让胜",probability:48},{score:"让平",probability:30},{score:"让负",probability:22}],combinedScores:[{score:"1:0",probability:20},{score:"2:0",probability:15}],totalGoalProbabilities:[{score:"2球",probability:28},{score:"3球",probability:25}],halfFullProbabilities:[{score:"胜胜",probability:36},{score:"平胜",probability:24},{score:"平平",probability:14}]}));
  const qualified=(marketCode,handicap)=>({marketCode,salesStatus:"Selling",qualification:"qualified",handicap,allowedPassCounts:[1,2,3,4,5,6,7,8],cutoffAt:"2026-09-08T19:50:00+08:00",ruleVersion:"test"});
- const officialMatches=reports.map(report=>({id:report.id,officialMatchId:report.officialMatchId,salesDate:report.salesDate,matchDate:report.matchDate,kickoffAt:report.kickoffAt,matchStatus:"Selling",marketOdds:{"胜平负":[2.1,3.2,4],"让球胜平负":[3.1,3.4,1.9],"比分":Array(31).fill(9),"总进球数":[24,12,7,6.4,10,16,24,32],"半全场":[4,12,25,5,6,14,18,13,7]},marketEligibility:{"胜平负":qualified("HAD"),"让球胜平负":qualified("HHAD","-1"),"比分":qualified("CRS"),"总进球数":qualified("TTG"),"半全场":qualified("HAFU")}}));
+ const officialMatches=reports.map(report=>({id:report.id,officialMatchId:report.officialMatchId,salesDate:report.salesDate,matchDate:report.matchDate,kickoffAt:report.kickoffAt,matchStatus:"Selling",marketOdds:{"胜平负":[2.1,3.2,4],"让球胜平负":[3.1,3.4,1.9],"比分":Array(31).fill(9),"总进球数":[12,6,3.5,3.2,5,8,12,16],"半全场":[4,12,25,5,6,14,18,13,7]},marketEligibility:{"胜平负":qualified("HAD"),"让球胜平负":qualified("HHAD","-1"),"比分":qualified("CRS"),"总进球数":qualified("TTG"),"半全场":qualified("HAFU")}}));
  const set=generatePurchasePlans({date:"2026-09-08",reports,officialMatches,generatedAt:"2026-09-08T09:00:00.000Z"});
  assert.equal(set.plans.length,21);assert.deepEqual(set.plans.map(plan=>plan.id),["score-double-3","score-single-2","score-double-2","score-single-3","total-double-3","total-double-2","total-single-2","draw-or-handicap-draw-2","draw-or-handicap-draw-3","result-mixed-3","result-mixed-4","result-mixed-5","had-safe-2","tenfold-safe-2","tenfold-safe-3","tenfold-safe-4","half-full-double-3","twofold-a","twofold-b","twofold-c","half-full-double-2"]);
- const accepted=set.plans.filter(plan=>plan.status==="pending"),policy=DEFAULT_RECOMMENDATION_POLICY;
- assert.ok(accepted.length>0,"A complete positive-EV fixture must exercise accepted tickets");
- assert.ok(accepted.length<=policy.maxTickets);
- assert.equal(set.decisionSummary.coverage.missingEligibleCount,0);
- assert.equal(set.decisionSummary.evaluated,true);
- assert.equal(set.riskSelection.selected,accepted.length);
- assert.ok(set.portfolio.totalStake<=policy.dailyBudget);
- assert.equal(set.portfolio.duplicateTickets,0);
- assert.equal(new Set(accepted.map(plan=>canonicalTicketKey(plan.items))).size,accepted.length);
- for(const exposure of set.portfolio.fixtures)assert.ok(exposure.stake<=policy.maxFixtureStake);
- for(const exposure of set.portfolio.leagues)assert.ok(exposure.stake<=policy.maxLeagueStake);
- for(let a=0;a<accepted.length;a++)for(let b=a+1;b<accepted.length;b++)assert.ok(accepted[a].items.filter(item=>accepted[b].items.some(other=>ticketFixtureKey(item)===ticketFixtureKey(other))).length<=policy.maxSharedFixturesPerPair);
- const fixtureTickets=new Map();
- for(const plan of accepted){
-  const definition=PURCHASE_PLAN_DEFINITIONS.find(item=>item.id===plan.id),economics=calculateTicketEconomics(plan.items),assessment=assessRecommendation(plan.items);
-  assert.equal(plan.items.length,definition.matches);
-  assert.equal(plan.passName,definition.matches+"串1");
-  assert.equal(plan.betCount,definition.selections**definition.matches);
-  assert.equal(plan.stake,plan.betCount*2);
-  assert.equal(new Set(plan.items.map(ticketFixtureKey)).size,plan.items.length);
-  assert.ok(plan.items.every(item=>definition.markets.includes(item.market)&&item.market!=="halfFull"&&item.picks.length===definition.selections&&item.probability>=(definition.minLegProbability||0)));
-  if(definition.allowedPicks)assert.ok(plan.items.every(item=>item.picks.every(pick=>definition.allowedPicks.includes(pick.pick))));
-  if(definition.mixed)assert.ok(new Set(plan.items.map(item=>item.market)).size>=2);
-  assert.ok(assessment.eligible);
-  assert.ok(economics.expectedROI>=policy.minExpectedROI);
-  assert.ok(assessment.sensitivity.low.expectedProfit>=0);
-  assert.ok(plan.minWinningProfit>=(definition.minProfitMultiplier||0)*plan.stake);
-  if(Number.isFinite(definition.targetNetProfit)){assert.equal(definition.targetProfitTolerance,0);assert.ok(plan.minWinningProfit>=definition.targetNetProfit);}
-  assert.ok(plan.maxWinningReturn>=plan.minWinningReturn);
-  for(const item of plan.items)fixtureTickets.set(ticketFixtureKey(item),(fixtureTickets.get(ticketFixtureKey(item))||0)+1);
- }
- assert.ok([...fixtureTickets.values()].every(count=>count<=policy.maxTicketsPerFixture));
- for(const plan of set.plans.filter(plan=>plan.id.startsWith("half-full-"))){assert.equal(plan.status,"unavailable");assert.equal(plan.reasonCode,"research_only");assert.deepEqual(plan.items,[]);}
- assert.ok(!set.plans.some(plan=>plan.id==="had-double-2"||plan.id==="total-adjacent-double-2"));
+ assert.equal(set.plans[0].betCount,8);assert.equal(set.plans[0].stake,16);assert.equal(set.plans[1].betCount,1);assert.equal(set.plans[1].stake,2);assert.equal(set.plans[2].betCount,4);assert.equal(set.plans[4].betCount,8);assert.equal(set.plans[5].betCount,4);assert.equal(set.plans[5].stake,8);assert.equal(set.plans[6].betCount,1);
+ assert.ok(set.plans[5].items.every(item=>item.market==="total"&&item.picks.length===2));
+ assert.ok(set.plans[7].items.every(item=>item.pick==="平"||item.pick==="让平"));
+ assert.ok(set.plans[8].items.every(item=>item.pick==="平"||item.pick==="让平"));
+ assert.ok(set.plans[12].items.every(item=>item.probability>=50));
+ assert.ok(!set.plans.some(plan=>plan.id==="had-double-2"));
+ for(const [index,matches] of [[13,2],[14,3],[15,4]]){assert.equal(set.plans[index].items.length,matches);assert.equal(set.plans[index].stake,2);assert.equal(set.plans[index].betCount,1);assert.ok(set.plans[index].minWinningProfit>0);assert.ok(set.plans[index].items.every(item=>item.probability>=30&&item.picks.length===1))}
+ assert.ok(!set.plans.some(plan=>plan.id==="total-adjacent-double-2"),"相同的相邻进球票不能重复生成");
+ assert.equal(set.plans[16].passName,"3串1");assert.equal(set.plans[16].betCount,8);assert.equal(set.plans[16].stake,16);assert.ok(set.plans[16].minWinningProfit>0);
+ assert.ok(set.plans[16].items.every(item=>item.market==="halfFull"&&item.picks.length===2));
+ const twofold=set.plans.filter(plan=>plan.id.startsWith("twofold-"));
+ assert.equal(twofold.length,3);
+ assert.equal(new Set(twofold.map(plan=>plan.items.map(item=>`${item.officialMatchId}:${item.market}:${item.pick}`).sort().join("|"))).size,3);
+ for(const plan of twofold){assert.equal(plan.passName,"2串1");assert.equal(plan.stake,2);assert.ok(plan.minWinningProfit>=plan.stake*2);assert.ok(plan.items.every(item=>item.picks.length===1&&item.probability>=30));}
+ const halfFullDouble=set.plans.find(plan=>plan.id==="half-full-double-2");
+ assert.equal(halfFullDouble.passName,"2串1");assert.equal(halfFullDouble.betCount,4);assert.equal(halfFullDouble.stake,8);assert.ok(halfFullDouble.items.every(item=>item.market==="halfFull"&&item.picks.length===2));
  assert.ok(PURCHASE_PLAN_DEFINITIONS.every(definition=>/单选|双选/.test(definition.title)&&/\d串1/.test(definition.title)));
- const first=accepted[0];
- const results=first.items.map(item=>{
-  const pick=item.picks[0].pick,fullScore=item.market==="score"?({"胜其他":"6:0","平其他":"4:4","负其他":"0:6"}[pick]||pick):item.market==="total"?parseInt(pick)+":0":item.market==="hhad"?{"让胜":"2:0","让平":"1:0","让负":"0:0"}[pick]:{"胜":"1:0","平":"0:0","负":"0:1"}[pick];
-  return {id:item.matchId,matchId:item.officialMatchId,date:"2026-09-08",fullScore,scoreResult:item.market==="score"?pick:undefined,hhadResult:item.market==="hhad"?pick.replace("让",""):undefined,status:"settled"};
- });
+ for(const plan of set.plans){assert.equal(plan.status,"pending");assert.equal(new Set(plan.items.map(item=>item.matchId)).size,plan.items.length);assert.ok(plan.maxWinningReturn>=plan.minWinningReturn)}
+ const first=set.plans[0],results=first.items.map(item=>({id:item.matchId,matchId:item.officialMatchId,date:"2026-09-08",fullScore:"2:0",scoreResult:"2:0",status:"settled"}));
  assert.equal(settlePurchasePlan(first,results).status,"won");
- const budgetBlocked=generatePurchasePlans({date:"2026-09-08",reports,officialMatches,generatedAt:"2026-09-08T09:00:00.000Z",riskPolicy:{...policy,dailyBudget:0}});
- assert.ok(budgetBlocked.riskSelection.modelEligibleCount>0,"Zero budget must reject valid candidates, not hide missing data");
- assert.equal(budgetBlocked.riskSelection.selected,0);
- assert.equal(budgetBlocked.portfolio.totalStake,0);
- assert.ok(budgetBlocked.plans.every(plan=>plan.status==="unavailable"));
- const incomplete=reports.map(report=>({...report,fullScoreDistribution:report.fullScoreDistribution.slice(0,168),hadProbabilities:report.hadProbabilities.slice(0,2),hhadProbabilities:report.hhadProbabilities.slice(0,2),totalGoalProbabilities:report.totalGoalProbabilities.slice(0,7)}));
- const incompleteSet=generatePurchasePlans({date:"2026-09-08",reports:incomplete,officialMatches,generatedAt:"2026-09-08T09:00:00.000Z"});
- assert.equal(incompleteSet.riskSelection.selected,0);assert.equal(incompleteSet.decisionSummary.noBet,false);assert.equal(incompleteSet.decisionSummary.coverage.missingEligibleCount,reports.length);
- const staleSet=generatePurchasePlans({date:"2026-09-08",reports:reports.map(report=>({...report,sourceFetchedAt:"2026-09-08T14:00:00+08:00"})),officialMatches,generatedAt:"2026-09-08T09:00:00.000Z"});
- assert.equal(staleSet.riskSelection.selected,0);assert.equal(staleSet.decisionSummary.noBet,false);assert.equal(staleSet.decisionSummary.coverage.missingEligibleCount,reports.length);
- const closed=officialMatches.map(match=>({...match,marketEligibility:Object.fromEntries(Object.entries(match.marketEligibility).map(([name,qualification])=>[name,{...qualification,cutoffAt:"2026-09-08T17:00:00+08:00"}]))}));
- const closedSet=generatePurchasePlans({date:"2026-09-08",reports,officialMatches:closed,generatedAt:"2026-09-08T09:00:00.000Z"});
- assert.equal(closedSet.riskSelection.selected,0);assert.equal(closedSet.portfolio.totalStake,0);
 });
 
 test("new fixed tickets exclude negative minimum profit and show per-match expected returns",()=>{
  const leg=calculatePurchaseLegReturns({picks:[{pick:"0球",probability:55,odd:1.2},{pick:"1球",probability:45,odd:1.3}]});
  assert.equal(Number(leg.expectedReturn.toFixed(2)),2.49);
  assert.deepEqual({stake:leg.stake,minWinningReturn:leg.minWinningReturn,maxWinningReturn:leg.maxWinningReturn,minWinningProfit:leg.minWinningProfit,maxWinningProfit:leg.maxWinningProfit},{stake:4,minWinningReturn:2.4,maxWinningReturn:2.6,minWinningProfit:-1.6,maxWinningProfit:-1.4});
- const reports=[1,2].map(index=>({id:`周一00${index}`,officialMatchId:`official-${index}`,officialMappingStatus:"verified",salesDate:"2026-09-08",matchDate:"2026-09-08",kickoffAt:"2026-09-08T20:00:00+08:00",sourceFetchedAt:"2026-09-08T16:55:00+08:00",home:`主队${index}`,away:`客队${index}`,matchStatus:"Selling",totalGoalProbabilities:completePoints(MARKET_META.total.labels,{"0球":55,"1球":45})}));
+ const reports=[1,2].map(index=>({id:`周一00${index}`,officialMatchId:`official-${index}`,officialMappingStatus:"verified",salesDate:"2026-09-08",matchDate:"2026-09-08",kickoffAt:"2026-09-08T20:00:00+08:00",sourceFetchedAt:"2026-09-08T16:55:00+08:00",home:`主队${index}`,away:`客队${index}`,matchStatus:"Selling",totalGoalProbabilities:[{score:"0球",probability:55},{score:"1球",probability:45}]}));
  const officialMatches=reports.map(report=>({officialMatchId:report.officialMatchId,salesDate:report.salesDate,kickoffAt:report.kickoffAt,matchStatus:"Selling",marketOdds:{"总进球数":[1.2,1.3,0,0,0,0,0,0]},marketEligibility:{"总进球数":{marketCode:"TTG",salesStatus:"Selling",qualification:"qualified",allowedPassCounts:[2],cutoffAt:"2026-09-08T19:50:00+08:00"}}}));
  const set=generatePurchasePlans({date:"2026-09-08",reports,officialMatches,generatedAt:"2026-09-08T17:00:00+08:00"});
  assert.equal(set.plans.find(plan=>plan.id==="total-double-2").status,"unavailable");
- assert.equal(set.decisionSummary.coverage.missingEligibleCount,0);
- assert.equal(set.decisionSummary.noBet,false,"单选命中后不亏的组合不再因负期望被排除");
- assert.ok(set.decisionSummary.rejectionCounts.nonPositiveEV>0,"负期望仍保留为审计指标");
  assert.ok(set.plans.filter(plan=>plan.id.startsWith("twofold-")).every(plan=>plan.status==="unavailable"),"低赔率不得被包装成2倍盈利票");
  assert.ok(set.plans.filter(plan=>plan.status!=="unavailable").every(plan=>plan.minWinningProfit>=0));
 });
@@ -689,12 +471,12 @@ test("daily purchase history is split into modules with independent hit-rate and
   {id:"half-full-double-3",status:"field_pending",stake:16,simulatedReturn:0},
   {id:"tenfold-safe-2",status:"corrected_won",stake:2,simulatedReturn:22},
  ]}]);
- assert.deepEqual(summary.score,{settled:2,refunded:0,won:1,rate:50,stake:18,returned:90,net:72});
- assert.deepEqual(summary.total,{settled:0,refunded:0,won:0,rate:0,stake:0,returned:0,net:0});
- assert.deepEqual(summary.result,{settled:1,refunded:0,won:0,rate:0,stake:2,returned:0,net:-2});
- assert.deepEqual(summary.draw,{settled:1,refunded:0,won:1,rate:100,stake:2,returned:12,net:10});
- assert.deepEqual(summary.halfFull,{settled:0,refunded:0,won:0,rate:0,stake:0,returned:0,net:0});
- assert.deepEqual(summary.tenfold,{settled:1,refunded:0,won:1,rate:100,stake:2,returned:22,net:20});
+ assert.deepEqual(summary.score,{settled:2,won:1,rate:50,stake:18,returned:90,net:72});
+ assert.deepEqual(summary.total,{settled:0,won:0,rate:0,stake:0,returned:0,net:0});
+ assert.deepEqual(summary.result,{settled:1,won:0,rate:0,stake:2,returned:0,net:-2});
+ assert.deepEqual(summary.draw,{settled:1,won:1,rate:100,stake:2,returned:12,net:10});
+ assert.deepEqual(summary.halfFull,{settled:0,won:0,rate:0,stake:0,returned:0,net:0});
+ assert.deepEqual(summary.tenfold,{settled:1,won:1,rate:100,stake:2,returned:22,net:20});
 });
 
 test("each fixed ticket has independent cross-date settlement and visible pending rows",()=>{
@@ -753,7 +535,7 @@ test("settlement keeps missing fields pending and isolates official ids by date"
  const missingHalf={id:"周一001",matchId:"same-id",date:"2026-09-08",fullScore:"2:0",halfScore:"",status:"settled"},pending=settlePurchasePlan(plan,[missingHalf]);
  assert.equal(pending.status,"field_pending");assert.equal(pending.items[0].result,"字段待补");assert.equal(pending.items[0].finalScore,"2:0");
  const settled=settlePurchasePlan(plan,[{...missingHalf,halfScore:"1:0"}]);assert.equal(settled.status,"won");assert.equal(settled.simulatedReturn,6);assert.equal(settled.items[0].finalScore,"2:0");
- const voided=settlePurchasePlan(plan,[{...missingHalf,status:"void",voidRule:"odds_one"}]);assert.equal(voided.status,"refunded");assert.equal(voided.simulatedReturn,2);assert.equal(voided.items[0].settlementState,"void_settled");
+ const voided=settlePurchasePlan(plan,[{...missingHalf,status:"void",voidRule:"odds_one"}]);assert.equal(voided.status,"void_won");assert.equal(voided.simulatedReturn,2);
 });
 
 test("verified full-time scores settle total-goal tickets when the market field is absent",async()=>{
@@ -793,14 +575,9 @@ test("17:00 snapshot persists purchase drafts and the recommendation page expose
   readFile(new URL("../app/reference-ui.css",import.meta.url),"utf8"),
   readFile(new URL("../scripts/sync-prediction-decision-index.mjs",import.meta.url),"utf8"),
  ]);
- assert.match(capture,/async function appendPurchasePlans\(\)\{return null;\}/);
- assert.doesNotMatch(capture,/generatePurchasePlans/);
- assert.match(purchaseCapture,/generatePurchasePlans/);
- assert.match(purchaseCapture,/verifyPurchasePlanCompletion/);
- assert.match(purchaseCapture,/priorPlans:slot==="2100"\?earlier\.plans:\[\]/);
- const projection=await readFile(new URL("../app/raw-snapshot-projection.js",import.meta.url),"utf8");
- assert.match(api,/projectRawPredictionSnapshot as toSnapshot/);
- assert.match(projection.replace(/\s/g,""),/purchasePlans:plan\?\.plans\|\|raw\.purchasePlans/);
+ assert.match(capture,/slot !== "1700"/);
+ assert.match(capture,/generatePurchasePlans/);
+ assert.match(api,/purchasePlans:plan\?\.plans\|\|raw\.purchasePlans/);
  assert.match(component,/每日固定组合票/);
  assert.match(component,/17:00 场次/);
  assert.match(component,/21:00 场次/);
@@ -813,7 +590,7 @@ test("17:00 snapshot persists purchase drafts and the recommendation page expose
  assert.match(component,/settlePurchasePlan/);
  assert.match(component,/每注2元/);
  assert.match(component,/prediction-snapshots\?view=recommendations/);
- assert.match(component,/fetchHistoricalPurchaseResults\(formalSets,cachedResults,frozenProbabilitySnapshots\)/);
+ assert.match(component,/fetchHistoricalPurchaseResults\(formalSets,cachedResults\)/);
  assert.match(component,/promoteSavedPurchaseTrial/);
  assert.match(component,/赛果查询失败，相关组合暂不计入已结算/);
  assert.match(component,/purchase-plan-module/);
@@ -888,13 +665,9 @@ test("September 23 and 24 recovery keeps provenance and never invents full forec
  assert.equal(results.results.length,11);
  assert.equal(new Set(results.results.map(result=>result.matchId)).size,11);
  assert.ok(results.results.every(result=>/^\d+:\d+$/.test(result.fullScore)&&/^\d+:\d+$/.test(result.halfScore)));
- cloudReadTypes.length=0;
  const response=await render("/api/prediction-snapshots");
  assert.equal(response.status,200);
  const payload=await response.json();
- assert.equal(payload.cloudCaptureStatus,"available");
- assert.equal(payload.cloudError,null);
- assert.deepEqual(cloudReadTypes,["raw","purchase","source-attempt"]);
  assert.equal(payload.snapshots.find(snapshot=>snapshot.snapshotId==="2026-09-23-recovered-review-v1")?.matches.length,3);
  assert.equal(payload.snapshots.find(snapshot=>snapshot.snapshotId==="2026-09-24-recovered-review-v1")?.matches.length,8);
  assert.equal(Object.keys(payload.resultCorrections).length,11);
@@ -908,7 +681,7 @@ test("one immutable prediction version supplies prediction, recommendation and a
   readFile(new URL("../app/prediction-version.ts",import.meta.url),"utf8"),
   readFile(new URL("../app/api/predictions/route.ts",import.meta.url),"utf8"),
   readFile(new URL("../app/api/predictions/ai/route.ts",import.meta.url),"utf8"),
-  readWorkspaceSource(),
+  readFile(new URL("../app/page.tsx",import.meta.url),"utf8"),
   readFile(new URL("../app/components/TodayRecommendations.tsx",import.meta.url),"utf8"),
   readFile(new URL("../app/components/PredictionArchive.tsx",import.meta.url),"utf8"),
   readFile(new URL("../scripts/capture-prediction-snapshot.mjs",import.meta.url),"utf8"),
@@ -940,41 +713,34 @@ test("one immutable prediction version supplies prediction, recommendation and a
  assert.match(recommendations,/match\.salesDate \|\| match\.matchDate \|\| match\.kickoffAt/);
  assert.match(recommendations,/current\?\.salesDate/);
  assert.match(page,/竞彩开售日/);
- assert.match(page,/match\.salesDate \|\| match\.matchDate/);
+ assert.match(page,/match\.salesDate\|\|match\.matchDate/);
  assert.match(archive,/预测版本 \{selected\.predictionId\}/);
  assert.match(capture,/body: JSON\.stringify\(\{ version: raw\.version, reports: raw\.reports \}\)/);
 });
 
 test("pre-match snapshots are append-only and keep prediction layers separate",async()=>{
- const [capture,purchaseCapture,api,page,recommendations,storage]=await Promise.all([
+ const [capture,api,page,recommendations,storage]=await Promise.all([
   readFile(new URL("../scripts/capture-prediction-snapshot.mjs",import.meta.url),"utf8"),
-  readFile(new URL("../scripts/capture-purchase-plan-snapshot.mjs",import.meta.url),"utf8"),
   readFile(new URL("../app/api/prediction-snapshots/route.ts",import.meta.url),"utf8"),
-  readWorkspaceSource(),
+  readFile(new URL("../app/page.tsx",import.meta.url),"utf8"),
   readFile(new URL("../app/components/TodayRecommendations.tsx",import.meta.url),"utf8"),
   readFile(new URL("../app/browser-storage.ts",import.meta.url),"utf8"),
  ]);
  assert.match(capture,/flag: "wx"/);
  assert.match(capture,/recordType: "raw-prediction-snapshot"/);
  assert.match(capture,/\.supplement\.ai\./);
- assert.doesNotMatch(capture,/\.supplement\.plans\./);
- assert.match(purchaseCapture,/recordType:"purchase-plan-snapshot"/);
- assert.match(purchaseCapture,/flag:"wx"/);
- assert.match(purchaseCapture,/const verifiedOfficialMatches=resolveServerOfficialMatches\(predictionData,matches,date\)/);
- assert.match(purchaseCapture,/officialMatches:verifiedOfficialMatches/);
- assert.match(purchaseCapture,/verifyPurchasePlanCompletion\(planSet,verifiedOfficialMatches,capturedAt\)/);
+ assert.match(capture,/\.supplement\.plans\./);
+ assert.match(capture,/officialMatches: raw\.officialMatches/);
  assert.match(capture,/scheduledAt/);
  assert.match(capture,/upstreamUpdatedAt/);
  assert.match(capture,/aiCompletedAt/);
  assert.match(capture,/oddsBaseline/);
  assert.match(capture,/intelligenceOutput/);
  assert.match(capture,/fusionOutput/);
- const projection=(await readFile(new URL("../app/raw-snapshot-projection.js",import.meta.url),"utf8")).replace(/\s/g,"");
- assert.match(api,/projectRawPredictionSnapshot as toSnapshot/);
- assert.match(projection,/snapshotOddsProjection\(report\)/);
- assert.match(projection,/report\.layers\?\.intelligenceOutput\?\.scores\|\|report\.intelligenceScores\|\|\[\]/);
- assert.match(projection,/report\.layers\?\.fusionOutput\?\.fullScoreDistribution\|\|report\.fullScoreDistribution/);
- assert.doesNotMatch(projection,/oddsScores:\(report\.scores\|\|\[\]\)/);
+ assert.match(api,/report\.layers\?\.oddsBaseline\?\.fullScoreDistribution\|\|report\.oddsScores\|\|\[\]/);
+ assert.match(api,/report\.layers\?\.intelligenceOutput\?\.scores\|\|report\.intelligenceScores\|\|\[\]/);
+ assert.match(api,/report\.layers\?\.fusionOutput\?\.fullScoreDistribution\|\|report\.fullScoreDistribution/);
+ assert.doesNotMatch(api,/oddsScores:\(report\.scores\|\|\[\]\)/);
  assert.match(page,/void savePredictionSet\(saved\)/);
  assert.match(storage,/if\(history\.some\(item=>item\.historyRecordId===saved\.historyRecordId\)\)return history/);
  assert.match(storage,/\.\.\.history/);
@@ -986,7 +752,7 @@ test("AI numerical fusion is gated by out-of-sample gain while shadow probabilit
  const javascript=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText;
  const {applyAiReviewVersion}=await import(`data:text/javascript;base64,${Buffer.from(javascript).toString("base64")}`);
  const generatedAt="2026-09-12T12:00:00.000Z",baseVersion={predictionId:"pred-base",inputSnapshotId:"input-1",baseModelVersion:"base",calibrationVersion:"cal-none",generatedAt};
- const report={id:"周六001",kickoffAt:"2026-09-12T22:00:00+08:00",predictionId:"pred-base",fullScoreDistribution:[{score:"1:0",probability:50},{score:"0:1",probability:50}],scores:[{score:"1:0",probability:50},{score:"0:1",probability:50}],marketSignal:{officialHandicap:"0"},intelligenceEvidence:{records:[{type:"lineup",sourceUrl:"https://example.com/evidence",observedAt:"2026-09-12T11:00:00.000Z"}]}};
+ const report={id:"周六001",predictionId:"pred-base",fullScoreDistribution:[{score:"1:0",probability:50},{score:"0:1",probability:50}],scores:[{score:"1:0",probability:50},{score:"0:1",probability:50}],marketSignal:{officialHandicap:"0"},intelligenceEvidence:{records:[{type:"lineup",sourceUrl:"https://example.com/evidence",observedAt:"2026-09-12T11:00:00.000Z"}]}};
  const review={id:"周六001",scores:[{score:"1:0",probability:90},{score:"0:1",probability:10}],verifiedIntelItems:["lineup"],summary:"证据复核",risk:""};
  const shadowOnly=applyAiReviewVersion(baseVersion,[report],[review],"DeepSeek","test",generatedAt,0);
  assert.equal(shadowOnly.version.predictionId,"pred-base");
@@ -1009,25 +775,18 @@ test("model audit surface exposes historical baseline comparison and guarded imp
  ]);
  assert.match(api,/prediction-history-audit\.json/);
  assert.match(panel,/模型与数据健康/);
- assert.match(panel,/旧口径未保证同场配对，不能据此判断领先/);
- assert.doesNotMatch(panel,/marketLead|模型暂未超越基线/);
- assert.match(panel,/AI 文字复核不改动正式概率/);
- assert.match(panel,/AI 正式概率权重/);
- assert.match(panel,/<b>0% · 仅文字复核<\/b>/);
+ assert.match(panel,/模型暂未超越基线/);
+ assert.match(panel,/AI 情报采用证据时效 \+ 未来增益双重门控/);
  assert.match(model,/predictFromSnapshot/);
  assert.match(model,/低比分修正处于影子验证/);
- assert.match(model,/return submitPredictionRequest\(request\)/);
- assert.match(await readFile(new URL("../app/prediction-submission.js",import.meta.url),"utf8"),/fixtureIds\.length > 120/);
- assert.match(model,/await fetchOfficialSporttery\(\{\s*repair:\s*forceRefresh,\s*serverHeaders:\s*true\s*\}\)/);
+ assert.match(model,/input\.matches\.slice\(0, 120\)/);
  assert.match(model,/unavailableOfficialMatches/);
  assert.match(model,/覆盖 \$\{coverage\.predictedMatches\}\/\$\{coverage\.officialMatches\} 场官方赛事/);
  assert.match(archive,/match\.officialMatchId&&result\.matchId/);
  assert.match(archive,/intelligenceCandidateProbabilities/);
- assert.match(aiRoute,/resolveContextEvidence/);
- assert.match(aiRoute,/validateEvidenceReviews/);
- assert.match(aiRoute,/applyEvidenceReviews/);
- assert.match(aiRoute,/reviewMode:"evidence-summary-v1"/);
- assert.match(aiRoute,/intelligenceWeightMultiplier:0/);
- assert.doesNotMatch(aiRoute,/applyAiReviewVersion/);
+ assert.match(aiRoute,/official-team-form-and-ranking/);
+ assert.match(aiRoute,/official-competition-context/);
+ assert.match(aiRoute,/evidenceById/);
+ assert.match(aiRoute,/getMatchHeadV1\.qry/);
  assert.match(aiRoute,/body\.reports\.length>120/);
 });

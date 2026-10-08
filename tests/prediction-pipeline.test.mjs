@@ -273,7 +273,7 @@ test("total goals market comparison uses complete contemporaneous inputs and ide
 test("calibration pairs half/full samples and test results cannot choose runtime parameters", async () => {
   const source = (await readFile(new URL("../app/calibration-service.ts", import.meta.url), "utf8"))
     .replace(
-      /from "(\.\/(?:prediction-model|snapshot-decision-policy|probability-evaluation)\.js)"/g,
+      /from "(\.\/(?:prediction-model|snapshot-decision-policy)\.js)"/g,
       (_, p) => `from ${JSON.stringify(new URL(p.replace("./", "../app/"), import.meta.url).href)}`,
     )
     .replace(/import\.meta\.glob<ModelCalibrationProfile>\([^;]+\);/, "{};");

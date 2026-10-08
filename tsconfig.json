@@ -3,7 +3,6 @@
     "target": "ES2017",
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
-    "types": ["vite/client"],
     "skipLibCheck": true,
     "strict": true,
     "noEmit": true,
@@ -26,5 +25,5 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules", "work", "backups", "dist"]
+  "exclude": ["node_modules"]
 }

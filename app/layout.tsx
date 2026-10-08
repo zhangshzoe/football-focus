@@ -10,7 +10,6 @@ import "./density.css";
 import "./ai-detail.css";
 import "./reference-ui.css";
 import "./mobile-ui.css";
-import "./research-refresh.css";
 import BrowserStorageNotice from "./components/BrowserStorageNotice";
 
 const geistSans = Geist({

@@ -1,7 +1,6 @@
 import {mkdir, writeFile} from "node:fs/promises";
 import {join} from "node:path";
 import {decisionTargetAt} from "../app/snapshot-decision-policy.js";
-import {snapshotFrozenOfficialHad} from "../app/snapshot-probability-layers.js";
 
 const BASE_URL = process.env.FOOTBALL_FOCUS_URL || "http://localhost:3000";
 const OUTPUT_DIRECTORY = join(process.cwd(), "data", "analysis");
@@ -167,7 +166,7 @@ for (const snapshot of snapshots) for (const match of snapshot.matches || []) {
     hhad: points(match.hhadProbabilities),
     total: points(match.totalGoalProbabilities),
     halfFull: points(match.halfFullProbabilities),
-    marketHad: points(snapshotFrozenOfficialHad(match)),
+    marketHad: points(match.marketHadProbabilities),
     handicap: String(match.handicap ?? result?.handicap ?? ""),
   });
 }

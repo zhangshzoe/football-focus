@@ -2,13 +2,7 @@ import { access, mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { constants } from "node:fs";
 import { createHash } from "node:crypto";
 import { join } from "node:path";
-import {runCapture} from "./capture-attempts.mjs";
-import {captureForwardCandidates} from "./capture-forward-candidates.mjs";
-import {buildSnapshotOddsLayer} from "../app/snapshot-probability-layers.js";
-import {resolveServerOfficialMatches} from "../app/server-official-evidence.js";
-import {appendLocalCaptureReceipt} from "./local-capture-receipts.mjs";
-import {requestPredictionResult} from "../app/prediction-compute-client.js";
-import {decisionCaptureWindow,selectDecisionCaptureMatches,assertDecisionCaptureComplete} from "../app/prediction-capture-policy.js";
+import { generatePurchasePlans } from "../app/purchase-plan-engine.js";
 
 const slot = process.argv[2];
 if (!/^([01]\d|2[0-3])[0-5]\d$/.test(slot || "")) throw new Error("快照时段必须是 HHmm，例如 2130 或 2230。");
@@ -33,9 +27,6 @@ async function supplementsFor(baseSnapshotId) {
 }
 
 async function appendAiReview(raw, supplements) {
-  // Critical capture never waits for text generation. Explicit review runs may
-  // append an honestly-timed supplement later, without changing the raw record.
-  if(!process.argv.includes("--ai-review"))return null;
   if (supplements.some(record => record.kind === "ai-review") || !raw.version?.predictionId || raw.reports.some(report => report.predictionId !== raw.version.predictionId)) return null;
   try {
     const response = await fetch(`${baseUrl}/api/predictions/ai`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ version: raw.version, reports: raw.reports }) });
@@ -48,35 +39,32 @@ async function appendAiReview(raw, supplements) {
   } catch { return null; }
 }
 
-async function appendPurchasePlans(){return null;}
+async function appendPurchasePlans(raw, supplements, aiRecord) {
+  if (slot !== "1700" || supplements.some(record => record.kind === "purchase-plans")) return null;
+  const reports = aiRecord?.reports || raw.reports, predictionId = aiRecord?.outputPredictionId || raw.predictionId, createdAt = new Date().toISOString(), decisionTiming = timingAt(createdAt, reports);
+  const plans = generatePurchasePlans({ date, reports, officialMatches: raw.officialMatches || [], generatedAt: createdAt });
+  const record = { recordId: `plans-${raw.snapshotId}-${digest([predictionId, createdAt])}`, kind: "purchase-plans", baseSnapshotId: raw.snapshotId, inputPredictionId: predictionId, createdAt, decisionTiming, includedInPreMatchEvaluation: decisionTiming === "pre_match", plans };
+  await writeOnce(join(directory, `${date}_${slot}.supplement.plans.${record.recordId}.json`), record);
+  return record;
+}
 
-const result=await runCapture({kind:"prediction",slot,scheduledAt},async audit=>{
 await mkdir(directory, { recursive: true });
 if (await exists(rawOutput) || await exists(legacyOutput)) {
   const path = await exists(rawOutput) ? rawOutput : legacyOutput, raw = JSON.parse(await readFile(path, "utf8"));
   raw.snapshotId ||= snapshotId;
   const supplements = await supplementsFor(raw.snapshotId), ai = await appendAiReview(raw, supplements), plans = await appendPurchasePlans(raw, supplements, ai);
-  return { status: "exists", raw: path, unchanged: true, supplementsAdded: [ai, plans].filter(Boolean).map(item => item.kind) };
+  console.log(JSON.stringify({ status: "exists", raw: path, unchanged: true, supplementsAdded: [ai, plans].filter(Boolean).map(item => item.kind) }));
+  process.exit(0);
 }
 
-const captureWindow=decisionCaptureWindow(date,slot);
-if(!captureWindow.allowed)return {status:"skipped",reason:captureWindow.reason};
-audit.stage="official-source";
-const matchesResponse = await fetch(`${baseUrl}/api/sporttery`, { cache: "no-store", signal:AbortSignal.timeout(Math.min(30000,captureWindow.target-Date.now())) }), matchesData = await matchesResponse.json();
-if (!matchesResponse.ok) throw Object.assign(new Error(matchesData.error || "体彩比赛数据读取失败"), {code:matchesData.code,sourceState:matchesData.sourceState});
-if(!matchesData.poolStatus||["HAD","HHAD","CRS","TTG","HAFU"].some(pool=>matchesData.poolStatus[pool]?.status!=="success"))throw new Error("官方五玩法清单未全部读取成功，覆盖范围未知");
-const manifest = (Array.isArray(matchesData.matches) ? matchesData.matches : []).filter(match => match.salesDate===date);
-const matches = selectDecisionCaptureMatches(matchesData.matches,date,slot);
+const matchesResponse = await fetch(`${baseUrl}/api/sporttery`, { cache: "no-store" }), matchesData = await matchesResponse.json();
+if (!matchesResponse.ok) throw new Error(matchesData.error || "体彩比赛数据读取失败");
+const matches = (Array.isArray(matchesData.matches) ? matchesData.matches : []).filter(match => String(match.salesDate || match.matchDate || "").slice(0, 10) === date);
+if (!matches.length) throw new Error("当前没有可保存的真实比赛数据");
+if (matches.some(match => !match.matchId || match.isMock)) throw new Error("存在缺少官方 matchId 或 mock 标记的比赛，拒绝保存快照");
 
-audit.officialManifest=manifest.map(match=>({officialMatchId:String(match.officialMatchId||match.matchId),salesDate:match.salesDate,kickoffAt:match.kickoffAt,home:match.home,away:match.away,league:match.league}));
-audit.selectedOfficialMatchIds=matches.map(match=>String(match.officialMatchId||match.matchId));
-audit.sourceFetchedAt=matchesData.fetchedAt||null;
-if(!matches.length)return {status:"skipped",reason:"no-due-fixtures"};
-audit.stage="prediction-validation";
-const predictionData = await requestPredictionResult({endpoint:`${baseUrl}/api/predictions`,fixtureIds:matches.map(match => String(match.officialMatchId || match.matchId || "")),timeoutMs:Math.min(120000,captureWindow.target-Date.now())});
-const verifiedOfficialMatches = resolveServerOfficialMatches(predictionData, matches, date);
-audit.selectedManifest=verifiedOfficialMatches.map(match=>({officialMatchId:String(match.officialMatchId||match.matchId),salesDate:match.salesDate,kickoffAt:match.kickoffAt,home:match.home,away:match.away,league:match.league}));
-audit.sourceFetchedAt=predictionData.officialSource.fetchedAt;
+const predictionResponse = await fetch(`${baseUrl}/api/predictions`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ matches: matches.map(match => ({ id: match.id, matchId: match.matchId, officialMatchId: match.officialMatchId || match.matchId, salesDate: match.salesDate, kickoffAt: match.kickoffAt, homeTeamId: match.homeTeamId, awayTeamId: match.awayTeamId, homeTeamCode: match.homeTeamCode, awayTeamCode: match.awayTeamCode, league: match.league, time: match.time, matchDate: match.matchDate, home: match.home, away: match.away, odds: match.odds, marketOdds: match.marketOdds, sourceFetchedAt: matchesData.fetchedAt, handicap: match.handicap, hhadOdds: match.marketOdds?.["让球胜平负"], matchStatus: match.matchStatus, marketEligibility: match.marketEligibility, updatedAt: match.updatedAt, isMock: false })) }) }), predictionData = await predictionResponse.json();
+if (!predictionResponse.ok) throw new Error(predictionData.error || "盘口预测读取失败");
 const rawReports = Array.isArray(predictionData.reports) ? predictionData.reports : [], realMatchIds = new Set(matches.map(match => String(match.officialMatchId || match.matchId)));
 if (rawReports.some(report => report.isMock)) throw new Error("预测结果包含 mock，拒绝保存快照");
 const reports = rawReports.filter(report => report.id && report.home && report.away && report.officialMappingStatus === "verified" && realMatchIds.has(String(report.officialMatchId)));
@@ -84,22 +72,10 @@ if (!reports.length) throw new Error("预测结果为空，或没有可与当前
 const incomplete = reports.filter(report => !report.fullScoreDistribution?.length || !report.probabilities || !report.marketSignal?.modeledTotalGoals?.length || !report.marketSignal?.modeledHalfFull?.length || (report.marketEligibility?.["让球胜平负"]?.qualification === "qualified" && !report.marketSignal?.modeledHhad?.length));
 if (incomplete.length) throw new Error(`有 ${incomplete.length} 场缺少其官方可售玩法所需的预测字段，拒绝保存快照`);
 
-const capturedAt = new Date().toISOString(), sourceFetchedAt=predictionData.fetchedAt||capturedAt,upstreamUpdatedAt=predictionData.officialSource.upstreamUpdatedAt||null;
-assertDecisionCaptureComplete(predictionData,matches,date,slot,Date.parse(capturedAt));
-const late=Date.parse(capturedAt)>Date.parse(scheduledAt);
-audit.outcome=late?"late":"saved";audit.stage="immutable-write";
-const immutableReports = reports.map(report => ({ ...report, sourceFetchedAt:report.sourceFetchedAt||sourceFetchedAt, layers: { oddsBaseline: buildSnapshotOddsLayer(report), intelligenceOutput: { scores: report.intelligenceScores || [], coverage: report.intelligenceCoverage || 0, summary: report.aiSummary || "", risk: report.aiRisk || "", evidence: report.intelligenceEvidence?.records || [] }, fusionOutput: { fullScoreDistribution: report.fullScoreDistribution, probabilities: report.probabilities, hhad: report.marketSignal?.modeledHhad || [], totalGoals: report.marketSignal?.modeledTotalGoals || [], halfFull: report.marketSignal?.modeledHalfFull || [] } }, inputHash: report.inputSnapshotId || predictionData.version?.inputSnapshotId || "", parameters: { baseModelVersion: report.baseModelVersion, calibrationVersion: report.calibrationVersion, predictionId: report.predictionId } }));
-const raw = { schemaVersion: 2, recordType: "raw-prediction-snapshot", snapshotId, immutable: true, predictionId: predictionData.predictionId, version: predictionData.version, scheduledAt, scheduledTime: slot, capturedAt, upstreamUpdatedAt, sourceFetchedAt, officialSource:predictionData.officialSource, captureTiming:late?"late":"on-time", decisionTiming: timingAt(capturedAt, immutableReports), source: { sporttery: predictionData.officialSource.source || "中国体育彩票竞彩网", market: predictionData.sourceUrl || "" }, sourceMatchCount: verifiedOfficialMatches.length, inputHash: predictionData.version?.inputSnapshotId || digest(verifiedOfficialMatches), modelVersion: predictionData.methodology || "多盘口交叉校准模型", officialMatches: verifiedOfficialMatches, reports: immutableReports };
-assertDecisionCaptureComplete(predictionData,matches,date,slot,Date.now());
+const capturedAt = new Date().toISOString(), upstreamUpdatedAt = predictionData.fetchedAt || matchesData.fetchedAt || capturedAt;
+const immutableReports = reports.map(report => ({ ...report, sourceFetchedAt:report.sourceFetchedAt||upstreamUpdatedAt, layers: { oddsBaseline: { fullScoreDistribution: report.oddsScores || report.fullScoreDistribution, probabilities: Array.isArray(report.marketProbabilities)&&report.marketProbabilities.length===3?{home:report.marketProbabilities[0],draw:report.marketProbabilities[1],away:report.marketProbabilities[2]}:undefined }, intelligenceOutput: { scores: report.intelligenceScores || [], coverage: report.intelligenceCoverage || 0, summary: report.aiSummary || "", risk: report.aiRisk || "", evidence: report.intelligenceEvidence?.records || [] }, fusionOutput: { fullScoreDistribution: report.fullScoreDistribution, probabilities: report.probabilities, hhad: report.marketSignal?.modeledHhad || [], totalGoals: report.marketSignal?.modeledTotalGoals || [], halfFull: report.marketSignal?.modeledHalfFull || [] } }, inputHash: report.inputSnapshotId || predictionData.version?.inputSnapshotId || "", parameters: { baseModelVersion: report.baseModelVersion, calibrationVersion: report.calibrationVersion, predictionId: report.predictionId } }));
+const raw = { schemaVersion: 2, recordType: "raw-prediction-snapshot", snapshotId, immutable: true, predictionId: predictionData.predictionId, version: predictionData.version, scheduledAt, scheduledTime: slot, capturedAt, upstreamUpdatedAt, sourceFetchedAt: upstreamUpdatedAt, decisionTiming: timingAt(capturedAt, immutableReports), source: { sporttery: matchesData.source || "中国体育彩票竞彩网", market: predictionData.sourceUrl || "" }, sourceMatchCount: matches.length, inputHash: predictionData.version?.inputSnapshotId || digest(matches), modelVersion: predictionData.methodology || "多盘口交叉校准模型", officialMatches: matches, reports: immutableReports };
 await writeOnce(rawOutput, raw);
-audit.completionReceipt=await appendLocalCaptureReceipt(raw,rawOutput);
-// Research failures never replace or block the official immutable snapshot.
-const forwardResearch=audit.completionReceipt.includedInStrictEvaluation
- ?await captureForwardCandidates(raw).catch(error=>({status:"failed",reason:error.message}))
- :{status:"excluded-completion",saved:0};
-audit.forwardResearch=forwardResearch;
 const supplements = [], ai = await appendAiReview(raw, supplements); if (ai) supplements.push(ai);
 const plans = await appendPurchasePlans(raw, supplements, ai);
-return { status: "saved", outcome:audit.completionReceipt.includedInStrictEvaluation?"saved":"late", output: rawOutput, immutable: true, scheduledAt, capturedAt, completedAt:audit.completionReceipt.persistedAt, captureTiming:audit.completionReceipt.decisionTiming, matches: reports.length, supplements: [ai, plans].filter(Boolean).map(item => item.kind) };
-});
-console.log(JSON.stringify(result));
+console.log(JSON.stringify({ status: "saved", output: rawOutput, immutable: true, scheduledAt, capturedAt, matches: reports.length, supplements: [ai, plans].filter(Boolean).map(item => item.kind) }));

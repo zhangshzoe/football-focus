@@ -43,25 +43,20 @@ async function fetchResultPage(url:string,page:number,signal:AbortSignal){
  return response.text();
 }
 
-// Source reads are separate from protected ledger writes. Opening this public
-// route never mutates the shared evidence store.
-export async function fetchPublishedResults(date:string){
- const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),25000);
- try{
-  const query=new URLSearchParams({startTime:date,endTime:date});
-  const url=`${SOURCE_URL}?${query}`,firstHtml=await fetchResultPage(url,1,controller.signal),pageCount=resultPageCount(firstHtml);
-  const remaining=pageCount>1?await Promise.all(Array.from({length:pageCount-1},(_,index)=>fetchResultPage(url,index+2,controller.signal))):[];
-  const parsed=[firstHtml,...remaining].flatMap(html=>parseResults(html,date));
-  // Exact duplicates are harmless; conflicting outcomes remain for the gate.
-  const results=Array.from(new Map(parsed.map(result=>[JSON.stringify(result),result])).values());
-  return {source:"足彩网·竞彩足球开奖结果（第三方公布）",sourcePage:SOURCE_URL,date,fetchedAt:new Date().toISOString(),pages:pageCount,results};
- }finally{clearTimeout(timer);}
-}
-
 export async function GET(request:NextRequest){
  const date=request.nextUrl.searchParams.get("date")||shanghaiDate(-1);
  const today=shanghaiDate(),earliest=shanghaiDate(-29);
  if(!DATE_PATTERN.test(date)||date<earliest||date>today)return NextResponse.json({error:`仅支持 ${earliest} 至 ${today} 的赛果查询`},{status:400});
- try{return NextResponse.json({...await fetchPublishedResults(date),researchResultLedger:{status:"read-only",persisted:0}},{headers:{"Cache-Control":"no-store, max-age=0"}});}
- catch(error){return NextResponse.json({error:error instanceof Error?error.message:"赛果读取失败"},{status:502,headers:{"Cache-Control":"no-store, max-age=0"}});}
+ try{
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),25000);
+  const query=new URLSearchParams({startTime:date,endTime:date});
+  const url=`${SOURCE_URL}?${query}`,firstHtml=await fetchResultPage(url,1,controller.signal),pageCount=resultPageCount(firstHtml);
+  const remaining=pageCount>1?await Promise.all(Array.from({length:pageCount-1},(_,index)=>fetchResultPage(url,index+2,controller.signal))):[];
+  clearTimeout(timer);
+  const parsed=[firstHtml,...remaining].flatMap(html=>parseResults(html,date));
+  const results=Array.from(new Map(parsed.map(result=>[`${result.date}|${result.id}|${result.home}|${result.away}`,result])).values());
+  return NextResponse.json({source:"足彩网·竞彩足球开奖结果",sourcePage:SOURCE_URL,date,fetchedAt:new Date().toISOString(),pages:pageCount,results},{headers:{"Cache-Control":"no-store, max-age=0"}});
+ }catch(error){
+  return NextResponse.json({error:error instanceof Error?error.message:"赛果读取失败"},{status:502,headers:{"Cache-Control":"no-store, max-age=0"}});
+ }
 }

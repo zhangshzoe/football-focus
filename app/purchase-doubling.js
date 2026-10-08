@@ -1,5 +1,20 @@
 // A derived historical replay only. Never changes saved tickets or places bets.
-import {settledTicketCash} from "./ticket-economics.js";
+const settledStatuses = new Set([
+  "won",
+  "lost",
+  "corrected_won",
+  "corrected_lost",
+  "void_won",
+  "void_lost",
+]);
+const winningStatuses = new Set(["won", "corrected_won", "void_won"]);
+
+function cents(value) {
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 0) return null;
+  const rounded = Math.round((value + Number.EPSILON) * 100);
+  return Number.isSafeInteger(rounded) ? BigInt(rounded) : null;
+}
+
 export function formatDoublingMoney(value, signed = false) {
   const amount = BigInt(value);
   const absolute = amount < 0n ? -amount : amount;
@@ -7,7 +22,37 @@ export function formatDoublingMoney(value, signed = false) {
   return `${amount < 0n ? "-" : signed && amount > 0n ? "+" : ""}¥${whole}.${(absolute % 100n).toString().padStart(2, "0")}`;
 }
 
-const cashResult = settledTicketCash;
+function cashResult(plan) {
+  const stake = cents(plan.stake);
+  if (stake === null || stake === 0n) return null;
+  const allVoid =
+    plan.items?.length && plan.items.every((item) => item.settlementState === "void_settled");
+  if (allVoid) return { stake, returned: stake, outcome: "refund" };
+  if (!settledStatuses.has(plan.status)) return null;
+  const won = winningStatuses.has(plan.status);
+  let returned = won ? cents(plan.simulatedReturn) : 0n;
+  // Each selection on a void leg is refunded at odds 1, not just one selection.
+  // Reprice those historical combinations instead of inheriting legacy underpayments.
+  if (won && plan.items.some((item) => item.settlementState === "void_settled")) {
+    const odds = plan.items.map((item) => {
+      if (item.settlementState === "void_settled") return 1;
+      return (item.picks?.length ? item.picks : [item]).find((pick) => pick.pick === item.actual)
+        ?.odd;
+    });
+    if (odds.some((odd) => typeof odd !== "number" || !Number.isFinite(odd) || odd <= 0))
+      return null;
+    const singleReturn = cents(2 * odds.reduce((product, odd) => product * odd, 1));
+    if (singleReturn === null) return null;
+    const winningBets = plan.items.reduce(
+      (count, item) =>
+        item.settlementState === "void_settled" ? count * BigInt(item.picks?.length || 1) : count,
+      1n,
+    );
+    returned = singleReturn * winningBets;
+  }
+  if (returned === null || (won && returned === 0n)) return null;
+  return { stake, returned, outcome: won ? "won" : "lost" };
+}
 
 /** Replay one method and time slot: add one unit after a loss, reset to one after a win. */
 export function simulatePurchaseDoubling(historyRows = []) {
@@ -46,7 +91,6 @@ export function simulatePurchaseDoubling(historyRows = []) {
     losingStreak = 0,
     maxLosingStreak = 0;
   const rows = [];
-  let equityPeak=0n,maxDrawdown=0n,capitalRequired=0n,profitable=0,legacyCashRows=0;
   for (const batch of batches.values()) {
     const results = batch.map((row) =>
       Number.isFinite(Date.parse(row.generatedAt)) ? cashResult(row.plan) : null,
@@ -67,17 +111,12 @@ export function simulatePurchaseDoubling(historyRows = []) {
       continue;
     }
     let batchStake = 0n;
-    const plannedStake=results.reduce((sum,result)=>sum+result.stake*multiplier,0n);
-    const required=plannedStake-(returned-stake);
-    if(required>capitalRequired)capitalRequired=required;
     for (let index = 0; index < batch.length; index++) {
       const result = results[index];
       const scaledStake = result.stake * multiplier,
         scaledReturn = result.returned * multiplier;
       stake += scaledStake;
       returned += scaledReturn;
-      if(scaledReturn>scaledStake)profitable++;
-      if(result.version==="legacy-recorded-cash-not-repriced")legacyCashRows++;
       batchStake += scaledStake;
       if (result.outcome === "refund") refunded++;
       else {
@@ -95,9 +134,6 @@ export function simulatePurchaseDoubling(historyRows = []) {
       });
     }
     if (multiplier > peakMultiplier) peakMultiplier = multiplier;
-    const equity=returned-stake;
-    if(equity>equityPeak)equityPeak=equity;
-    if(equityPeak-equity>maxDrawdown)maxDrawdown=equityPeak-equity;
     if (batchStake > peakStake) peakStake = batchStake;
     if (results.some((result) => result.outcome === "won")) {
       multiplier = 1n;
@@ -122,6 +158,5 @@ export function simulatePurchaseDoubling(historyRows = []) {
     peakMultiplier,
     peakStake,
     maxLosingStreak,
-    maxDrawdown,capitalRequired,profitable,legacyCashRows,
   };
 }

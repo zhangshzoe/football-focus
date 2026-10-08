@@ -1,20 +1,8 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {summarizeTicketPortfolio,ticketSensitivity} from "../ticket-economics.js";
-import {DEFAULT_RECOMMENDATION_POLICY,assessRecommendation} from "../recommendation-policy.js";
-import {completeDistribution,projectOfficialScores} from "../probability-evaluation.js";
-import {collectEarlierPurchasePlans,mergePurchaseBatches} from "../purchase-batch-policy.js";
-import {purchaseCaptureState,compactCaptureAttempts} from "../capture-health.js";
 import PurchaseDoublingSummary from "./PurchaseDoublingSummary";
-import PurchaseSlotComparison from "./PurchaseSlotComparison";
-import PredictionSlotComparison from "./PredictionSlotComparison";
-import {comparePredictionSlots} from "../model-evaluation.js";
-import {slotProbabilityObservations,slotProbabilityResultDates} from "../slot-probability-observations.js";
-import PortfolioScenarioSummary, { type PortfolioScenarios } from "./PortfolioScenarioSummary";
-import {comparePurchaseSlots} from "../slot-comparison.js";
 import {readBrowserData} from "../browser-storage";
-import { fetchServerPrediction, predictionVersionMessage } from "../server-prediction-client.js";
 import {fetchOfficialSporttery} from "../sporttery-official";
 import {PROMOTED_PURCHASE_TRIAL,promoteSavedPurchaseTrial} from "../purchase-trial-promotion.js";
 import {
@@ -25,13 +13,13 @@ import {
   MAX_COMBINATION_CANDIDATES,
   MIN_COMPLETENESS,
   parseZonedKickoff,
+  PREDICTION_STORAGE_KEY,
   refreshPolicy,
   SavedPrediction,
   SavedPredictionSet,
   ScorePoint,
 } from "../prediction-config";
 import {
-  MARKET_META,
   deduplicatePurchasePlanSets,
   deduplicatePurchasePlans,
   generatePurchasePlans,
@@ -46,12 +34,15 @@ import {
   summarizePurchasePlans,
 } from "../purchase-plan-engine";
 
+type Model = "odds" | "intelligence" | "consensus";
 type Candidate = {
   match: SavedPrediction;
   market: RecommendationMarket;
   scores: PricedSelection[];
   coverage: number;
+  confidence: number;
   completeness: number;
+  singleModel: boolean;
 };
 type Combination = {
   items: Candidate[];
@@ -59,6 +50,11 @@ type Combination = {
   averageCompleteness: number;
   returns: ReturnType<typeof calculateRecommendationReturns>;
   oddsFetchedAt: string;
+};
+const modelNames: Record<Model, string> = {
+  odds: "赔率模型",
+  intelligence: "综合情报模型",
+  consensus: "双模型共识",
 };
 const marketNames: Record<RecommendationMarket, string> = {
   score: "比分",
@@ -87,13 +83,12 @@ const passNames = (n: number) => (n === 1 ? "单场" : `${n}串1`);
 
 function mergeScores(
   match: SavedPrediction,
-): { scores: ScorePoint[] } | null {
+): { scores: ScorePoint[]; singleModel: boolean } | null {
   const scores = match.fullScoreDistribution?.length
     ? match.fullScoreDistribution
     : match.combinedScores;
-  const vector=projectOfficialScores(scores);
-  return vector
-    ? {scores:MARKET_META.score.labels.map((score,index)=>({score,probability:vector[index]*100}))}
+  return scores?.length
+    ? { scores, singleModel: Boolean(match.singleModel) }
     : null;
 }
 function combinations<T>(items: T[], size: number) {
@@ -116,6 +111,16 @@ function combinations<T>(items: T[], size: number) {
   walk(0, []);
   return result;
 }
+function confidenceLabel(value: number) {
+  return value >= 82
+    ? "高"
+    : value >= 68
+      ? "中高"
+      : value >= 52
+        ? "中等"
+        : "偏低";
+}
+
 export type PurchaseItem = {
   matchId: string;
   officialMatchId?: string;
@@ -136,13 +141,6 @@ export type PurchaseItem = {
   finalScore?: string;
   settlementState?: string;
 };
-function purchaseSelectionCoverage(item: PurchaseItem): string {
-  const selections = item.picks?.length ? item.picks : [item];
-  const total = selections.reduce((sum, selection) => sum + selection.probability, 0);
-  if (selections.some(selection => !Number.isFinite(selection.probability) || selection.probability < 0 || selection.probability > 100)
-      || new Set(selections.map(selection => selection.pick)).size !== selections.length || total > 100 + 1e-8) return "待核验";
-  return `${total.toFixed(1)}%`;
-}
 type PurchasePlan = {
   decision?:{objective:string;targetNetProfit:number|null;targetMet:boolean|null;maximumLoss:number};
   id: string;
@@ -165,9 +163,6 @@ type PurchasePlan = {
   simulatedReturn?: number;
 };
 type PurchasePlanSet = {
-  portfolioScenarios?: PortfolioScenarios;
-  decisionSummary?:{evaluated:boolean;noBet:boolean;searchScope:string};portfolio?:ReturnType<typeof summarizeTicketPortfolio>;
-  riskSelection?:{policy:typeof DEFAULT_RECOMMENDATION_POLICY;dailyStake:number;priorStake:number;selected:number;rejected:Record<string,{code:string;reason:string}>};
   version?: number;
   date: string;
   generatedAt: string;
@@ -176,13 +171,6 @@ type PurchasePlanSet = {
   snapshotId?: string;
   contentHash?: string;
   scheduledTime?: string;
-  capturedAt?: string;
-  completedAt?: string;
-  inputDecisionAt?: string;
-  sourceFetchedAt?: string;
-  decisionPolicy?: string;
-  baseModelVersion?: string;
-  calibrationVersion?: string;
   promotionKind?: "manual-exception";
 };
 function SignedPurchaseMoney({value,flow="net"}:{value:number;flow?:"net"|"stake"|"return"}){
@@ -190,36 +178,23 @@ function SignedPurchaseMoney({value,flow="net"}:{value:number;flow?:"net"|"stake
   const signed=flow==="stake"?-Math.abs(amount):flow==="return"?Math.abs(amount):amount;
   return <b className={`purchase-money ${signed<0?"purchase-money-negative":signed>0?"purchase-money-positive":""}`}>{signed<0?"-":signed>0?"+":""}¥{Math.abs(signed).toFixed(2)}</b>;
 }
-function purchasePlanEconomics(plan:PurchasePlan){
+function PurchasePlanReturns({plan}:{plan:PurchasePlan}){
+  let returns;
   try {
-    return calculateRecommendationReturns(plan.items.map(item=>({
+    returns=calculateRecommendationReturns(plan.items.map(item=>({
       matchKey:item.officialMatchId||`${item.salesDate||item.matchDate||""}:${item.matchId}`,
       market:item.market as RecommendationMarket,
       scores:(item.picks?.length?item.picks:[item]).map(pick=>({score:pick.pick,probability:pick.probability,odd:pick.odd})),
     })));
   } catch {
-    return null;
+    return <span className="purchase-leg-returns">本组合返奖：数据待补</span>;
   }
-}
-function PurchasePlanReturns({plan}:{plan:PurchasePlan}){
-  const returns=purchasePlanEconomics(plan);
-  if(!returns)return <span className="purchase-leg-returns">本组合返奖：数据待补</span>;
   if(returns.status!=="ready")return <span className="purchase-leg-returns">本组合返奖：赔率待补</span>;
-  const sensitivity=ticketSensitivity(plan.items);
   return <span className="purchase-leg-returns">
-    <span>概率权重±10%敏感性（非置信区间）：预计净收益 {sensitivity.low.status==="ready"?sensitivity.low.expectedProfit?.toFixed(2):"—"}～{sensitivity.high.status==="ready"?sensitivity.high.expectedProfit?.toFixed(2):"—"} 元</span>
     <span>本组合模型预期返奖 {returns.expectedReturn===null?"概率待补":`¥${returns.expectedReturn.toFixed(2)}`}</span>
-    <span>模型期望净收益 {returns.expectedProfit===null?"概率待补":`¥${returns.expectedProfit.toFixed(2)}`} · ROI {returns.expectedROI===null?"—":`${(returns.expectedROI*100).toFixed(1)}%`}（非盈利保证）</span>
     <span>组合命中返奖 ¥{returns.minWinningReturn.toFixed(2)}～¥{returns.maxWinningReturn.toFixed(2)}</span>
     <span>命中时最低 / 最高盈利 <SignedPurchaseMoney value={returns.minWinningProfit}/> / <SignedPurchaseMoney value={returns.maxWinningProfit}/></span>
   </span>;
-}
-function PurchasePlanDecision({plan}:{plan:PurchasePlan}){
-  const returns=purchasePlanEconomics(plan),target=plan.decision?.targetNetProfit;
-  // Reconcile the label with the displayed ticket economics. Old frozen flags
-  // are provenance, not proof that the current calculation meets its target.
-  const targetStatus=returns?.status!=="ready"?"目标门槛待核验":returns.minWinningProfit>=Number(target)?"达到目标门槛":"旧版本未达目标门槛（只供历史查看）";
-  return <p className="purchase-risk">筛选目标：{plan.decision?.objective||"历史版本未记录"}。全部未中时损失 ¥{plan.stake.toFixed(2)}。{target!=null&&<>目标为命中后净盈利 ¥{target.toFixed(2)}；{targetStatus}。</>}</p>;
 }
 function purchaseHistoryOdds(item:PurchaseItem){
   const selections=item.picks?.length?item.picks:[{pick:item.pick,odd:item.odd}];
@@ -231,9 +206,9 @@ function purchaseHistoryActual(item:PurchaseItem){
   if(score)return marketResult&&marketResult!==score?`${score}（${marketResult}）`:score;
   return marketResult||"待公布";
 }
-type PurchaseResult = {id?:string;matchId?:string;officialMatchId?:string;date?:string;matchDate?:string;salesDate?:string;fullScore?:string;halfScore?:string};
+type PurchaseResult = {id?:string;matchId?:string;officialMatchId?:string;date?:string;matchDate?:string};
 const currentPurchasePlanIds=new Set(PURCHASE_PLAN_DEFINITIONS.map(definition=>definition.id));
-const hasPurchasePlanData=(item:PurchasePlanSet|undefined|null)=>Boolean((item?.version||0)>=15&&item?.decisionSummary?.evaluated&&item.decisionSummary.noBet||deduplicatePurchasePlans(item?.plans).some(plan=>currentPurchasePlanIds.has(plan.id)&&plan.status!=="unavailable"&&Array.isArray(plan.items)&&plan.items.length>0));
+const hasPurchasePlanData=(item:PurchasePlanSet|undefined|null)=>Boolean(deduplicatePurchasePlans(item?.plans).some(plan=>currentPurchasePlanIds.has(plan.id)&&plan.status!=="unavailable"&&Array.isArray(plan.items)&&plan.items.length>0));
 const purchaseSlot=(item:PurchasePlanSet)=>item.scheduledTime==="21:00"?"2100":"1700";
 type OfficialMatch = OfficialRecommendationMatch;
 const shanghaiDate = () =>
@@ -246,7 +221,7 @@ const shanghaiDate = () =>
 const dateOnly = (value?: string) =>
   String(value || "").match(/\d{4}-\d{2}-\d{2}/)?.[0] || "";
 const purchaseResultKey=(result:PurchaseResult)=>`${result.officialMatchId||result.matchId||result.id||""}|${dateOnly(result.date||result.matchDate)}`;
-async function fetchHistoricalPurchaseResults(sets:PurchasePlanSet[],cached:PurchaseResult[],probabilitySnapshots:Parameters<typeof slotProbabilityObservations>[0]=[]){
+async function fetchHistoricalPurchaseResults(sets:PurchasePlanSet[],cached:PurchaseResult[]){
   const known=new Set(cached.flatMap(result=>[purchaseResultKey(result),`${result.id||""}|${dateOnly(result.date||result.matchDate)}`]));
   const dates=new Set<string>(),now=Date.now();
   const earliest=new Date(now-29*86400000).toLocaleDateString("en-CA",{timeZone:"Asia/Shanghai"});
@@ -258,7 +233,6 @@ async function fetchHistoricalPurchaseResults(sets:PurchasePlanSet[],cached:Purc
     if(Number.isFinite(kickoff)&&kickoff+3*3600000>now)continue;
     if(!known.has(`${item.officialMatchId||""}|${date}`)&&!known.has(`${item.matchId}|${date}`))dates.add(date);
   }
-  slotProbabilityResultDates(probabilitySnapshots,cached,now).forEach(date=>dates.add(date));
   const fresh:PurchaseResult[]=[],ordered=[...dates].sort();
   let failed=0;
   for(let index=0;index<ordered.length;index+=4){
@@ -298,7 +272,7 @@ const formatMatchDay = (value: string) => {
   return month && day ? `${weekday}场次（${month}月${day}日）` : value;
 };
 
-type OfficialSnapshot = { matches: OfficialMatch[]; fetchedAt: string; error: string; manifestState?:string; poolStatus?:unknown; sourceState?:unknown; sourceCode?:string };
+type OfficialSnapshot = { matches: OfficialMatch[]; fetchedAt: string; error: string };
 let officialSnapshot: OfficialSnapshot = {
     matches: [],
     fetchedAt: "",
@@ -318,25 +292,22 @@ function refreshOfficialMarkets(): Promise<OfficialSnapshot | null> {
       try {
         const response = await fetch("/api/sporttery", { cache: "no-store", signal: controller.signal });
         payload = await response.json();
-        if (!response.ok || !Array.isArray(payload.matches)) throw Object.assign(new Error(payload.error || "体彩赔率读取失败"),{code:payload.code,sourceState:payload.sourceState});
+        if (!response.ok || !Array.isArray(payload.matches)) throw new Error(payload.error || "体彩赔率读取失败");
       } catch (siteError) {
         try { payload = await fetchOfficialSporttery({serverHeaders:false,timeoutMs:12000}); }
         catch (directError) {
-          const siteState=siteError as {code?:string;sourceState?:unknown},directState=directError as {code?:string;sourceState?:unknown};
-          throw Object.assign(new Error(`站点读取失败：${siteError instanceof Error?siteError.message:"未知错误"}；浏览器直连失败：${directError instanceof Error?directError.message:"未知错误"}`),{code:siteState?.code||directState?.code,sourceState:siteState?.sourceState||directState?.sourceState});
+          throw new Error(`站点读取失败：${siteError instanceof Error?siteError.message:"未知错误"}；浏览器直连失败：${directError instanceof Error?directError.message:"未知错误"}`);
         }
       }
       officialSnapshot = {
         matches: payload.matches,
         fetchedAt: payload.fetchedAt || new Date().toISOString(),
         error: "",
-        manifestState:payload.manifestState,poolStatus:payload.poolStatus,
       };
       officialListeners.forEach((listener) => listener(officialSnapshot));
       return officialSnapshot;
     } catch (error) {
-      officialSnapshot = {...officialSnapshot, error: error instanceof Error ? error.message : "体彩赔率读取失败",
-        sourceCode:(error as {code?:string})?.code,sourceState:(error as {sourceState?:unknown})?.sourceState,manifestState:"unknown"};
+      officialSnapshot = {...officialSnapshot, error: error instanceof Error ? error.message : "体彩赔率读取失败"};
       officialListeners.forEach(listener => listener(officialSnapshot));
       return null;
     } finally {
@@ -388,13 +359,7 @@ function DailyPurchasePlans({
   const [planSet, setPlanSet] = useState<PurchasePlanSet | null>(null),
     [summaryView, setSummaryView] = useState<"original" | "doubling">("original"),
     [activeSlot,setActiveSlot]=useState<"1700"|"2100">("1700"),
-    [riskPolicy,setRiskPolicy]=useState({...DEFAULT_RECOMMENDATION_POLICY}),
     [planSets, setPlanSets] = useState<PurchasePlanSet[]>([]),
-    [captureAttempts,setCaptureAttempts]=useState<ReturnType<typeof compactCaptureAttempts>>([]),
-    [cloudHistoryError,setCloudHistoryError]=useState(""),
-    [savedTrialReadError,setSavedTrialReadError]=useState(""),
-    [probabilitySnapshots,setProbabilitySnapshots]=useState<Parameters<typeof slotProbabilityObservations>[0]>([]),
-    [cloudAuditRecords,setCloudAuditRecords]=useState<Array<{snapshotId:string;scheduledAt:string;persistedAt:string;reason:string}>>([]),
     [savedTrials, setSavedTrials] = useState<PurchasePlanSet[]>([]),
     [historyResultCache, setHistoryResultCache] = useState<PurchaseResult[]>([]),
     [resultSyncError,setResultSyncError]=useState(""),
@@ -456,32 +421,13 @@ function DailyPurchasePlans({
     setBusy(true);
     Promise.all([
       fetch("/api/prediction-snapshots?view=recommendations", { cache: "no-store" })
-        .then(async (response) => {
-          if (!response.ok) throw new Error(`HTTP ${response.status}`);
-          const payload = await response.json();
-          if (!payload || (!Array.isArray(payload.snapshots) && !Array.isArray(payload.purchasePlanSnapshots)))
-            throw new Error("历史清单结构无效");
-          return payload;
-        })
-        .catch(() => ({ snapshots: [], historyReadError: "正式快照历史读取失败；当前仅汇总可读取记录，不能据此认定批次缺失或全部历史已同步。请点击“刷新快照”重试。" })),
+        .then((response) => response.ok ? response.json() : {snapshots:[]})
+        .catch(() => ({ snapshots: [] })),
       fetch("/api/purchase-trials", { cache: "no-store" })
-        .then(async (response) => {
-          if (response.status === 401)
-            return { trials: [], historyReadError: "尚未登录，无法读取账户中已保存的手动试算；不代表没有试算记录。登录后请点击“刷新快照”。正式历史仍可查看。" };
-          if (!response.ok) throw new Error(`HTTP ${response.status}`);
-          const payload = await response.json();
-          if (!payload || !Array.isArray(payload.trials)) throw new Error("试算清单结构无效");
-          return payload;
-        })
-        .catch(() => ({ trials: [], historyReadError: "已保存的手动试算读取失败，不能据此认定没有试算记录。请点击“刷新快照”重试；正式历史仍可查看。" })),
+        .then((response) => response.ok ? response.json() : {trials:[]})
+        .catch(() => ({ trials: [] })),
     ]).then(async ([archive, saved]) => {
         if (!active) return;
-        setCaptureAttempts(Array.isArray(archive.captureAttempts)?archive.captureAttempts:[]);
-        setCloudHistoryError(archive.historyReadError || (archive.cloudCaptureStatus==="unavailable"?"线上采集历史暂时读取失败；下方已打包历史仍可查看，但不能据此认定所有批次均已同步。":""));
-        setSavedTrialReadError(saved.historyReadError || "");
-        setCloudAuditRecords(Array.isArray(archive.cloudAuditRecords)?archive.cloudAuditRecords:[]);
-        const frozenProbabilitySnapshots=Array.isArray(archive.probabilitySlotSnapshots)?archive.probabilitySlotSnapshots:[];
-        setProbabilitySnapshots(frozenProbabilitySnapshots);
         let locals: PurchasePlanSet[] = [];
         try {
           const stored=await readBrowserData<PurchasePlanSet[]>(PURCHASE_PLAN_STORAGE_KEY,[]);
@@ -510,15 +456,24 @@ function DailyPurchasePlans({
             (item: PurchasePlanSet | undefined): item is PurchasePlanSet =>
               hasPurchasePlanData(item),
           );
-        const mergedBatches=mergePurchaseBatches([...periodicSets,...legacySets,...locals.filter(item=>item.snapshotId?.startsWith("purchase-"))].map(set=>({...set,plans:deduplicatePurchasePlans(set.plans)})));
-        const allSets=(mergedBatches.planSets as PurchasePlanSet[]).filter(hasPurchasePlanData).sort((a,b)=>b.generatedAt.localeCompare(a.generatedAt));
+        const allSets = Array.from(
+          new Map(
+            [...periodicSets, ...legacySets, ...locals.filter(item=>item.snapshotId?.startsWith("purchase-"))]
+              .sort((a, b) => b.generatedAt.localeCompare(a.generatedAt))
+              .map((item) => [
+                item.snapshotId ||
+                  `${item.generatedAt}-${item.contentHash || "legacy"}`,
+                item,
+              ]),
+          ).values(),
+        ).filter(hasPurchasePlanData);
         const storedTrials=(Array.isArray(saved.trials)?saved.trials:[]).filter(hasPurchasePlanData) as PurchasePlanSet[];
         const promoted=storedTrials.map(trial=>promoteSavedPurchaseTrial(trial,allSets.filter(set=>purchaseSlot(set)==="1700").map(set=>set.date)) as PurchasePlanSet|null).filter((trial):trial is PurchasePlanSet=>Boolean(trial));
         const targetTrial=storedTrials.find(trial=>trial.snapshotId===PROMOTED_PURCHASE_TRIAL.snapshotId);
         const promotionRejected=Boolean(targetTrial&&!promoted.length&&!allSets.some(set=>set.date===PROMOTED_PURCHASE_TRIAL.date&&purchaseSlot(set)==="1700"));
         const formalSets=[...allSets,...promoted];
         const cachedResults=Object.values(archive.resultCache&&typeof archive.resultCache==="object"?archive.resultCache:{}) as PurchaseResult[];
-        const {results:historyResults,failed}=await fetchHistoricalPurchaseResults(formalSets,cachedResults,frozenProbabilitySnapshots);
+        const {results:historyResults,failed}=await fetchHistoricalPurchaseResults(formalSets,cachedResults);
         const settledSets=(deduplicatePurchasePlanSets(formalSets) as PurchasePlanSet[]).map(item=>({...item,plans:item.plans.map(plan=>settlePurchasePlan(plan,historyResults))}));
         const settledTrials=(deduplicatePurchasePlanSets(storedTrials.filter(trial=>!promoted.some(item=>item.snapshotId===trial.snapshotId))) as PurchasePlanSet[]).map(item=>({...item,plans:item.plans.map(plan=>settlePurchasePlan(plan,historyResults))}));
         if (active) {
@@ -526,17 +481,15 @@ function DailyPurchasePlans({
           setSavedTrials(settledTrials);
           setHistoryResultCache(historyResults);
           setResultSyncError(failed?`${failed} 个比赛日期的赛果查询失败，相关组合暂不计入已结算；刷新页面可重试。`:"");
-          setPromotionError(mergedBatches.conflicts.length?`${mergedBatches.conflicts.length} 个批次身份存在内容冲突，已暂停这些批次的统计与预算使用。`:promotionRejected?"9 月 26 日手动试算未通过正式统计核验，暂不纳入；请检查官方比赛、销售时间和赔率字段。":"");
+          setPromotionError(promotionRejected?"9 月 26 日手动试算未通过正式统计核验，暂不纳入；请检查官方比赛、销售时间和赔率字段。":"");
           setPlanSet(null);
         }
-        const selected=settledSets
+        const selected=[...settledSets,...settledTrials]
           .filter(item=>purchaseSlot(item)===activeSlot&&(!lotteryDate||item.date===lotteryDate))
           .sort((a,b)=>b.generatedAt.localeCompare(a.generatedAt))[0]||null;
         // 已归档方案必须按生成时赔率原样读取；没有 17:00 快照时不自动补造正式票。
         if (selected && active) await selectPlanSet(selected, historyResults);
-        else if (active) setStatus(archive.historyReadError || archive.cloudCaptureStatus === "unavailable"
-          ? "历史读取不完整，尚无法确认该日期与批次是否已有正式组合票"
-          : `该彩票日期没有已保存的${activeSlot==="2100"?"21:00":"17:00"}正式组合票；研究试算可在选择器中查看`);
+        else if (active) setStatus(`该彩票日期没有已保存的${activeSlot==="2100"?"21:00":"17:00"}组合票`);
       })
       .finally(() => {
         if (active) setBusy(false);
@@ -556,10 +509,7 @@ function DailyPurchasePlans({
       const age=Date.now()-Date.parse(latest.fetchedAt);
       if(!Number.isFinite(age)||age< -60000||age>60000)throw new Error("盘口采集时间无效或已过期，未生成试算。请重新获取。");
       const current=lotteryDate?latest.matches.filter(match=>dateOnly(match.salesDate||match.matchDate||match.kickoffAt)===lotteryDate):latest.matches;
-      const date=lotteryDate||data.date;
-      const earlier=collectEarlierPurchasePlans(planSets,date);
-      if(activeSlot==="2100"&&earlier.status!=="verified")throw new Error("该日17:00批次的投入记录缺失或冲突，无法核验全天限额。请先同步早批次或其不投注记录。");
-      const generated=generatePurchasePlans({date,reports:scopedReports,officialMatches:current,riskPolicy,priorPlans:activeSlot==="2100"?earlier.plans:[]}) as PurchasePlanSet;
+      const generated=generatePurchasePlans({date:lotteryDate||data.date,reports:scopedReports,officialMatches:current}) as PurchasePlanSet;
       if(!hasPurchasePlanData(generated))throw new Error("当前可售比赛或合规赔率不足，暂不能生成固定票。");
       setPlanSet({...generated,scheduledTime:activeSlot==="2100"?"21:00":"17:00",snapshotId:`manual-trial-${crypto.randomUUID()}`,source:"当前盘口手动试算（未保存，非固定时刻正式快照）"});
       setStatus("当前盘口试算 · 尚未保存");
@@ -579,12 +529,9 @@ function DailyPurchasePlans({
     }catch(error){setSaveState(error instanceof Error?error.message:"保存试算失败");}
     finally{setBusy(false);}
   }
-  const viewingResearchTrial=Boolean(planSet?.snapshotId?.startsWith("manual-trial-")&&planSet.promotionKind!=="manual-exception");
-  const portfolio=planSet?summarizeTicketPortfolio(planSet.plans):null;
   const planResult = (plan: PurchasePlan) =>
     ["won", "corrected_won", "void_won"].includes(plan.status)
       ? <>模拟返还 <SignedPurchaseMoney value={plan.simulatedReturn||0} flow="return"/></>
-      : plan.status==="refunded"?"全部作废，退还本金"
       : ["lost", "corrected_lost", "void_lost"].includes(plan.status)
         ? "模拟未中"
         : plan.status === "void"
@@ -601,8 +548,6 @@ function DailyPurchasePlans({
   const moduleStats=useMemo(()=>summarizePurchasePlanModules(slotSets),[slotSets]);
   const definitionHistory=useMemo(()=>summarizePurchasePlanDefinitions(slotSets),[slotSets]);
   const dayHistory=useMemo(()=>summarizePurchasePlanDays(slotSets),[slotSets]);
-  const slotComparison=useMemo(()=>comparePurchaseSlots(planSets),[planSets]);
-  const probabilityComparison=useMemo(()=>comparePredictionSlots(slotProbabilityObservations(probabilitySnapshots,historyResultCache)),[probabilitySnapshots,historyResultCache]);
   const recentDates=useMemo(()=>{
     const [year,month,day]=shanghaiDate().split("-").map(Number);
     return Array.from({length:7},(_,index)=>new Date(Date.UTC(year,month-1,day-index)).toISOString().slice(0,10));
@@ -611,7 +556,7 @@ function DailyPurchasePlans({
   const latestFormalSet=slotSets[0];
   const visiblePlanModules=useMemo(()=>PURCHASE_PLAN_MODULES.map(module=>({
     ...module,
-    definitions:PURCHASE_PLAN_DEFINITIONS.filter(definition=>purchasePlanModuleId(definition.id)===module.id&&planSet?.plans.some(plan=>plan.id===definition.id&&(plan.items.length>0||planSet?.decisionSummary?.evaluated))),
+    definitions:PURCHASE_PLAN_DEFINITIONS.filter(definition=>purchasePlanModuleId(definition.id)===module.id&&planSet?.plans.some(plan=>plan.id===definition.id&&plan.status!=="unavailable"&&plan.items.length>0)),
   })).filter(module=>module.definitions.length>0),[planSet]);
   const allModulesCollapsed=visiblePlanModules.length>0&&visiblePlanModules.every(module=>collapsedModules[module.id]);
   return (
@@ -619,14 +564,10 @@ function DailyPurchasePlans({
       <header>
         <div>
           <small>DAILY PURCHASE DRAFT</small>
-          <h3>{viewingResearchTrial?"当前研究试算（非正式票）":"每日固定组合票"}</h3>
+          <h3>每日固定组合票</h3>
           <p>
             每天北京时间17:00、21:00各留档一批；按每注2元计算组合投入，依据官方赛果分别结算。
           </p>
-          {viewingResearchTrial&&<p className="purchase-notice">当前查看研究试算；下方历史统计与倍投计算只使用正式快照，不包含本次试算。</p>}
-          {planSet?.decisionSummary?.noBet&&<p className="data-fallback">本批次已完成评估：未通过该版本的返奖、选场或额度检查，无合格组合。</p>}{portfolio&&<p className="purchase-latest">本批次{planSet?.riskSelection?"筛选后的模拟组合":"历史方案"}：总投入 ¥{portfolio.totalStake.toFixed(2)}，最坏损失上界 ¥{portfolio.maximumLossBound.toFixed(2)}；共享比赛的票对 {portfolio.overlappingPairs}，单场最大敞口 {(portfolio.maxFixtureConcentration*100).toFixed(1)}%。</p>}
-          {planSet?.riskSelection&&<p className="purchase-latest">全天模拟投入 ¥{planSet.riskSelection.dailyStake.toFixed(2)}（早批次 ¥{planSet.riskSelection.priorStake.toFixed(2)}），预算 ¥{planSet.riskSelection.policy.dailyBudget}；同场上限 ¥{planSet.riskSelection.policy.maxFixtureStake}，同联赛上限 ¥{planSet.riskSelection.policy.maxLeagueStake}。通过 {planSet.riskSelection.selected} 组。{Object.values(planSet.riskSelection.rejected).map(row=>row.reason).filter((value,index,array)=>array.indexOf(value)===index).join("；")}</p>}
-          <details className="purchase-risk"><summary>试算筛选设置</summary><p>仅用于模拟。要求模型收益率至少5%，所选结果权重下调10%后仍有非负期望收益；A/B/C是同一模型的不同备选。默认每对票最多共享1场、每场最多进入2票，降低集中风险但不保证独立。半全场保留研究和历史结算。</p><div className="purchase-risk-controls">{(["dailyBudget","maxFixtureStake","maxLeagueStake","maxTickets","maxSharedFixturesPerPair","maxTicketsPerFixture"] as const).map((key,index)=><label key={key}>{["每日模拟预算（元）","同场累计上限（元）","同联赛累计上限（元）","每日票数上限","每对票最多共享场次（0或1）","每场最多进入票数"][index]}<input type="number" min={key==="maxTicketsPerFixture"?1:0} max={key==="maxSharedFixturesPerPair"?1:key==="maxTickets"||key==="maxTicketsPerFixture"?20:10000} step="1" value={riskPolicy[key]} onChange={event=>setRiskPolicy(current=>({...current,[key]:Number(event.target.value)}))}/></label>)}</div></details>
           {latestFormalSet&&<p className="purchase-latest">最近正式快照：{latestFormalSet.date} {new Date(latestFormalSet.generatedAt).toLocaleTimeString("zh-CN",{timeZone:"Asia/Shanghai",hour:"2-digit",minute:"2-digit"})} · {latestFormalSet.plans.filter(plan=>plan.status!=="unavailable"&&plan.items?.length).length} 组{lotteryDate&&lotteryDate!==latestFormalSet.date?`；当前筛选 ${lotteryDate}，可切换彩票日期查看最新批次`:""}</p>}
         </div>
         <div>
@@ -645,7 +586,6 @@ function DailyPurchasePlans({
                 if (selected) void selectPlanSet(selected);
               }}
             >
-              {!planSet&&<option value="">请选择正式快照或已保存研究试算</option>}
               {planSet && !selectableSets.some(item=>item.snapshotId===planSet.snapshotId) && <option value={planSet.snapshotId||planSet.generatedAt}>当前未保存试算</option>}
               {selectableSets.map((item) => (
                 <option
@@ -685,21 +625,18 @@ function DailyPurchasePlans({
             setSummaryView(target === 0 ? "original" : "doubling");
             (event.currentTarget.parentElement?.children[target] as HTMLButtonElement)?.focus();
           }}
-        >{view === "original" ? "正式票与原始汇总" : "倍投计算"}</button>)}
+        >{view === "original" ? "推荐与原始汇总" : "倍投计算"}</button>)}
       </div>
       <div className="purchase-slot-tabs" role="tablist" aria-label="选择固定组合票批次">
         {(["1700","2100"] as const).map(slot=><button key={slot} type="button" role="tab" aria-selected={activeSlot===slot} onClick={()=>{setPlanSet(null);setStatus("正在读取该批次快照…");setActiveSlot(slot)}}>{slot==="1700"?"17:00 场次":"21:00 场次"}</button>)}
       </div>
-      {cloudHistoryError && <p role="alert" className="purchase-notice">{cloudHistoryError}</p>}
-      {savedTrialReadError && <p role="alert" className="purchase-notice">{savedTrialReadError}</p>}
       <div id="purchase-panel-doubling" role="tabpanel" aria-labelledby="purchase-view-doubling" hidden={summaryView !== "doubling"}>
         {resultSyncError && <p role="alert" className="purchase-notice">{resultSyncError}</p>}
         {promotionError && <p role="alert" className="purchase-notice">{promotionError}</p>}
         <PurchaseDoublingSummary history={definitionHistory} slot={activeSlot} loading={busy} />
       </div>
       <div id="purchase-panel-original" role="tabpanel" aria-labelledby="purchase-view-original" hidden={summaryView !== "original"}>
-      {planSet && <PortfolioScenarioSummary scenarios={planSet.portfolioScenarios} />}
-      {!data && <p className="purchase-notice">当前没有合格的服务端预测版本，暂不能试算；已有历史方案仍按原版本查看与统计。</p>}
+      {!data && <p className="purchase-notice">当前浏览器没有今日预测版本，请先到 AI 预测页生成预测；没有预测时无法试算。</p>}
       {liveOfficial.error && <p className="purchase-notice">官方盘口获取失败：{liveOfficial.error}。可点击“按当前盘口试算”重试；过期赔率不会参与试算。</p>}
       {previewError && <p role="alert" className="purchase-notice">{previewError}</p>}
       {saveState && <p role="status" className="purchase-notice">{saveState}</p>}
@@ -713,39 +650,27 @@ function DailyPurchasePlans({
         <div><span>模拟返还</span><SignedPurchaseMoney value={planStats.returned} flow="return"/></div>
         <div><span>模拟净收益</span><SignedPurchaseMoney value={planStats.net}/></div>
       </div>
-      <p className="purchase-risk">当前只统计正式快照中的{activeSlot==="2100"?"21:00":"17:00"}批次，不与另一批重复合计。17:00统计另包含经确认转入的 2026-09-26 17:39 手动试算（保留实际采集时间）。其他手动试算不计入；待赛或缺少官方赛果的票不计入已结算、投入及返还。</p>
+      <p className="purchase-risk">当前只统计{activeSlot==="2100"?"21:00":"17:00"}批次，不与另一批重复合计。17:00统计另包含经确认转入的 2026-09-26 17:39 手动试算（保留实际采集时间）。其他手动试算不计入；待赛或缺少官方赛果的票不计入已结算、投入及返还。</p>
       <details className="purchase-history-panel" aria-label="最近七天正式快照与结算汇总">
         <summary><strong>最近七天留档与结算</strong><span>核对每日批次、待结算与模拟收益</span></summary>
-        <div className="purchase-history-scroll"><table className="purchase-day-table"><thead><tr><th>彩票日期</th><th>留档 / 执行状态</th><th>组合票</th><th>中奖 / 已结算</th><th>待结算</th><th>投入 / 模拟返还</th><th>模拟净收益</th></tr></thead><tbody>
+        <div className="purchase-history-scroll"><table className="purchase-day-table"><thead><tr><th>彩票日期</th><th>正式快照</th><th>组合票</th><th>中奖 / 已结算</th><th>待结算</th><th>投入 / 模拟返还</th><th>模拟净收益</th></tr></thead><tbody>
           {recentDates.map(date=>{
             const day=dayHistory[date];
-            const capture=purchaseCaptureState(date,activeSlot,captureAttempts,planSets);
-            return <tr key={date}><td>{date}</td><td><span className={capture.state==="failed"||capture.state==="missing_evidence"?"purchase-capture-missing":""}>{capture.label}</span>{capture.actualAt&&<small>实际 {new Date(capture.actualAt).toLocaleTimeString("zh-CN",{timeZone:"Asia/Shanghai",hour:"2-digit",minute:"2-digit"})}{(capture.delaySeconds??0)>0?" · 延迟批次":""}</small>}{capture.reason&&<small>{capture.reason}</small>}</td><td>{day?`${day.tickets} 组`:"—"}</td><td>{day?`${day.won} / ${day.settled}`:"—"}</td><td>{day?day.pending:"—"}</td><td>{day?<><SignedPurchaseMoney value={day.stake} flow="stake"/> / <SignedPurchaseMoney value={day.returned} flow="return"/></>:"—"}</td><td>{day?<SignedPurchaseMoney value={day.net}/>:"—"}</td></tr>;
+            return <tr key={date}><td>{date}</td><td>{day?`${day.batches} 批`:<span className="purchase-capture-missing">未留档</span>}</td><td>{day?`${day.tickets} 组`:"—"}</td><td>{day?`${day.won} / ${day.settled}`:"—"}</td><td>{day?day.pending:"—"}</td><td>{day?<><SignedPurchaseMoney value={day.stake} flow="stake"/> / <SignedPurchaseMoney value={day.returned} flow="return"/></>:"—"}</td><td>{day?<SignedPurchaseMoney value={day.net}/>:"—"}</td></tr>;
           })}
         </tbody></table></div>
-        <p className="purchase-risk">采集失败、评估不完整和没有执行证据不算未中奖；明确的“不投注”记录也不增加票数。延迟批次保留实际完成时间，不事后补写成17:00或21:00预测。投入与返还仅统计已结算的模拟票，全作废退款不进入中奖率分母。</p>
+        <p className="purchase-risk">“未留档”只表示没有保存的正式快照，可能是无赛事或采集失败，不算作未中奖；历史批次只按实际采集时间展示，不事后补写成17:00预测。投入与返还仅统计已结算的模拟票。</p>
       </details>
-      {cloudAuditRecords.length>0&&<details className="purchase-history-panel"><summary>未纳入严格统计的真实采集记录（{cloudAuditRecords.length}）</summary><p>原始内容保持不变；恢复时刻不能代替计划时刻，过期票不进入正式推荐。</p>{cloudAuditRecords.map(record=><p key={record.snapshotId}>{record.snapshotId} · 实际核验 {new Date(record.persistedAt).toLocaleString("zh-CN",{timeZone:"Asia/Shanghai"})} · {record.reason}</p>)}</details>}
-      <PurchaseSlotComparison report={slotComparison}/>
-      <PredictionSlotComparison report={probabilityComparison}/>
       <details className="purchase-history-panel" aria-label="各投注方式历史汇总">
         <summary><strong>各投注方式历史汇总</strong><span>展开查看中奖率、投入与历史明细</span></summary>
       <div className="purchase-history">
         {PURCHASE_PLAN_DEFINITIONS.map(definition=>{
-          const history=definitionHistory[definition.id]||{settled:0,won:0,rate:0,stake:0,returned:0,net:0,samples:null,rows:[]};
-          const samples=history.samples;
+          const history=definitionHistory[definition.id]||{settled:0,won:0,rate:0,stake:0,returned:0,net:0,rows:[]};
           return <details key={definition.id} className="purchase-history-group">
             <summary><strong>{definition.title}</strong><span>中奖 / 已结算 {history.won} / {history.settled}</span><span>中奖率 {history.settled?`${history.rate.toFixed(1)}%`:"待积累"}</span><span>投入 / 返还 <SignedPurchaseMoney value={history.stake} flow="stake"/> / <SignedPurchaseMoney value={history.returned} flow="return"/></span><span>净收益 <SignedPurchaseMoney value={history.net}/></span></summary>
-            {samples&&<>
-              <p className="purchase-risk">留档 {samples.ticketCount} 张票 / {samples.batchCount} 个真实批次；已知身份去重 {samples.uniqueFixtureCount} 场 / {samples.salesDayCount} 个销售日，其中已结算涉及 {samples.settledUniqueFixtureCount} 场 / {samples.settledSalesDayCount} 日。去重场次数不等于统计独立样本数，共享场次的票不能当成独立预测。{samples.unidentifiedFixtureOccurrences>0&&` 有${samples.unidentifiedFixtureOccurrences}次比赛身份或销售日期缺失，未推定为已知场次。`}{samples.fixtureIdentityConflicts>0&&` 有${samples.fixtureIdentityConflicts}个官方比赛ID的销售日期冲突，未计入去重场次。`}</p>
-              <details className="purchase-history-panel"><summary>冻结模型 / 策略版本分组（{samples.versionGroups.length}组）</summary>
-                <div className="purchase-history-scroll"><table><thead><tr><th>模型 / 校准</th><th>决策策略</th><th>票数 / 已结算</th><th>已知去重场次 / 销售日</th><th>冻结风险设置</th></tr></thead><tbody>{samples.versionGroups.map(group=><tr key={group.key}><td>{group.baseModelVersion||"未知"}<small>校准 {group.calibrationVersion||"未知"}</small></td><td>{group.decisionPolicy||"未知"}</td><td>{group.ticketCount} / {group.settledTicketCount}</td><td>{group.uniqueFixtureCount} / {group.salesDayCount}</td><td>{group.riskPolicy?Object.entries(group.riskPolicy).map(([key,value])=>`${key}=${String(value)}`).join(" · "):"未知（不回填当前设置）"}</td></tr>)}</tbody></table></div>
-                <p className="purchase-risk">按留档中的模型、校准、决策策略及完整风险设置分组；未知版本不回填，组内也不保证概率独立。原始逐批票与结算金额保持不变。</p>
-              </details>
-            </>}
             <div className="purchase-history-scroll"><table><thead><tr><th>日期 / 批次</th><th>投注内容</th><th>结算</th><th>投入</th><th>模拟返还</th><th>净收益</th></tr></thead><tbody>
               {history.rows.length?history.rows.map((row:{snapshotId:string;date:string;generatedAt:string;plan:PurchasePlan})=>{
-                const settled=["won","lost","corrected_won","corrected_lost","void_won","void_lost","refunded"].includes(row.plan.status);
+                const settled=["won","lost","corrected_won","corrected_lost","void_won","void_lost"].includes(row.plan.status);
                 return <tr key={`${row.snapshotId}-${row.plan.originPlanId||row.plan.id}`}><td>{row.date}<small>{new Date(row.generatedAt).toLocaleTimeString("zh-CN",{hour:"2-digit",minute:"2-digit"})}</small></td><td>{row.plan.items.map(item=><div className="purchase-history-item" key={`${item.officialMatchId||item.matchId}-${item.market}`}><b>{item.matchId}</b> {item.home} vs {item.away} · {item.marketName} {(item.picks?.length?item.picks.map(pick=>pick.pick):[item.pick]).join(" / ")}<span className="purchase-history-outcome">最终赛果 {purchaseHistoryActual(item)} · 购入赔率 {purchaseHistoryOdds(item)}</span></div>)}<PurchasePlanReturns plan={row.plan}/></td><td>{planResult(row.plan)}</td><td>{settled?<SignedPurchaseMoney value={row.plan.stake} flow="stake"/>:"—"}</td><td>{settled?<SignedPurchaseMoney value={row.plan.simulatedReturn||0} flow="return"/>:"—"}</td><td>{settled?<SignedPurchaseMoney value={(row.plan.simulatedReturn||0)-row.plan.stake}/>:"—"}</td></tr>;
               }):<tr><td colSpan={6}>暂无该玩法的正式历史票</td></tr>}
             </tbody></table></div>
@@ -796,11 +721,9 @@ function DailyPurchasePlans({
                       注数 <b>{plan.betCount || 1} 注</b>
                     </span>
                     <span>
-                      整票模型概率{" "}
+                      模型概率{" "}
                       <b>{(plan.estimatedProbability * 100).toFixed(2)}%</b>
                     </span>
-                    <span>总投入 <SignedPurchaseMoney value={plan.stake} flow="stake"/></span>
-                    <span>概率口径 <b>跨场独立假设</b></span>
                   </div>
                   <ol>
                     {plan.items.map((item) => (
@@ -828,13 +751,13 @@ function DailyPurchasePlans({
                             </i>
                           )}
                         </div>
-                        <small className="purchase-coverage">所选结果单场覆盖率 {purchaseSelectionCoverage(item)}</small>
                       </li>
                     ))}
                   </ol>
                   <PurchasePlanReturns plan={plan}/>
-                  <PurchasePlanDecision plan={plan}/>
+                  <p className="purchase-risk">筛选目标：{plan.decision?.objective||"历史版本未记录"}。全部未中时损失 ¥{plan.stake.toFixed(2)}。{plan.decision?.targetNetProfit!=null&&<>目标为命中后净盈利 ¥{plan.decision.targetNetProfit.toFixed(2)}；{plan.decision.targetMet?"在目标区间":"未达目标区间，当前为最接近方案"}。</>}</p>
                   <footer>
+                    <span>投入 <SignedPurchaseMoney value={plan.stake} flow="stake"/></span>
                     <strong>{planResult(plan)}</strong>
                   </footer>
               </>
@@ -861,11 +784,10 @@ function DailyPurchasePlans({
 export default function TodayRecommendations() {
   const [data, setData] = useState<SavedPredictionSet | null>(null),
     [loadError, setLoadError] = useState("");
-  const [versionRefresh, setVersionRefresh] = useState(0);
-  const [historicalVersion, setHistoricalVersion] = useState<SavedPredictionSet | null>(null);
   const [count, setCount] = useState(2),
     [scoreCount, setScoreCount] = useState(2),
     [markets, setMarkets] = useState<RecommendationMarket[]>(["score"]),
+    model: Model = "consensus",
     [groupCount, setGroupCount] = useState(1),
     [allowLow, setAllowLow] = useState(false),
     [results, setResults] = useState<Combination[]>([]),
@@ -875,27 +797,37 @@ export default function TodayRecommendations() {
     official = useOfficialMarkets(data);
   const [selectedMatchDate, setSelectedMatchDate] = useState("");
   useEffect(() => {
-    const controller = new AbortController();
-    let expiry: ReturnType<typeof setTimeout> | undefined;
-    const query = new URLSearchParams(window.location.search);
-    const predictionId = query.get("predictionId") || undefined;
-    const salesDate = query.get("salesDate") || (predictionId ? undefined : new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10));
-    setLoadError(predictionVersionMessage("loading"));
-    setData(null); setHistoricalVersion(null);
-    void fetchServerPrediction({ salesDate, predictionId, signal: controller.signal }).then(result => {
-      if (controller.signal.aborted) return;
-      if (result.status === "ready" && result.eligible === true) {
-        setData(result.snapshot); setLoadError("");
-        const remaining = Date.parse(result.expiresAt) - Date.now();
-        if (!(remaining > 0)) { setData(null); setLoadError(predictionVersionMessage("expired")); return; }
-        expiry = setTimeout(() => { setData(null); setLoadError(predictionVersionMessage("expired")); }, remaining);
-      } else {
-        if (result.status === "historical") setHistoricalVersion(result.snapshot);
-        setLoadError(predictionVersionMessage(result.status));
+    let active=true;
+    void readBrowserData<SavedPredictionSet|null>(PREDICTION_STORAGE_KEY,null).then(saved=>{
+      if(!active)return;
+      if (!saved) {
+        setLoadError(
+          "尚未找到已保存的 AI 预测。请先进入“AI预测”生成赔率预测，并完成 AI 复核。",
+        );
+        return;
       }
-    }).catch(() => { if (!controller.signal.aborted) setLoadError(predictionVersionMessage("unavailable")); });
-    return () => { controller.abort(); if (expiry) clearTimeout(expiry); };
-  }, [versionRefresh]);
+      const today = new Date(Date.now() + 8 * 60 * 60 * 1000)
+        .toISOString()
+        .slice(0, 10);
+      if (saved.date !== today) {
+        setLoadError(
+          "已保存的预测不是今日数据，请返回“AI预测”刷新并重新复核。",
+        );
+        return;
+      }
+      if (
+        !saved.predictionId || !Array.isArray(saved.matches) ||
+        saved.matches.some((match) => match.predictionId !== saved.predictionId)
+      ) {
+        setLoadError(
+          "旧预测缺少统一版本标识，请返回“AI预测”刷新；旧 AI 结果不会覆盖新盘口。",
+        );
+        return;
+      }
+      setData(saved);
+    }).catch(()=>{if(active)setLoadError("已保存的预测数据无法读取，请返回“AI预测”重新生成。")});
+    return()=>{active=false};
+  }, []);
   const availableMatchDates = useMemo(
     () =>
       Array.from(
@@ -950,19 +882,20 @@ export default function TodayRecommendations() {
           return [];
         if (!allowLow && match.completeness < MIN_COMPLETENESS) return [];
         return markets.flatMap((market) => {
-          if(market==="halfFull")return [];
           const eligibility=current.marketEligibility?.[marketEligibilityNames[market]],cutoff=eligibility?.cutoffAt?parseZonedKickoff(eligibility.cutoffAt):kickoff;
           if(eligibility?.qualification!=="qualified"||String(eligibility.salesStatus||"").toLowerCase()!=="selling"||!eligibility.allowedPassCounts?.includes(count)||!Number.isFinite(cutoff)||cutoff<=now)return [];
           if(market==="hhad"&&(!String(eligibility.handicap??"").trim()||!String(match.handicap??"").trim()||Number(eligibility.handicap)!==Number(match.handicap)))return [];
           const selected = market === "score"
             ? mergeScores(match)
             : market === "had"
-              ? { scores: match.hadProbabilities || [] }
+              ? { scores: match.hadProbabilities || [], singleModel: false }
               : market === "hhad"
-                ? { scores: match.hhadProbabilities || [] }
-                : { scores: match.totalGoalProbabilities || [] };
+                ? { scores: match.hhadProbabilities || [], singleModel: false }
+                : market === "total" ? {
+                    scores: match.totalGoalProbabilities || [],
+                    singleModel: Boolean(match.singleModel),
+                  } : {scores:match.halfFullProbabilities||[],singleModel:Boolean(match.singleModel)};
           if (!selected?.scores.length) return [];
-          if(market!=="score"&&!completeDistribution(selected.scores,MARKET_META[market].labels))return [];
           const scores = selected.scores
           .slice()
           .sort((a, b) => b.probability - a.probability)
@@ -975,13 +908,18 @@ export default function TodayRecommendations() {
             market,
             scores: priceRecommendationSelections(scores, market, current),
             coverage,
-            completeness: match.completeness,
+            confidence: match.confidence,
+            completeness: selected.singleModel
+              ? Math.max(1, match.completeness - 2)
+              : match.completeness,
+            singleModel: selected.singleModel,
           }];
         });
       })
       .sort(
         (a, b) =>
           b.coverage - a.coverage ||
+          b.confidence - a.confidence ||
           b.completeness - a.completeness ||
           a.match.time.localeCompare(b.match.time),
       )
@@ -1026,13 +964,13 @@ export default function TodayRecommendations() {
         oddsFetchedAt: latest.fetchedAt,
         returns: calculateRecommendationReturns(items.map(item => ({matchKey: officialKey(item.match), market: item.market, scores: item.scores}))),
       }))
-      .filter(combination => combination.returns.status === "ready" && combination.returns.minWinningProfit >= 0 && assessRecommendation(combination.items.map(item=>({officialMatchId:item.match.officialMatchId,salesDate:item.match.salesDate,market:item.market,scores:item.scores}))).eligible)
+      .filter(combination => combination.returns.status === "ready" && combination.returns.minWinningProfit >= 0)
       .sort(
         (a, b) =>
-          (b.returns.status==="ready"?b.returns.expectedROI??-Infinity:-Infinity)-(a.returns.status==="ready"?a.returns.expectedROI??-Infinity:-Infinity) || b.probability - a.probability ||
+          b.probability - a.probability ||
           b.averageCompleteness - a.averageCompleteness,
       );
-    if (!combos.length) { setResults([]); throw new Error("本次未生成研究组合：合规候选中没有符合返奖约束、收益余量与压力检查的组合；不保证全市场没有机会。"); }
+    if (!combos.length) { setResults([]); throw new Error("缺少完整赔率，或命中后最低盈利为负；没有符合返奖约束的组合，未生成推荐。"); }
     setResults(combos.slice(0, groupCount));
       setGeneratedAt(new Date(now).toISOString());
     } catch (error) {
@@ -1046,7 +984,7 @@ export default function TodayRecommendations() {
           <p className="eyebrow">TRACEABLE COMBINATIONS</p>
           <h2>今日推荐</h2>
           <p className="recommendation-intro">
-            读取服务端保存的同一不可变预测版本，不在本页重新融合概率。
+            读取“AI预测”保存的不可变概率版本，不在本页重新融合。
             {data?.predictionId && ` 版本 ${data.predictionId}`}
           </p>
         </div>
@@ -1055,10 +993,6 @@ export default function TodayRecommendations() {
         </a>
       </div>
       {loadError && <div className="data-fallback">{loadError}</div>}
-      <button className="source-link" onClick={() => setVersionRefresh(value => value + 1)}>刷新预测版本</button>
-      {historicalVersion && <details className="data-fallback"><summary>历史版本 {historicalVersion.predictionId}</summary>
-        {historicalVersion.matches.map(match => <p key={match.officialMatchId}>{match.id} {match.home} vs {match.away} · {(match.hadProbabilities || []).map(point => `${point.score} ${point.probability.toFixed(2)}%`).join(" / ")}</p>)}
-      </details>}
       <div className="recommendation-lottery-date">
         <label>
           <span>彩票日期</span>
@@ -1094,9 +1028,6 @@ export default function TodayRecommendations() {
         data={data}
         lotteryDate={effectiveMatchDate}
       />
-      <details className="purchase-history-panel research-combinations">
-      <summary><strong>自选组合研究试算</strong><span>非每日正式票，不纳入正式统计或倍投序列</span></summary>
-      <p className="purchase-risk">这只是对同一份固定概率的不同选项试算，不是独立模型意见。每组金额分别计算，不能把重叠组当成独立命中机会；正式推荐请使用上方经过预算、重叠和压力筛选的每日票。</p>
       <div className="recommendation-controls">
         <fieldset disabled={generating}>
           <legend>推荐玩法</legend>
@@ -1110,8 +1041,7 @@ export default function TodayRecommendations() {
                   <input
                     type="checkbox"
                     name={`recommendation-market-${value}`}
-                    checked={value!=="halfFull"&&markets.includes(value)}
-                    disabled={value==="halfFull"}
+                    checked={markets.includes(value)}
                     onChange={() => {
                       const next=markets.includes(value)?markets.filter(item=>item!==value):[...markets,value];
                       if(!next.length)return;
@@ -1121,13 +1051,13 @@ export default function TodayRecommendations() {
                       setResults([]);
                     }}
                   />
-                  <span>{marketNames[value]}{value==="halfFull"?"（研究中，新组合暂停）":""}</span>
+                  <span>{marketNames[value]}</span>
                 </label>
               ),
             )}
           </div>
           <small>
-            可多选玩法进行研究；同一场比赛只出现一次。半全场尚缺独立验证，暂停生成新正式票，也不在本试算中提供新票。
+            可多选玩法并跨玩法生成组合；每个组合中的同一场比赛只会出现一次，半全场仅纳入官方资格有效且已保存完整概率的比赛。
         </small>
       </fieldset>
       <fieldset disabled={generating}>
@@ -1211,7 +1141,7 @@ export default function TodayRecommendations() {
               checked={allowLow}
               onChange={(event) => setAllowLow(event.target.checked)}
             />
-            允许较低输入完整度（仍须官方资格有效）
+            允许低完整度或双模型缺一的数据
           </label>
         </fieldset>
         <div className="generate-row">
@@ -1220,14 +1150,14 @@ export default function TodayRecommendations() {
             <span>
               {availableCandidateMatches < count
                 ? `${effectiveMatchDate ? formatMatchDay(effectiveMatchDate) : "当前筛选"}只有 ${availableCandidateMatches} 场比赛具备完整预测数据，无法生成 ${count} 场组合。`
-                : "候选按同一模型覆盖概率与输入完整度筛选，试算按模型ROI排序"}
+                : "已按覆盖概率、置信度、完整度和开赛时间排序"}
             </span>
           </div>
           <button
             disabled={!data || availableCandidateMatches < count || generating}
             onClick={generate}
           >
-            {generating ? "读取体彩赔率…" : "生成研究试算"}
+            {generating ? "读取体彩赔率…" : "生成推荐"}
           </button>
         </div>
       </div>
@@ -1248,13 +1178,13 @@ export default function TodayRecommendations() {
                     {scoreCount}个{selectionLabel}
                   </h3>
                   <small>
-                    固定概率研究试算 · 非正式票
+                    {modelNames[model]}
                     {generatedAt &&
                       ` · ${new Date(generatedAt).toLocaleString("zh-CN")}`}
                   </small>
                 </div>
                 <div>
-                  <span>独立假设下的模型组合概率</span>
+                  <span>组合估算概率</span>
                   <strong>{(combo.probability * 100).toFixed(3)}%</strong>
                   <small>
                     平均完整度 {combo.averageCompleteness.toFixed(1)}/10
@@ -1293,8 +1223,14 @@ export default function TodayRecommendations() {
                         覆盖概率 <b>{(item.coverage * 100).toFixed(1)}%</b>
                       </span>
                       <span>
-                        输入完整度 <b>{item.completeness}/10</b>
+                        模型置信度 <b>{confidenceLabel(item.confidence)}</b>
                       </span>
+                      <span>
+                        数据完整度 <b>{item.completeness}/10</b>
+                      </span>
+                      {item.singleModel && (
+                        <span className="single-model">仅有单模型数据</span>
+                      )}
                     </div>
                     <p>
                       <b>关键理由：</b>
@@ -1304,7 +1240,7 @@ export default function TodayRecommendations() {
                         : item.market === "had"
                           ? `胜平负模型中“${item.scores.map((value) => value.score).join("、")}”的概率覆盖在当前候选中靠前。`
                           : item.market === "hhad"
-                            ? `体彩让球 ${item.match.handicap || "—"} 场景中，“${item.scores.map((value) => value.score).join("、")}”统一比分分布派生概率覆盖较高。`
+                            ? `体彩让球 ${item.match.handicap || "—"} 场景中，“${item.scores.map((value) => value.score).join("、")}”去水概率覆盖较高。`
                             : item.market === "total"
                               ? `总进球模型中“${item.scores.map((value) => value.score).join("、")}”的累计覆盖概率在当前候选中靠前。`
                               : `半全场模型中“${item.scores.map((value) => value.score).join("、")}”的累计覆盖概率在当前候选中靠前。`}
@@ -1339,9 +1275,8 @@ export default function TodayRecommendations() {
         <p>
           同一场多个比分、总进球数或赛果选项互斥，覆盖概率采用加法；不同比赛暂按相互独立处理，组合概率采用各场覆盖概率的小数乘积。组合概率是模型估算值，共同因素可能造成相关性，实际概率不一定等于简单乘积，也不构成命中保证。
         </p>
-        <p>盈利为税前情景测算：每场选项数相乘得到注数，总投入＝注数×2元；中奖返还按每场命中选项的体彩 SP 连乘×2元计算。“中奖时最低”不是保底收益，未中奖可能损失本组全部投入。研究组合逐组测算，未合计重叠方案的组合风险，也未统一执行正式组合的预算筛选；不能把它们视为独立机会。实际奖金以出票赔率及官方无效场次、限额等规则为准。 <a href="https://m.sporttery.cn/bzzx/20210207/3273604.html?gid=3" target="_blank" rel="noreferrer">体彩计奖规则</a></p>
+        <p>盈利为税前情景测算：每场选项数相乘得到注数，总投入＝注数×2元；中奖返还按每场命中选项的体彩 SP 连乘×2元计算。“中奖时最低”不是保底收益，未中奖可能损失本组全部投入。各组独立计算，不合并重叠方案；实际奖金以出票赔率及官方无效场次、限额等规则为准。 <a href="https://m.sporttery.cn/bzzx/20210207/3273604.html?gid=3" target="_blank" rel="noreferrer">体彩计奖规则</a></p>
       </div>
-      </details>
     </section>
   );
 }
