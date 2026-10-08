@@ -41,6 +41,8 @@ const aliasGroups={
  "fortunaSittard":["福图纳","福图纳锡塔德"],
  "consadoleSapporo":["札幌冈萨","札幌冈萨多"],
  "kuopioPalloseura":["库奥皮奥","库普斯"],
+ "acOulu":["AC奥卢","奥卢"],
+ "atleticoMineiro":["米竞技","米内罗竞技"],
  "elversberg":["埃沃斯堡","埃尔沃斯贝格"],
  "getafe":["赫塔费","赫塔菲"],
  "deportivoCoruna":["拉科","拉科鲁尼亚"],
@@ -117,7 +119,7 @@ const aliasGroups={
  "realSaltLake":["盐湖城","皇家盐湖城"],
 };
 
-export const TEAM_ALIAS_VERSION="verified-zh-aliases-2026-09-26.1";
+export const TEAM_ALIAS_VERSION="verified-zh-aliases-2026-10-08.1";
 export const TEAM_ALIAS_INDEX=new Map(Object.entries(aliasGroups).flatMap(([identity,names])=>names.map(name=>[normalize(name),identity])));
 export const teamIdentity=(value,league="")=>{
  const name=normalize(value);
