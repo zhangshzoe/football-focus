@@ -8,7 +8,24 @@ import {join} from "node:path";
 import {fileURLToPath} from "node:url";
 import {spawnSync} from "node:child_process";
 import {writePurchaseAttempt} from "../scripts/purchase-capture-attempt.mjs";
+import {recommendationComplete,recommendationLabel} from "../app/purchase-snapshot-status.js";
 const target="2026-10-09T17:00:00+08:00", t=Date.parse(target);
+test("daily recommendation completeness and labels do not pretend strict eligibility",()=>{
+ assert.equal(recommendationComplete({sourceCoverage:{eligible:10,predicted:9}}),false);
+ assert.equal(recommendationComplete({sourceCoverage:{eligible:10,predicted:10},cutoffStatus:"unknown",includedInStrictEvaluation:false}),true);
+ assert.match(recommendationLabel({scheduledTime:"21:00",captureTiming:"delayed",qualityStatus:"partial",cutoffStatus:"unknown"}),/21:00推荐快照 · 延迟采集 · 部分场次 · 截止时间未知/);
+});
+test("partial batch retries append improved coverage and never overwrite the first snapshot",async()=>{
+ const directory=await mkdtemp(join(tmpdir(),"football-purchase-recovery-"));
+ try{
+  const run=partial=>spawnSync(process.execPath,["--import",new URL("./fixtures/capture-runtime.mjs",import.meta.url).href,fileURLToPath(new URL("../scripts/capture-purchase-plan-snapshot.mjs",import.meta.url)),"--slot=2100"],{cwd:directory,encoding:"utf8",env:{...process.env,TEST_CAPTURE_NOW:String(Date.parse("2026-10-09T21:20:00+08:00")),TEST_CAPTURE_COMPLETE:"1",TEST_CAPTURE_MISSING_CUTOFF:"1",TEST_CAPTURE_PARTIAL:partial?"1":"0"}});
+  const first=run(true);assert.equal(first.status,0,first.stderr);const initial=JSON.parse(first.stdout);const before=await readFile(initial.output,"utf8");
+  const same=run(true);assert.equal(same.status,0,same.stderr);assert.equal(JSON.parse(same.stdout).reason,"unchanged-partial-snapshot");
+  const second=run(false);assert.equal(second.status,0,second.stderr);const recovered=JSON.parse(second.stdout);assert.equal(recovered.status,"saved");assert.notEqual(recovered.output,initial.output);
+  assert.equal(await readFile(initial.output,"utf8"),before);assert.equal(JSON.parse(await readFile(recovered.output,"utf8")).sourceCoverage.predicted,5);
+  assert.equal(JSON.parse(run(false).stdout).reason,"daily-snapshot-exists");
+ }finally{await rm(directory,{recursive:true,force:true});}
+});
 test("purchase supports pre-window but cannot backfill a closed or next-day batch",()=>{
  assert.equal(captureWindow(t-15*60000,target,{purchase:true,preWindow:true}),"eligible");
  assert.equal(captureWindow(t-15*60000-1,target,{purchase:true,preWindow:true}),"before-window");

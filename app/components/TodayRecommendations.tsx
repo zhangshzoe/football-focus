@@ -2,6 +2,7 @@
 "use client";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import PurchaseDoublingSummary from "./PurchaseDoublingSummary";
+import {recommendationLabel} from "../purchase-snapshot-status.js";
 import {readBrowserData} from "../browser-storage";
 import {fetchOfficialSporttery} from "../sporttery-official";
 import {PROMOTED_PURCHASE_TRIAL,promoteSavedPurchaseTrial} from "../purchase-trial-promotion.js";
@@ -172,6 +173,9 @@ type PurchasePlanSet = {
   contentHash?: string;
   scheduledTime?: string;
   promotionKind?: "manual-exception";
+  captureTiming?: string;
+  qualityStatus?: string;
+  cutoffStatus?: string;
 };
 function SignedPurchaseMoney({value,flow="net"}:{value:number;flow?:"net"|"stake"|"return"}){
   const amount=Number.isFinite(value)?value:0;
@@ -412,7 +416,7 @@ function DailyPurchasePlans({
       plans: deduplicatePurchasePlans(selected.plans).map((plan) => settlePurchasePlan(plan, results)),
     });
     setStatus(
-      `${purchaseSlot(selected)==="current" ? "当前采集（非固定票）" : selected.promotionKind === "manual-exception" ? "手动转正式" : selected.snapshotId?.startsWith("manual-trial-")?"手动试算":selected.date === shanghaiDate() ? "今日正式" : "历史正式"}方案 · ${new Date(selected.generatedAt).toLocaleTimeString("zh-CN", { timeZone:"Asia/Shanghai", hour: "2-digit", minute: "2-digit" })}批次`,
+      `${purchaseSlot(selected)==="current" ? "当前采集（非固定票）" : selected.promotionKind === "manual-exception" ? "手动转正式" : selected.snapshotId?.startsWith("manual-trial-")?"手动试算":recommendationLabel(selected)} · ${new Date(selected.generatedAt).toLocaleTimeString("zh-CN", { timeZone:"Asia/Shanghai", hour: "2-digit", minute: "2-digit" })}实际生成`,
     );
     setBusy(false);
   }
@@ -440,7 +444,7 @@ function DailyPurchasePlans({
             ? archive.purchasePlanSnapshots
             : []
         )
-          .map((snapshot: { planSet?: PurchasePlanSet }) => snapshot.planSet)
+          .map((snapshot: { planSet?: PurchasePlanSet; captureTiming?: string; qualityStatus?: string; cutoffStatus?: string }) => snapshot.planSet ? {...snapshot.planSet,captureTiming:snapshot.captureTiming||snapshot.planSet.captureTiming,qualityStatus:snapshot.qualityStatus||snapshot.planSet.qualityStatus,cutoffStatus:snapshot.cutoffStatus||snapshot.planSet.cutoffStatus} : undefined)
           .filter(
             (item: PurchasePlanSet | undefined): item is PurchasePlanSet =>
               hasPurchasePlanData(item),
@@ -592,7 +596,7 @@ function DailyPurchasePlans({
                   key={item.snapshotId || item.generatedAt}
                   value={item.snapshotId || item.generatedAt}
                 >
-                  {purchaseSlot(item)==="current" ? "当前采集（非固定票） · " : item.promotionKind === "manual-exception" ? "手动转正式 · " : item.snapshotId?.startsWith("manual-trial-")?"手动试算 · ":"正式快照 · "}{item.date}{" "}
+                  {purchaseSlot(item)==="current" ? "当前采集（非固定票） · " : item.promotionKind === "manual-exception" ? "手动转正式 · " : item.snapshotId?.startsWith("manual-trial-")?"手动试算 · ":`${recommendationLabel(item)} · `}{item.date}{" "}
                   {new Date(item.generatedAt).toLocaleTimeString("zh-CN", {
                     timeZone: "Asia/Shanghai",
                     hour: "2-digit",

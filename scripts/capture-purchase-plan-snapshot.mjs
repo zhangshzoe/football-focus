@@ -4,6 +4,7 @@ import {join} from "node:path";
 import {generatePurchasePlans,MARKET_META} from "../app/purchase-plan-engine.js";
 import {captureWindow,captureEvidence,assertOfficialInput,assertCoverage,requestJson,selectSellingInputs,changedOfficialOdds} from "./capture-contract.mjs";
 import {writePurchaseAttempt} from "./purchase-capture-attempt.mjs";
+import {recommendationComplete} from "../app/purchase-snapshot-status.js";
 
 const baseUrl=process.env.FOOTBALL_FOCUS_URL||"http://localhost:3000";
 const directory=join(process.cwd(),"data","purchase-plan-snapshots");
@@ -33,7 +34,8 @@ if(windowState!=="eligible"){
  process.exit(0);
 }
 const existingNames=(await readdir(directory)).filter(name=>name.startsWith(`${date}_`)&&name.endsWith(".json"));
-for(const name of existingNames){try{const record=JSON.parse(await readFile(join(directory,name),"utf8"));if(record?.recordType==="purchase-plan-snapshot"&&record.immutable===true&&record.scheduledAt===scheduledAt&&Array.isArray(record?.planSet?.plans)&&record.planSet.plans.length){console.log(JSON.stringify({status:"skipped",reason:"daily-snapshot-exists",slot,snapshotId:record.snapshotId,capturedAt:checkedAt,version:record.planSet.version}));process.exit(0)}}catch{/* 损坏文件不阻断新快照。 */}}
+const batchRecords=[];
+for(const name of existingNames){try{const record=JSON.parse(await readFile(join(directory,name),"utf8"));if(record?.recordType==="purchase-plan-snapshot"&&record.immutable===true&&record.scheduledAt===scheduledAt&&Array.isArray(record?.planSet?.plans)&&record.planSet.plans.length){batchRecords.push(record);if(recommendationComplete(record)){console.log(JSON.stringify({status:"skipped",reason:"daily-snapshot-exists",slot,snapshotId:record.snapshotId,checkedAt,version:record.planSet.version}));process.exit(0)}}}catch{/* 损坏文件不阻断新快照。 */}}
 const matchesData=await requestJson(`${baseUrl}/api/sporttery`,{cache:"no-store"});
 // 固定组合票严格按竞彩销售日生成；提前开售的次日场次不能混入当天方案。
 if(!Array.isArray(matchesData.matches))throw new Error("官方清单未知，拒绝留档");
@@ -90,15 +92,20 @@ record.inputHash||=digest(matches);
 Object.assign(record,captureEvidence(scheduledAt,checkedAt,capturedAt,completedAt,reports),{modelVersion:predictionData.version?.modelVersion||reports[0]?.baseModelVersion||predictionData.methodology});
 record.sourceCoverage={listed:matchesData.matches.filter(match=>match.salesDate===date).length,eligible:matches.length,predicted:reports.length,excluded};
 record.cutoffStatus=evaluatedMatches.some(match=>Object.values(match.marketEligibility||{}).some(m=>m.qualification==="qualified"&&m.cutoffStatus==="unknown"))?"unknown":"provided";
-record.qualityStatus=excluded.length?"partial":record.cutoffStatus==="unknown"?"cutoff-unknown":"complete";
+record.qualityStatus=reports.length<matches.length?"partial":record.cutoffStatus==="unknown"?"cutoff-unknown":"complete";
 if(current||record.qualityStatus!=="complete"){record.includedInStrictEvaluation=false;record.includedInPreMatchEvaluation=false;}
 if(record.cutoffStatus==="unknown")planSet.source=`官方在售状态确认；停售时间未知（不进入严格验证） · ${planSet.source}`;
 if(excluded.length)planSet.source=`已核验部分场次，排除${excluded.length}场 · ${planSet.source}`;
-Object.assign(planSet,{captureTiming:record.captureTiming,includedInStrictEvaluation:record.includedInStrictEvaluation});
+Object.assign(planSet,{captureTiming:record.captureTiming,includedInStrictEvaluation:record.includedInStrictEvaluation,qualityStatus:record.qualityStatus,cutoffStatus:record.cutoffStatus,sourceCoverage:record.sourceCoverage});
 if(current)planSet.source=`当前实际采集（非17点/21点批次） · ${planSet.source}`;
 else if(record.captureTiming==="delayed")planSet.source=`延迟批次（不进入严格前瞻验证） · ${planSet.source}`;
-// A deterministic batch filename makes concurrent writers share one wx boundary.
-const output=join(directory,current?`${date}_current_${clock}.purchase.json`:`${date}_${slot}.purchase.json`);
+// Partial recovery appends a distinct immutable result; identical retries share a wx boundary.
+const resultKey=value=>digest({contentHash:value.contentHash,coverage:value.sourceCoverage,cutoffStatus:value.cutoffStatus});
+if(batchRecords.some(prior=>resultKey(prior)===resultKey(record))){
+ await writePurchaseAttempt({...attemptBase,status:"unchanged",snapshotId:batchRecords[0].snapshotId,reason:"重新采集结果未变化，保留已有部分记录"});
+ console.log(JSON.stringify({status:"skipped",reason:"unchanged-partial-snapshot",slot,checkedAt}));process.exit(0);
+}
+const output=join(directory,current?`${date}_current_${clock}.purchase.json`:batchRecords.length?`${date}_${slot}_retry_${resultKey(record).slice(0,16)}.purchase.json`:`${date}_${slot}.purchase.json`);
 await writeFile(output,`${JSON.stringify(record,null,2)}\n`,{encoding:"utf8",flag:"wx"}).catch(error=>{
  if(error.code!=="EEXIST")throw error;
  console.log(JSON.stringify({status:"skipped",reason:"daily-snapshot-exists",slot,checkedAt}));
