@@ -209,7 +209,7 @@ function purchaseHistoryActual(item:PurchaseItem){
 type PurchaseResult = {id?:string;matchId?:string;officialMatchId?:string;date?:string;matchDate?:string};
 const currentPurchasePlanIds=new Set(PURCHASE_PLAN_DEFINITIONS.map(definition=>definition.id));
 const hasPurchasePlanData=(item:PurchasePlanSet|undefined|null)=>Boolean(deduplicatePurchasePlans(item?.plans).some(plan=>currentPurchasePlanIds.has(plan.id)&&plan.status!=="unavailable"&&Array.isArray(plan.items)&&plan.items.length>0));
-const purchaseSlot=(item:PurchasePlanSet)=>item.scheduledTime==="21:00"?"2100":"1700";
+const purchaseSlot=(item:PurchasePlanSet)=>item.scheduledTime&&item.scheduledTime!=="17:00"&&item.scheduledTime!=="21:00"?"current":item.scheduledTime==="21:00"?"2100":"1700";
 type OfficialMatch = OfficialRecommendationMatch;
 const shanghaiDate = () =>
   new Intl.DateTimeFormat("en-CA", {
@@ -412,7 +412,7 @@ function DailyPurchasePlans({
       plans: deduplicatePurchasePlans(selected.plans).map((plan) => settlePurchasePlan(plan, results)),
     });
     setStatus(
-      `${selected.promotionKind === "manual-exception" ? "手动转正式" : selected.snapshotId?.startsWith("manual-trial-")?"手动试算":selected.date === shanghaiDate() ? "今日正式" : "历史正式"}方案 · ${new Date(selected.generatedAt).toLocaleTimeString("zh-CN", { timeZone:"Asia/Shanghai", hour: "2-digit", minute: "2-digit" })}批次`,
+      `${purchaseSlot(selected)==="current" ? "当前采集（非固定票）" : selected.promotionKind === "manual-exception" ? "手动转正式" : selected.snapshotId?.startsWith("manual-trial-")?"手动试算":selected.date === shanghaiDate() ? "今日正式" : "历史正式"}方案 · ${new Date(selected.generatedAt).toLocaleTimeString("zh-CN", { timeZone:"Asia/Shanghai", hour: "2-digit", minute: "2-digit" })}批次`,
     );
     setBusy(false);
   }
@@ -467,11 +467,11 @@ function DailyPurchasePlans({
               ]),
           ).values(),
         ).filter(hasPurchasePlanData);
-        const storedTrials=(Array.isArray(saved.trials)?saved.trials:[]).filter(hasPurchasePlanData) as PurchasePlanSet[];
+        const storedTrials=[...(Array.isArray(saved.trials)?saved.trials:[]),...allSets.filter(item=>purchaseSlot(item)==="current")].filter(hasPurchasePlanData) as PurchasePlanSet[];
         const promoted=storedTrials.map(trial=>promoteSavedPurchaseTrial(trial,allSets.filter(set=>purchaseSlot(set)==="1700").map(set=>set.date)) as PurchasePlanSet|null).filter((trial):trial is PurchasePlanSet=>Boolean(trial));
         const targetTrial=storedTrials.find(trial=>trial.snapshotId===PROMOTED_PURCHASE_TRIAL.snapshotId);
         const promotionRejected=Boolean(targetTrial&&!promoted.length&&!allSets.some(set=>set.date===PROMOTED_PURCHASE_TRIAL.date&&purchaseSlot(set)==="1700"));
-        const formalSets=[...allSets,...promoted];
+        const formalSets=[...allSets.filter(item=>purchaseSlot(item)!=="current"),...promoted];
         const cachedResults=Object.values(archive.resultCache&&typeof archive.resultCache==="object"?archive.resultCache:{}) as PurchaseResult[];
         const {results:historyResults,failed}=await fetchHistoricalPurchaseResults(formalSets,cachedResults);
         const settledSets=(deduplicatePurchasePlanSets(formalSets) as PurchasePlanSet[]).map(item=>({...item,plans:item.plans.map(plan=>settlePurchasePlan(plan,historyResults))}));
@@ -485,7 +485,7 @@ function DailyPurchasePlans({
           setPlanSet(null);
         }
         const selected=[...settledSets,...settledTrials]
-          .filter(item=>purchaseSlot(item)===activeSlot&&(!lotteryDate||item.date===lotteryDate))
+          .filter(item=>(purchaseSlot(item)===activeSlot||purchaseSlot(item)==="current")&&(!lotteryDate||item.date===lotteryDate))
           .sort((a,b)=>b.generatedAt.localeCompare(a.generatedAt))[0]||null;
         // 已归档方案必须按生成时赔率原样读取；没有 17:00 快照时不自动补造正式票。
         if (selected && active) await selectPlanSet(selected, historyResults);
@@ -552,7 +552,7 @@ function DailyPurchasePlans({
     const [year,month,day]=shanghaiDate().split("-").map(Number);
     return Array.from({length:7},(_,index)=>new Date(Date.UTC(year,month-1,day-index)).toISOString().slice(0,10));
   },[]);
-  const selectableSets=[...slotSets,...savedTrials.filter(item=>purchaseSlot(item)===activeSlot)].filter(item=>!lotteryDate||item.date===lotteryDate).sort((a,b)=>b.generatedAt.localeCompare(a.generatedAt));
+  const selectableSets=[...slotSets,...savedTrials.filter(item=>purchaseSlot(item)===activeSlot||purchaseSlot(item)==="current")].filter(item=>!lotteryDate||item.date===lotteryDate).sort((a,b)=>b.generatedAt.localeCompare(a.generatedAt));
   const latestFormalSet=slotSets[0];
   const visiblePlanModules=useMemo(()=>PURCHASE_PLAN_MODULES.map(module=>({
     ...module,
@@ -592,7 +592,7 @@ function DailyPurchasePlans({
                   key={item.snapshotId || item.generatedAt}
                   value={item.snapshotId || item.generatedAt}
                 >
-                  {item.promotionKind === "manual-exception" ? "手动转正式 · " : item.snapshotId?.startsWith("manual-trial-")?"手动试算 · ":"正式快照 · "}{item.date}{" "}
+                  {purchaseSlot(item)==="current" ? "当前采集（非固定票） · " : item.promotionKind === "manual-exception" ? "手动转正式 · " : item.snapshotId?.startsWith("manual-trial-")?"手动试算 · ":"正式快照 · "}{item.date}{" "}
                   {new Date(item.generatedAt).toLocaleTimeString("zh-CN", {
                     timeZone: "Asia/Shanghai",
                     hour: "2-digit",

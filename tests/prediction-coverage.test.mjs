@@ -5,6 +5,19 @@ import ts from "typescript";
 import {createElement} from "react";
 import {renderToStaticMarkup} from "react-dom/server";
 import {teamIdentity,teamNamesCompatible} from "../app/team-identity.js";
+import {confirmedFixtureMapping,manualMappingScopeCompatible} from "../app/team-identity.js";
+
+test("manual confirmation remains bound to fixture, names, time, league and expiry",()=>{
+ const official={id:"周五003",officialMatchId:"test-003",salesDate:"2026-10-09",kickoffAt:"2026-10-10T00:30:00+08:00",home:"海登海姆",away:"凯泽",league:"德乙"};
+ const external={CC_ID:"周五003",ID:"test-external-003",MATCH_TIME:"2026-10-10 00:30:00",HOST_NAME:"海登海姆",GUEST_NAME:"凯泽斯劳滕",LEAGUE_NAME_SIMPLY:"德乙"};
+ const now=Date.parse("2026-10-09T12:00:00+08:00");
+ const record={...official,externalId:external.ID,externalHome:external.HOST_NAME,externalAway:external.GUEST_NAME,externalTime:external.MATCH_TIME,externalLeague:external.LEAGUE_NAME_SIMPLY,confirmedAt:new Date(now).toISOString()};
+ assert.equal(manualMappingScopeCompatible(official,external),true);
+ assert.equal(confirmedFixtureMapping(official,external,[record],now),record);
+ for(const change of [{CC_ID:"周五004"},{LEAGUE_NAME_SIMPLY:"德甲"},{MATCH_TIME:"2026-10-11 00:30:00"},{MATCH_TIME:"2026-10-10 02:00:00"},{HOST_NAME:official.away,GUEST_NAME:official.home},{ID:"changed-id"},{GUEST_NAME:"changed-team"}])assert.equal(confirmedFixtureMapping(official,{...external,...change},[record],now),null);
+ assert.equal(confirmedFixtureMapping(official,external,[record],now+24*3600000+1),null);
+ assert.equal(confirmedFixtureMapping(official,external,[],now),null);
+});
 
 const compile=(source,fileName="test.ts")=>{
  const js=ts.transpileModule(source,{fileName,compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX}}).outputText;
@@ -81,7 +94,7 @@ test("prediction API recovers every confirmed alias and explains the reversed fi
  const external=fixtures.map(([id,,,home,away,league,kickoff])=>({ID:`test-feed-${id}`,CC_ID:`周一${id}`,HOST_NAME:home,GUEST_NAME:away,LEAGUE_NAME_SIMPLY:league,MATCH_TIME:kickoff,listOdds:[2,3,22].map(company=>({SOURCE_COMPANY_ID:company,COMPANY_NAME:`测试公司${company}`,WIN:2.1,SAME:3.2,LOST:3.4,HANDICAP:-.25,HOST:.9,GUEST:.9,DW_HANDICAP:2.5,BIG:.9,SMALL:.9,FIRST_WIN:2.2,FIRST_SAME:3.2,FIRST_LOST:3.3,FIRST_HANDICAP:-.25,FIRST_HOST:.9,FIRST_GUEST:.9,DW_FIRST_HANDICAP:2.5,FIRST_BIG:.9,FIRST_SMALL:.9}))}));
  const {POST}=await loadRoute(),originalFetch=globalThis.fetch;
  globalThis.fetch=async(url)=>{assert.equal(url,"https://plzx.zgzcw.com/odds/oyzs_ajax.action");return Response.json(external)};
- const predict=matches=>POST(new Request("http://localhost/api/predictions",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({matches})}));
+ const predict=(matches,manualMappings=[])=>POST(new Request("http://localhost/api/predictions",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({matches,manualMappings})}));
  try{
   const response=await predict(official),result=await response.json();
   assert.equal(response.status,200);
@@ -102,6 +115,18 @@ test("prediction API recovers every confirmed alias and explains the reversed fi
   assert.equal(result.unavailableOfficialMatches[0].officialMatchId,"test-014");
   assert.match(result.unavailableOfficialMatches[0].reason,/主客队顺序.*相反/);
   assert.equal(result.pendingVerification[0].candidateOfficialMatchIds.includes("test-014"),true);
+
+  const variant={...official[0],away:"隔离简称"},candidate=external[0];
+  const rejectedVariant=await (await predict([variant])).json();
+  assert.equal(rejectedVariant.reports.length,0);
+  assert.equal(rejectedVariant.unavailableOfficialMatches[0].externalCandidates[0].canConfirmNameMatch,true);
+  const confirmation={officialMatchId:variant.officialMatchId,salesDate:variant.salesDate,kickoffAt:variant.kickoffAt,home:variant.home,away:variant.away,league:variant.league,externalId:candidate.ID,externalHome:candidate.HOST_NAME,externalAway:candidate.GUEST_NAME,externalTime:candidate.MATCH_TIME,externalLeague:candidate.LEAGUE_NAME_SIMPLY,confirmedAt:new Date().toISOString()};
+  const confirmed=await (await predict([variant],[confirmation])).json();
+  assert.equal(confirmed.reports.length,1);
+  assert.equal(confirmed.reports[0].modelInput.manualMappingConfirmation.externalId,candidate.ID);
+  assert.match(confirmed.reports[0].mappingReason,/人工确认/);
+  const wrongTime=await (await predict([{...variant,kickoffAt:"2026-09-14T01:00:00+08:00"}],[confirmation])).json();
+  assert.equal(wrongTime.reports.length,0);
 
   for(const changed of [
    {...official[0],kickoffAt:"2026-09-13T23:00:00+08:00"},
@@ -131,6 +156,9 @@ test("coverage panel renders visible missing-match reasons and is wired into bot
  assert.match(html,/重新抓取并核验/);
  assert.match(html,/周一014/);assert.match(html,/09\/14 18:00/);assert.match(html,/主客队顺序相反/);
  assert.match(html,/外围返回：中国香港女足 VS 中国女足/);
+ assert.doesNotMatch(html,/确认同场并执行AI预测/);
+ const confirmable=renderToStaticMarkup(createElement(Coverage,{coverage,predictedCount:11,onRetry:()=>{},unavailableMatches:[{...unavailableMatches[0],reason:"主客队名称尚未匹配",externalCandidates:[{displayId:"周一014",externalId:"test-feed",canConfirmNameMatch:true,home:"中国女",away:"中国香港女足"}]}]}));
+ assert.match(confirmable,/确认同场并执行AI预测/);
  assert.doesNotMatch(html,/<details|hidden=/,"The missing match must be visible, not hidden behind an expansion");
  assert.equal(renderToStaticMarkup(createElement(Coverage,{predictedCount:0})),"");
  const complete=renderToStaticMarkup(createElement(Coverage,{coverage:{officialMatches:11,predictedMatches:11,unavailableMatches:0},predictedCount:11}));
@@ -140,4 +168,6 @@ test("coverage panel renders visible missing-match reasons and is wired into bot
  assert.match(page,/const unavailable=predictionMatches\.filter/);
  assert.match(page,/setPredictionCoverage\(null\);setUnavailablePredictions\(\[\]\)/);
  assert.match(ai,/<PredictionCoverage /);assert.match(market,/<PredictionCoverage /);
+ assert.match(page,/await reviewPredictionWithAi\(data.version,reports\)/);
+ assert.match(page,/row.officialMatchId===confirmedId/);
 });

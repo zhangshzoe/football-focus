@@ -331,8 +331,13 @@ test("post-match workspace separates analysis views and deduplicates league accu
  const [archive,styles]=await Promise.all([readFile(new URL("../app/components/PredictionArchive.tsx",import.meta.url),"utf8"),readFile(new URL("../app/reference-ui.css",import.meta.url),"utf8")]);
  for(const label of ["综合回溯","比分预测","胜平负预测","让球预测","总进球数预测","半全场预测"])assert.match(archive,new RegExp(label));
  assert.match(archive,/各联赛预测正确率/);
- assert.match(archive,/metric\.total<5\?"small-sample":metric\.hits\/metric\.total>=\.9\?"very-high":metric\.hits\/metric\.total>=\.65\?"high":metric\.hits\/metric\.total>=\.4\?"medium":"low"/);
- for(const tone of ["very-high","high","medium","low","small-sample"])assert.match(styles,new RegExp(`\\.accuracy-rate\\.${tone}\\{`));
+ const toneSource=archive.match(/const accuracyTone=\(metric:AccuracyValue\)=>([^;]+);/)[1];
+ const tone=new Function("metric",`return ${toneSource}`);
+ for(const [hits,total,expected] of [[80,100,"high"],[79,100,"medium"],[50,100,"medium"],[49,100,"low"],[34,100,"low"],[33,100,"empty"],[0,100,"empty"],[0,0,"empty"],[4,5,"high"],[1,1,"high"],[1,3,"low"]])assert.equal(tone({hits,total}),expected,`${hits}/${total}`);
+ for(const name of ["high","medium","low","empty"])assert.match(styles,new RegExp(`\\.accuracy-rate\\.${name}\\{`));
+ assert.match(styles,/\.accuracy-rate\.high\{background:#e3f4e8/);
+ assert.match(styles,/\.accuracy-rate\.medium\{background:#fff4cf/);
+ assert.match(styles,/\.accuracy-rate\.low\{background:#fff0ef/);
  assert.match(archive,/uniqueArchiveMatchRows\(snapshots\.filter/);
  assert.match(archive,/detailRows=drilldown\?rows\.flatMap/);
  assert.match(archive,/\.sort\(compareArchiveMatchRows\):\[\]/);
@@ -583,7 +588,9 @@ test("17:00 snapshot persists purchase drafts and the recommendation page expose
  assert.match(component,/21:00 场次/);
  assert.match(component,/const slotSets=useMemo\(\(\)=>planSets\.filter\(item=>purchaseSlot\(item\)===activeSlot\)/);
  assert.match(purchaseCapture,/--slot=2100/);
- assert.match(purchaseCapture,/record\.scheduledAt===`\$\{date\}T\$\{slotTime\}:00\+08:00`/);
+ assert.match(purchaseCapture,/record\.scheduledAt===scheduledAt/);
+ assert.match(component,/allSets\.filter\(item=>purchaseSlot\(item\)!=="current"\)/);
+ assert.match(component,/当前采集（非固定票）/);
  assert.match(purchaseCapture,/planSet\.scheduledTime=slotTime/);
  assert.match(component,/已归档方案必须按生成时赔率原样读取/);
  assert.doesNotMatch(component,/高覆盖门槛更新后按当前盘口重新试算/);

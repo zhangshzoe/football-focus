@@ -52,6 +52,70 @@ function installDom(html="<!doctype html><html><body><div id='test-root'></div><
  return {dom,restore(){dom.window.close();for(const [key,descriptor] of saved){if(descriptor)Object.defineProperty(globalThis,key,descriptor);else delete globalThis[key]}}};
 }
 
+test("manual fixture confirmation saves only after consent and triggers retry; storage failure does not retry",async()=>{
+ const Coverage=await load("../app/components/PredictionCoverage.tsx"),{dom,restore}=installDom();
+ let root,retries=0,alerts=0,confirmedId;
+ try{
+  root=createRoot(document.getElementById("test-root"));
+  const candidate={displayId:"周五003",externalId:"isolated-ext",league:"德乙",externalTime:"2026-10-10 00:30:00",home:"海登海姆",away:"凯泽斯劳滕",canConfirmNameMatch:true};
+  const match={id:"周五003",officialMatchId:"isolated-official",salesDate:"2026-10-09",kickoffAt:"2026-10-10T00:30:00+08:00",home:"海登海姆",away:"凯泽",league:"德乙",reason:"主客队名称尚未匹配",externalCandidates:[candidate]};
+  await act(async()=>root.render(h(Coverage,{coverage:{officialMatches:12,predictedMatches:11,unavailableMatches:1},predictedCount:11,unavailableMatches:[match],onRetry:id=>{confirmedId=id;retries++}})));
+  const button=[...document.querySelectorAll("button")].find(node=>node.textContent.includes("确认同场并执行AI预测"));
+  assert.ok(button);
+  dom.window.confirm=()=>false;
+  await act(async()=>button.click());
+  assert.equal(localStorage.getItem("ff-manual-fixture-mappings"),null);assert.equal(retries,0);
+  dom.window.confirm=text=>{assert.match(text,/海登海姆 VS 凯泽斯劳滕/);return true;};
+  await act(async()=>button.click());
+  const saved=JSON.parse(localStorage.getItem("ff-manual-fixture-mappings"));
+  assert.equal(saved[0].officialMatchId,"isolated-official");assert.equal(saved[0].externalId,"isolated-ext");assert.equal(retries,1);
+  assert.equal(confirmedId,"isolated-official");
+  dom.window.alert=()=>alerts++;
+  dom.window.Storage.prototype.setItem=()=>{throw new Error("quota");};
+  await act(async()=>button.click());
+  assert.equal(alerts,1);assert.equal(retries,1);
+ }finally{if(root)await act(async()=>root.unmount());restore();}
+});
+
+test("confirmation refreshes a qualified version then invokes AI with that version, not stale state",async()=>{
+ const Home=await load("../app/page.tsx"),{dom,restore}=installDom();
+ Object.defineProperty(dom.window,"indexedDB",{value:new IDBFactory()});
+ const now=new Date().toISOString(),date=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai"}).format(new Date());
+ const version={predictionId:"confirmed-base",inputSnapshotId:"isolated-input",baseModelVersion:"test",calibrationVersion:"none",generatedAt:now};
+ const row={...fixture("周五003"),...version,officialMappingStatus:"verified",salesDate:date,matchDate:date};
+ const candidate={displayId:row.id,externalId:"isolated-ext",league:row.league,externalTime:row.time,home:row.home,away:"另一译名",canConfirmNameMatch:true};
+ const match={...row,matchId:row.officialMatchId,odds:[2,3.2,3.8],marketOdds:{"胜平负":[2,3.2,3.8]},form:[],risk:"",tag:"",matchStatus:"Selling"};
+ let aiCalls=0;
+ globalThis.fetch=async(url,options={})=>{
+  const path=String(url);
+  if(path.startsWith("/api/sporttery"))return Response.json({matches:[match],fetchedAt:now});
+  if(path==="/api/predictions"){
+   const body=JSON.parse(options.body),confirmed=body.manualMappings?.some(record=>record.officialMatchId===row.officialMatchId);
+   return Response.json({reports:confirmed?[row]:[],...version,version,fetchedAt:now,unavailableOfficialMatches:confirmed?[]:[{...match,reason:"主客队名称尚未匹配",externalCandidates:[candidate]}]});
+  }
+  if(path.startsWith("/api/predictions/ai")){
+   const body=JSON.parse(options.body);aiCalls++;
+   assert.equal(body.version.predictionId,"confirmed-base");assert.equal(body.reports[0].officialMatchId,row.officialMatchId);
+   return Response.json({version:{...version,predictionId:"confirmed-ai",reviewForPredictionId:"confirmed-base"},reports:[{...row,predictionId:"confirmed-ai",aiSummary:"隔离测试复核"}]});
+  }
+  if(path.startsWith("/api/prediction-snapshots"))return Response.json({snapshots:[]});
+  if(path==="/api/model-audit")return Response.json({});
+  throw new Error("Unexpected isolated request: "+path);
+ };
+ const root=createRoot(document.getElementById("test-root"));
+ try{
+  await act(async()=>{root.render(h(Home));await new Promise(resolve=>setTimeout(resolve,30))});
+  const findButton=()=>[...document.querySelectorAll("button")].find(button=>button.textContent==="确认同场并执行AI预测");
+  for(let i=0;i<50&&!findButton();i++)await act(async()=>{await new Promise(resolve=>setTimeout(resolve,20))});
+  assert.ok(findButton());assert.equal(aiCalls,0);
+  dom.window.confirm=()=>true;
+  await act(async()=>{findButton().click();await new Promise(resolve=>setTimeout(resolve,30))});
+  for(let i=0;i<50&&!aiCalls;i++)await act(async()=>{await new Promise(resolve=>setTimeout(resolve,20))});
+  assert.equal(aiCalls,1);
+  assert.match(document.querySelector(".compact-predictions-page").textContent,/隔离测试复核/);
+ }finally{await act(async()=>root.unmount());restore();}
+});
+
 test("navigation survives hydration, prediction-page replacement and root unmount",async()=>{
  const [Layout,ArchiveLink]=await Promise.all([load("../app/layout.tsx"),load("../app/components/ArchiveNavLink.tsx")]);
  const content=active=>h(Layout,null,h("main",{key:active?"archive":"predictions"},h("div",{className:"topbar"},h("nav",null,h("a",{href:"/predictions"},"AI预测"),h(ArchiveLink,{active})))));

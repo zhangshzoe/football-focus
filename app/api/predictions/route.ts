@@ -4,7 +4,7 @@ import {getPublishedCalibration,MIN_TEMPERATURE_CALIBRATION_MATCHES} from "../..
 import {PREDICTION_PIPELINE_VERSION,predictFromSnapshot,compatibleCalibration} from "../../prediction-model.js";
 import {normalizeCompany,assessPredictionInput,createOddsBatchLoader} from "../../prediction-input.js";
 import {deVig,asianMarketTarget,validAsianLine} from "../../asian-market.js";
-import {TEAM_ALIAS_VERSION,teamIdentity,teamNamesCompatible} from "../../team-identity.js";
+import {TEAM_ALIAS_VERSION,teamIdentity,teamNamesCompatible,manualMappingScopeCompatible,confirmedFixtureMapping} from "../../team-identity.js";
 type CompanyOdds = {
   companyId: number;
   company: string;
@@ -142,7 +142,7 @@ const datePart=(value:unknown)=>String(value||"").match(/\d{4}-\d{2}-\d{2}/)?.[0
 const clockPart=(value:unknown)=>String(value||"").match(/\d{2}:\d{2}/)?.[0]||"";
 const normalizedTeam=(value:unknown,league:unknown="")=>teamIdentity(value,String(league||""));
 const minutes=(clock:string)=>{const [hour,minute]=clock.split(":").map(Number);return Number.isFinite(hour)&&Number.isFinite(minute)?hour*60+minute:Number.NaN};
-function verifyOfficialMapping(external:any,officialMatches:any[],issue:string){
+function verifyOfficialMapping(external:any,officialMatches:any[],issue:string,confirmations:any[]=[]){
  const league=external.LEAGUE_NAME_SIMPLY,externalDate=datePart(external.MATCH_TIME)||datePart(external.MATCH_DATE)||issue,externalClock=clockPart(external.MATCH_TIME),home=normalizedTeam(external.HOST_NAME,league),away=normalizedTeam(external.GUEST_NAME,league);
  const sameSchedule=(item:any)=>{
   const officialDate=datePart(item.kickoffAt)||datePart(item.matchDate)||datePart(item.time)||datePart(item.salesDate),officialClock=clockPart(item.kickoffAt)||clockPart(item.time);
@@ -151,11 +151,11 @@ function verifyOfficialMapping(external:any,officialMatches:any[],issue:string){
  const sameTeams=(item:any)=>!!home&&!!away&&normalizedTeam(item.home,item.league)===home&&normalizedTeam(item.away,item.league)===away;
  const sameDisplayId=(item:any)=>String(item.id||"")===String(external.CC_ID||"");
  const compatibleTeams=(item:any)=>teamNamesCompatible(item.home,external.HOST_NAME,item.league,league)&&teamNamesCompatible(item.away,external.GUEST_NAME,item.league,league);
- const verifiedTeams=(item:any)=>sameTeams(item)||(sameDisplayId(item)&&compatibleTeams(item));
+ const verifiedTeams=(item:any)=>sameTeams(item)||(sameDisplayId(item)&&compatibleTeams(item))||!!confirmedFixtureMapping(item,external,confirmations);
  const reversed=officialMatches.filter(item=>teamNamesCompatible(item.home,external.GUEST_NAME,item.league,league)&&teamNamesCompatible(item.away,external.HOST_NAME,item.league,league)&&sameSchedule(item));
  const candidates=officialMatches.filter(item=>String(item.id||"")===String(external.CC_ID||"")||normalizedTeam(item.home,item.league)===home||normalizedTeam(item.away,item.league)===away||reversed.includes(item));
  const verified=candidates.filter(item=>verifiedTeams(item)&&sameSchedule(item));
- if(verified.length===1)return{official:verified[0],status:"verified",reason:`彩票编号、日期、主客队与开赛时间均已通过校验（球队别名版本 ${TEAM_ALIAS_VERSION}）`,candidateOfficialMatchIds:[]};
+ if(verified.length===1)return{official:verified[0],status:"verified",manualConfirmation:confirmedFixtureMapping(verified[0],external,confirmations),reason:`彩票编号、日期、主客队与开赛时间均已通过校验（球队别名版本 ${TEAM_ALIAS_VERSION}）`,candidateOfficialMatchIds:[]};
  const candidateOfficialMatchIds=candidates.map(item=>String(item.officialMatchId||item.matchId||"")).filter(Boolean);
  if(verified.length>1)return{official:null,status:"pending_verification",reason:"存在多场同队同时间赛事，无法唯一确认官方比赛",candidateOfficialMatchIds};
  if(reversed.length)return{official:null,status:"pending_verification",reason:"外围盘口的主客队顺序与官方赛程相反，暂停生成预测",candidateOfficialMatchIds};
@@ -170,6 +170,7 @@ export async function POST(request: Request) {
   const input = await request.json().catch(() => null);
   const sportteryMatches: any[] = Array.isArray(input?.matches) ? input.matches.slice(0, 120) : [];
   const forceRefresh = input?.forceRefresh === true;
+  const manualMappings=Array.isArray(input?.manualMappings)?input.manualMappings.slice(0,120):[];
   const calibrationProfile = await getPublishedCalibration() as Partial<ModelCalibrationProfile> | null;
   const globalCalibration = compatibleCalibration(calibrationProfile)&&calibrationProfile?.trainingSampleSize&&calibrationProfile.trainingSampleSize>=20
     ? validCalibrationBucket(calibrationProfile.global)
@@ -190,9 +191,10 @@ export async function POST(request: Request) {
     const pendingVerification:any[]=[];
     const reports = raw.filter((match) => String(match.CC_ID || "").includes("周")).map((match) => {
       const sourceCompanies=parsedCompanies(match,match.__fetchedAt),companies=displayCompanies(sourceCompanies);
-      const saleIssue=String(match.__issue||issue),mapping=verifyOfficialMapping(match,sportteryMatches,saleIssue),official=mapping.official;
-      if (!official){pendingVerification.push({externalId:String(match.MATCH_ID||match.ID||""),displayId:String(match.CC_ID||""),matchDate:datePart(match.MATCH_TIME)||saleIssue,time:clockPart(match.MATCH_TIME),home:String(match.HOST_NAME||""),away:String(match.GUEST_NAME||""),mappingStatus:mapping.status,reason:mapping.reason,candidateOfficialMatchIds:mapping.candidateOfficialMatchIds});return null}
+      const saleIssue=String(match.__issue||issue),mapping=verifyOfficialMapping(match,sportteryMatches,saleIssue,manualMappings),official=mapping.official;
+      if (!official){pendingVerification.push({externalId:String(match.MATCH_ID||match.ID||""),displayId:String(match.CC_ID||""),league:String(match.LEAGUE_NAME_SIMPLY||""),externalTime:String(match.MATCH_TIME||""),canConfirmNameMatch:sportteryMatches.some(item=>manualMappingScopeCompatible(item,match))&&mapping.reason==="主客队名称尚未匹配",matchDate:datePart(match.MATCH_TIME)||saleIssue,time:clockPart(match.MATCH_TIME),home:String(match.HOST_NAME||""),away:String(match.GUEST_NAME||""),mappingStatus:mapping.status,reason:mapping.reason,candidateOfficialMatchIds:mapping.candidateOfficialMatchIds});return null}
       const modelInput=inputSnapshot(sourceCompanies,generatedAt,official),dataQuality=assessPredictionInput(sourceCompanies,generatedAt);
+      if(mapping.manualConfirmation)Object.assign(modelInput,{manualMappingConfirmation:mapping.manualConfirmation});
       if(dataQuality.status!=="ready"){pendingVerification.push({reason:dataQuality.reasons.join("；"),candidateOfficialMatchIds:[String(official.officialMatchId||official.matchId)],displayId:match.CC_ID});return null}
       const totalLine = median(sourceCompanies.filter(row=>validAsianLine(row.total)&&row.total>0).map(row=>row.total));
       const handicap = median(sourceCompanies.filter(row=>validAsianLine(row.handicap)).map(row=>row.handicap));
@@ -232,7 +234,7 @@ export async function POST(request: Request) {
       const narrative = !movementAvailable?`初盘信息不足，不计算变盘方向。${calibrationNarrative}`:`当前绝对概率最高为${directions[directionIndex]}；变盘相对偏向${directions[movementDirectionIndex]}。${institutionAction}。该变盘信号表示相对强弱变化，不等同于赛果概率最高项；欧赔变化 ${Math.abs(shifts[movementDirectionIndex]).toFixed(1)} 个百分点，亚盘主队侧水位概率变化 ${asianMovement>=0?"+":""}${asianMovement.toFixed(1)} 个百分点。${expectation}；当前结论为“${fitAgreement}”。${calibrationNarrative}`;
       const spread = Math.max(...companies.map((row) => row.win), 0) - Math.min(...companies.map((row) => row.win), Number.POSITIVE_INFINITY);
       return {
-        id: String(official.id),externalDisplayId:String(match.CC_ID),officialMatchId:String(official.officialMatchId||official.matchId),salesDate:String(official.salesDate||official.matchDate||""),kickoffAt:String(official.kickoffAt||""),homeTeamId:String(official.homeTeamId||""),awayTeamId:String(official.awayTeamId||""),homeTeamCode:String(official.homeTeamCode||""),awayTeamCode:String(official.awayTeamCode||""),officialMappingStatus:"verified",mappingReason:mapping.reason,marketEligibility:official.marketEligibility||{},league,
+        id: String(official.id),externalDisplayId:String(match.CC_ID),officialMatchId:String(official.officialMatchId||official.matchId),salesDate:String(official.salesDate||official.matchDate||""),kickoffAt:String(official.kickoffAt||""),homeTeamId:String(official.homeTeamId||""),awayTeamId:String(official.awayTeamId||""),homeTeamCode:String(official.homeTeamCode||""),awayTeamCode:String(official.awayTeamCode||""),officialMappingStatus:"verified",mappingReason:mapping.manualConfirmation?"用户人工确认名称对应；其余身份与盘口校验通过":mapping.reason,manualMappingConfirmation:mapping.manualConfirmation,marketEligibility:official.marketEligibility||{},league,
         time: String(official?.matchDate&&official?.time?`${official.matchDate} ${official.time}`:official?.kickoffAt||official?.time||match.MATCH_TIME||""), matchDate: String(official?.matchDate || match.MATCH_TIME || ""), home: String(official.home), away: String(official.away), matchStatus: official?.matchStatus || "", isMock: Boolean(official?.isMock), sourceUpdatedAt: official?.updatedAt || "",
         modelInput,modelParameters,dataQuality,sourceFetchedAt:match.__fetchedAt,officialOddsFresh:modeled.officialFresh,marketTotalGoalProbabilities:modeled.marketTotalGoalProbabilities,priceDiagnostics:modeled.priceDiagnostics,
         companies, marketProbabilities:rawProbabilities.map(value=>value*100),probabilities: {home: finalProbabilities[0] * 100, draw: finalProbabilities[1] * 100, away: finalProbabilities[2] * 100},
@@ -248,7 +250,7 @@ export async function POST(request: Request) {
       const officialMatchId=String(match.officialMatchId||match.matchId||"");
       const related=pendingVerification.filter(record=>record.candidateOfficialMatchIds?.includes(officialMatchId));
       const reasons=Array.from(new Set(related.map(record=>record.reason)));
-      const externalCandidates=related.map(record=>({displayId:record.displayId,home:record.home,away:record.away,matchDate:record.matchDate,time:record.time}));
+      const externalCandidates=related.map(record=>({externalId:record.externalId,displayId:record.displayId,league:record.league,externalTime:record.externalTime,canConfirmNameMatch:record.canConfirmNameMatch,home:record.home,away:record.away,matchDate:record.matchDate,time:record.time}));
       return{id:match.id,officialMatchId,salesDate:match.salesDate,kickoffAt:match.kickoffAt,matchDate:match.matchDate,time:match.time,league:match.league,home:match.home,away:match.away,reason:reasons.join("；")||sourceFailures.find(source=>source.issue===datePart(match.salesDate))?.reason||"外围盘口尚未提供可核验的本场数据",externalCandidates};
     });
     const coverage={officialMatches:sportteryMatches.length,predictedMatches:versionedReports.length,unavailableMatches:unavailableOfficialMatches.length,pendingExternalMappings:pendingVerification.length};

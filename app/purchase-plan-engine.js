@@ -544,7 +544,8 @@ function matchMarkets(report, official, decisionAt) {
         marketName: meta.name,
         maxPass: meta.maxPass,
         allowedPassCounts,
-        cutoffAt: eligibility.cutoffAt || official.kickoffAt,
+        cutoffAt: eligibility.cutoffAt || null,
+        cutoffStatus: eligibility.cutoffAt ? "provided" : "unknown",
         ruleVersion: eligibility.ruleVersion || "",
         ...item,
       }));

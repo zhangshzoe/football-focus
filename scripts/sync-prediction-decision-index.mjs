@@ -47,7 +47,7 @@ for(const name of await readdir(purchaseDirectory).catch(()=>[])){
  try{
   const record=JSON.parse(await readFile(join(purchaseDirectory,name),"utf8"));
   if(record.recordType!=="purchase-plan-snapshot"||record.immutable!==true||!record.snapshotId||!Array.isArray(record.planSet?.plans)||!record.planSet.plans.length)continue;
-  diskPurchaseSnapshots.push({snapshotId:record.snapshotId,scheduledAt:record.scheduledAt,capturedAt:record.capturedAt,sourceFetchedAt:record.sourceFetchedAt,predictionId:record.predictionId,contentHash:record.contentHash,previousSnapshotId:record.previousSnapshotId,planSet:{...record.planSet,snapshotId:record.snapshotId,contentHash:record.contentHash}});
+  diskPurchaseSnapshots.push({snapshotId:record.snapshotId,scheduledAt:record.scheduledAt,capturedAt:record.capturedAt,startedAt:record.startedAt,completedAt:record.completedAt,captureTiming:record.captureTiming,includedInStrictEvaluation:record.includedInStrictEvaluation,qualityStatus:record.qualityStatus,cutoffStatus:record.cutoffStatus,sourceCoverage:record.sourceCoverage,sourceFetchedAt:record.sourceFetchedAt,predictionId:record.predictionId,contentHash:record.contentHash,previousSnapshotId:record.previousSnapshotId,planSet:{...record.planSet,snapshotId:record.snapshotId,contentHash:record.contentHash}});
  }catch{/* 损坏文件不会进入线上索引。 */}
 }
 // 本地服务可能只读到上一次打包的索引；正式票以已落盘的不可变文件为准。

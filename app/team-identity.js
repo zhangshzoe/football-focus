@@ -140,3 +140,21 @@ export const teamNamesCompatible=(left,right,leftLeague="",rightLeague="")=>{
  // 但要求至少三个连续汉字且全名最多只多三个字符，避免把相近队名误合并。
  return shorter.length>=3&&longer.includes(shorter)&&longer.length-shorter.length<=3;
 };
+
+// Manual evidence is fixture-scoped, never a global team alias or an identity override.
+export function manualMappingScopeCompatible(official,external){
+ if(!String(external.MATCH_ID||external.ID||""))return false;
+ const kickoff=String(official.kickoffAt||""),externalTime=String(external.MATCH_TIME||"");
+ const date=kickoff.slice(0,10),externalDate=externalTime.slice(0,10);
+ const clock=value=>{const match=value.match(/(?:T|\s)(\d{2}):(\d{2})/);return match?Number(match[1])*60+Number(match[2]):NaN;};
+ const reversed=teamNamesCompatible(official.home,external.GUEST_NAME,official.league,external.LEAGUE_NAME_SIMPLY)&&teamNamesCompatible(official.away,external.HOST_NAME,official.league,external.LEAGUE_NAME_SIMPLY);
+ return !!official.officialMatchId&&!!official.salesDate&&!!external.HOST_NAME&&!!external.GUEST_NAME&&String(official.id)===String(external.CC_ID)&&normalize(official.league)!==""&&normalize(official.league)===normalize(external.LEAGUE_NAME_SIMPLY)&&/^\d{4}-\d{2}-\d{2}$/.test(date)&&date===externalDate&&Math.abs(clock(kickoff)-clock(externalTime))<=45&&!reversed;
+}
+export function confirmedFixtureMapping(official,external,records,now=Date.now()){
+ if(!manualMappingScopeCompatible(official,external))return null;
+ return (Array.isArray(records)?records.slice(0,120):[]).find(record=>{
+  if(!record||typeof record!=="object")return false;
+  const age=now-Date.parse(record.confirmedAt||"");
+  return age>=0&&age<=24*3600000&&record.officialMatchId===String(official.officialMatchId)&&record.salesDate===official.salesDate&&record.kickoffAt===official.kickoffAt&&record.home===official.home&&record.away===official.away&&record.league===official.league&&record.externalId===String(external.MATCH_ID||external.ID||"")&&record.externalHome===external.HOST_NAME&&record.externalAway===external.GUEST_NAME&&record.externalTime===external.MATCH_TIME&&record.externalLeague===external.LEAGUE_NAME_SIMPLY;
+ })||null;
+}

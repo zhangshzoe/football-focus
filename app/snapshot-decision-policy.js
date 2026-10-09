@@ -13,6 +13,7 @@ export function decisionTargetAt(salesDate,kickoffAt){
 export function selectOfficialDecisionRows(snapshots){
  const groups=new Map();
  for(const snapshot of snapshots||[])for(const match of snapshot?.matches||[]){
+  if(snapshot.includedInStrictEvaluation===false||snapshot.captureTiming==="delayed")continue;
   const salesDate=String(match.salesDate||snapshot.date||"");
   const targetAt=decisionTargetAt(salesDate,match.kickoffAt||match.matchDate||match.time);
   const scheduledAt=String(snapshot.scheduledAt||"");

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "policy": "actual_information_not_after_fixed_target_v2",
+  "policy": "latest_not_after_official_target_v1",
   "rules": {
     "weekday": "22:00及以后统一21:30，否则开赛前30分钟",
     "weekend": "23:00及以后统一22:30，否则开赛前30分钟"
@@ -3022,5 +3022,5 @@
       ]
     }
   ],
-  "generatedAt": "2026-10-06T13:25:01.827Z"
+  "generatedAt": "2026-10-09T11:10:29.646Z"
 }

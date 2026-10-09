@@ -85,7 +85,7 @@ const validFullScore=(result?:Result)=>{
  return goals.length===2&&goals.every(Number.isFinite)?goals as [number,number]:null;
 };
 const accuracyText=(metric:AccuracyValue)=>metric.total?`${metric.hits}/${metric.total} · ${(metric.hits/metric.total*100).toFixed(1)}%`:"—";
-const accuracyTone=(metric:AccuracyValue)=>!metric.total?"empty":metric.total<5?"small-sample":metric.hits/metric.total>=.9?"very-high":metric.hits/metric.total>=.65?"high":metric.hits/metric.total>=.4?"medium":"low";
+const accuracyTone=(metric:AccuracyValue)=>!metric.total?"empty":metric.hits/metric.total>=.8?"high":metric.hits/metric.total>=.5?"medium":metric.hits/metric.total>.33?"low":"empty";
 const increment=(metric:AccuracyValue,hit:boolean)=>({hits:metric.hits+(hit?1:0),total:metric.total+1});
 
 function LeagueAccuracyPanel({rows}:{rows:EvaluatedRow[]}){
@@ -122,7 +122,7 @@ function LeagueAccuracyPanel({rows}:{rows:EvaluatedRow[]}){
   <div className="accuracy-panel-toolbar"><div className="archive-view-tabs" role="tablist" aria-label="联赛正确率预测类型">{ARCHIVE_TABS.map(tab=><button key={tab.key} type="button" role="tab" aria-selected={view===tab.key} className={view===tab.key?"active":""} onClick={()=>{setView(tab.key);setDrilldown(null)}}>{tab.label}</button>)}</div><label>按联赛筛选<select aria-label="正确率联赛筛选" value={selectedLeague} onChange={event=>{setSelectedLeague(event.target.value);setDrilldown(null)}}>{leagues.map(league=><option key={league}>{league}</option>)}</select></label></div>
   <div className="league-accuracy-wrap"><table className="league-accuracy-table"><thead><tr><th>联赛</th><th>样本</th>{columns.map(key=><th key={key}>{labels[key]}</th>)}</tr></thead><tbody>{displayMetrics.map(item=><tr key={item.league}><td><b>{item.league}</b></td><td>{item.matches} 场{item.matches<5&&<em>小样本</em>}</td>{columns.map(key=><td key={key}><button type="button" aria-expanded={drilldown?.league===item.league&&drilldown.key===key} className={`accuracy-rate ${accuracyTone(item[key])}`} onClick={()=>setDrilldown(current=>current?.league===item.league&&current.key===key?null:{league:item.league,key})}>{accuracyText(item[key])}</button></td>)}</tr>)}</tbody></table></div>
   {drilldown&&<section className="accuracy-drilldown" aria-label={`${drilldown.league}${labels[drilldown.key]}明细`}><header><div><small>预测与实际结果明细</small><h4>{drilldown.league} · {labels[drilldown.key]}</h4></div><button type="button" onClick={()=>setDrilldown(null)}>收起明细</button></header><div className="league-accuracy-wrap"><table><thead><tr><th>比赛日/场次</th><th>对阵</th><th>赛前预测</th><th>实际结果</th><th>核验</th></tr></thead><tbody>{detailRows.map(({match,result,points,actual,hit})=><tr key={`${result.date}-${match.officialMatchId||match.id}`}><td><small>{result.date}</small><b>{match.id}</b></td><td>{match.home} <i>VS</i> {match.away}</td><td><div className="accuracy-detail-picks">{points.map((point,index)=><span className={`pick-rank-${index+1}`} key={`${point.score}-${index}`}><b>{point.score}</b><em>{point.probability.toFixed(1)}%</em></span>)}</div></td><td><strong>{actual}</strong></td><td><span className={`accuracy-detail-status ${hit?"hit":"miss"}`}>{hit?"命中":"未命中"}</span></td></tr>)}</tbody></table></div></section>}
-  <p>正确率分母只包含“已有真实赛果且该预测字段完整”的比赛；同一比赛的多个快照只取最近一次。高亮：≥90% 红色、65%～&lt;90% 浅红、40%～&lt;65% 黄色、&lt;40% 绿色；少于 5 场保持小样本标记。</p>
+  <p>正确率分母只包含“已有真实赛果且该预测字段完整”的比赛；同一比赛的多个快照只取最近一次。颜色：≥80% 绿色、≥50% 且 &lt;80% 黄色、&gt;33% 且 &lt;50% 浅红色、≤33% 或无样本灰色；少于 5 场仍显示小样本标记。</p>
  </div></details></section>;
 }
 
