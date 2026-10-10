@@ -1,8 +1,9 @@
 import { decisionTargetAt } from "./snapshot-decision-policy.js";
+import octoberRecovery from "../data/archive-recovery/2026-10-06.json" with {type:"json"};
 
-// These two lottery dates have independently retained pre-match evidence, but
+// These lottery dates have independently retained pre-match evidence, but
 // their scheduled raw prediction snapshots were not captured in full.
-export const ARCHIVE_RECOVERY_DATES = ["2026-09-23", "2026-09-24"];
+export const ARCHIVE_RECOVERY_DATES = ["2026-09-23", "2026-09-24", "2026-10-06"];
 
 const validBeforeDecision = (date, kickoffAt, capturedAt) => {
   const target = Date.parse(decisionTargetAt(date, kickoffAt) || "");
@@ -45,6 +46,14 @@ export function buildArchiveRecoverySnapshots(snapshots, purchaseSnapshots, date
     const plan = purchaseSnapshots
       .filter((snapshot) => snapshot.planSet?.date === date)
       .sort((a, b) => String(b.capturedAt).localeCompare(String(a.capturedAt)))[0];
+    if(date===octoberRecovery.date){
+      for(const match of octoberRecovery.matches){
+        if(!matchKey(match)||rows.has(matchKey(match))||match.isMock||
+          !validBeforeDecision(date,match.kickoffAt,match.archiveCapturedAt)||
+          !validBeforeDecision(date,match.kickoffAt,match.predictionGeneratedAt))continue;
+        rows.set(matchKey(match),{...match});
+      }
+    }
     const tickets = new Map();
     for (const group of plan?.planSet?.plans || []) {
       for (const item of group.items || []) {
