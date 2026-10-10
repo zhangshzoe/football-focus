@@ -608,7 +608,7 @@ test("17:00 snapshot persists purchase drafts and the recommendation page expose
  assert.match(component,/投入 \/ 返还/);
  assert.match(component,/模型预期返奖/);
  assert.match(component,/命中时最低 \/ 最高盈利/);
- assert.match(component,/最近正式快照/);
+ assert.match(component,/最近归档推荐/);
  assert.match(component,/刷新快照/);
  assert.match(component,/visibilitychange/);
  assert.match(purchaseCapture,/record\.immutable===true&&record\.scheduledAt===/);

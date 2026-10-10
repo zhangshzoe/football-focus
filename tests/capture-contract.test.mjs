@@ -8,8 +8,15 @@ import {join} from "node:path";
 import {fileURLToPath} from "node:url";
 import {spawnSync} from "node:child_process";
 import {writePurchaseAttempt} from "../scripts/purchase-capture-attempt.mjs";
-import {recommendationComplete,recommendationLabel} from "../app/purchase-snapshot-status.js";
+import {recommendationComplete,recommendationLabel,analysisArchiveSlot} from "../app/purchase-snapshot-status.js";
 const target="2026-10-09T17:00:00+08:00", t=Date.parse(target);
+test("requested October 9 analysis cohorts preserve immutable times and eligibility",()=>{
+ const current={date:"2026-10-09",snapshotId:"purchase-2026-10-09-190102-9bb04be49374",generatedAt:"2026-10-09T11:01:02.636Z",scheduledTime:"19:01",includedInStrictEvaluation:false};
+ const trial={date:"2026-10-09",snapshotId:"manual-trial-private",generatedAt:"2026-10-09T11:55:30Z",scheduledTime:"21:00"};
+ const before=JSON.stringify([current,trial]);assert.equal(analysisArchiveSlot(current),"1700");assert.equal(analysisArchiveSlot(trial),"2100");assert.match(recommendationLabel(trial),/21:00档指定汇总/);
+ assert.equal(analysisArchiveSlot({...trial,date:"2026-10-10"}),null);assert.equal(analysisArchiveSlot({...trial,generatedAt:"2026-10-09T11:54:59Z"}),null);assert.equal(analysisArchiveSlot({...trial,snapshotId:"purchase-other"}),null);
+ assert.equal(JSON.stringify([current,trial]),before);
+});
 test("daily recommendation completeness and labels do not pretend strict eligibility",()=>{
  assert.equal(recommendationComplete({sourceCoverage:{eligible:10,predicted:9}}),false);
  assert.equal(recommendationComplete({sourceCoverage:{eligible:10,predicted:10},cutoffStatus:"unknown",includedInStrictEvaluation:false}),true);

@@ -2,7 +2,7 @@
 "use client";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import PurchaseDoublingSummary from "./PurchaseDoublingSummary";
-import {recommendationLabel} from "../purchase-snapshot-status.js";
+import {recommendationLabel,analysisArchiveSlot} from "../purchase-snapshot-status.js";
 import {readBrowserData} from "../browser-storage";
 import {fetchOfficialSporttery} from "../sporttery-official";
 import {PROMOTED_PURCHASE_TRIAL,promoteSavedPurchaseTrial} from "../purchase-trial-promotion.js";
@@ -213,7 +213,7 @@ function purchaseHistoryActual(item:PurchaseItem){
 type PurchaseResult = {id?:string;matchId?:string;officialMatchId?:string;date?:string;matchDate?:string};
 const currentPurchasePlanIds=new Set(PURCHASE_PLAN_DEFINITIONS.map(definition=>definition.id));
 const hasPurchasePlanData=(item:PurchasePlanSet|undefined|null)=>Boolean(deduplicatePurchasePlans(item?.plans).some(plan=>currentPurchasePlanIds.has(plan.id)&&plan.status!=="unavailable"&&Array.isArray(plan.items)&&plan.items.length>0));
-const purchaseSlot=(item:PurchasePlanSet)=>item.scheduledTime&&item.scheduledTime!=="17:00"&&item.scheduledTime!=="21:00"?"current":item.scheduledTime==="21:00"?"2100":"1700";
+const purchaseSlot=(item:PurchasePlanSet)=>analysisArchiveSlot(item)||(item.scheduledTime&&item.scheduledTime!=="17:00"&&item.scheduledTime!=="21:00"?"current":item.scheduledTime==="21:00"?"2100":"1700");
 type OfficialMatch = OfficialRecommendationMatch;
 const shanghaiDate = () =>
   new Intl.DateTimeFormat("en-CA", {
@@ -416,7 +416,7 @@ function DailyPurchasePlans({
       plans: deduplicatePurchasePlans(selected.plans).map((plan) => settlePurchasePlan(plan, results)),
     });
     setStatus(
-      `${purchaseSlot(selected)==="current" ? "当前采集（非固定票）" : selected.promotionKind === "manual-exception" ? "手动转正式" : selected.snapshotId?.startsWith("manual-trial-")?"手动试算":recommendationLabel(selected)} · ${new Date(selected.generatedAt).toLocaleTimeString("zh-CN", { timeZone:"Asia/Shanghai", hour: "2-digit", minute: "2-digit" })}实际生成`,
+      `${analysisArchiveSlot(selected) ? recommendationLabel(selected) : purchaseSlot(selected)==="current" ? "当前采集（非固定票）" : selected.promotionKind === "manual-exception" ? "手动转正式" : selected.snapshotId?.startsWith("manual-trial-")?"手动试算":recommendationLabel(selected)} · ${new Date(selected.generatedAt).toLocaleTimeString("zh-CN", { timeZone:"Asia/Shanghai", hour: "2-digit", minute: "2-digit" })}实际生成`,
     );
     setBusy(false);
   }
@@ -475,11 +475,11 @@ function DailyPurchasePlans({
         const promoted=storedTrials.map(trial=>promoteSavedPurchaseTrial(trial,allSets.filter(set=>purchaseSlot(set)==="1700").map(set=>set.date)) as PurchasePlanSet|null).filter((trial):trial is PurchasePlanSet=>Boolean(trial));
         const targetTrial=storedTrials.find(trial=>trial.snapshotId===PROMOTED_PURCHASE_TRIAL.snapshotId);
         const promotionRejected=Boolean(targetTrial&&!promoted.length&&!allSets.some(set=>set.date===PROMOTED_PURCHASE_TRIAL.date&&purchaseSlot(set)==="1700"));
-        const formalSets=[...allSets.filter(item=>purchaseSlot(item)!=="current"),...promoted];
+        const formalSets=[...allSets.filter(item=>purchaseSlot(item)!=="current"),...promoted,...storedTrials.filter(item=>analysisArchiveSlot(item))];
         const cachedResults=Object.values(archive.resultCache&&typeof archive.resultCache==="object"?archive.resultCache:{}) as PurchaseResult[];
         const {results:historyResults,failed}=await fetchHistoricalPurchaseResults(formalSets,cachedResults);
         const settledSets=(deduplicatePurchasePlanSets(formalSets) as PurchasePlanSet[]).map(item=>({...item,plans:item.plans.map(plan=>settlePurchasePlan(plan,historyResults))}));
-        const settledTrials=(deduplicatePurchasePlanSets(storedTrials.filter(trial=>!promoted.some(item=>item.snapshotId===trial.snapshotId))) as PurchasePlanSet[]).map(item=>({...item,plans:item.plans.map(plan=>settlePurchasePlan(plan,historyResults))}));
+        const settledTrials=(deduplicatePurchasePlanSets(storedTrials.filter(trial=>!analysisArchiveSlot(trial)&&!promoted.some(item=>item.snapshotId===trial.snapshotId))) as PurchasePlanSet[]).map(item=>({...item,plans:item.plans.map(plan=>settlePurchasePlan(plan,historyResults))}));
         if (active) {
           setPlanSets(settledSets);
           setSavedTrials(settledTrials);
@@ -572,7 +572,7 @@ function DailyPurchasePlans({
           <p>
             每天北京时间17:00、21:00各留档一批；按每注2元计算组合投入，依据官方赛果分别结算。
           </p>
-          {latestFormalSet&&<p className="purchase-latest">最近正式快照：{latestFormalSet.date} {new Date(latestFormalSet.generatedAt).toLocaleTimeString("zh-CN",{timeZone:"Asia/Shanghai",hour:"2-digit",minute:"2-digit"})} · {latestFormalSet.plans.filter(plan=>plan.status!=="unavailable"&&plan.items?.length).length} 组{lotteryDate&&lotteryDate!==latestFormalSet.date?`；当前筛选 ${lotteryDate}，可切换彩票日期查看最新批次`:""}</p>}
+          {latestFormalSet&&<p className="purchase-latest">最近归档推荐：{latestFormalSet.date} {new Date(latestFormalSet.generatedAt).toLocaleTimeString("zh-CN",{timeZone:"Asia/Shanghai",hour:"2-digit",minute:"2-digit"})} · {latestFormalSet.plans.filter(plan=>plan.status!=="unavailable"&&plan.items?.length).length} 组{lotteryDate&&lotteryDate!==latestFormalSet.date?`；当前筛选 ${lotteryDate}，可切换彩票日期查看最新批次`:""}</p>}
         </div>
         <div>
           <span>{status}</span>
@@ -596,7 +596,7 @@ function DailyPurchasePlans({
                   key={item.snapshotId || item.generatedAt}
                   value={item.snapshotId || item.generatedAt}
                 >
-                  {purchaseSlot(item)==="current" ? "当前采集（非固定票） · " : item.promotionKind === "manual-exception" ? "手动转正式 · " : item.snapshotId?.startsWith("manual-trial-")?"手动试算 · ":`${recommendationLabel(item)} · `}{item.date}{" "}
+                  {analysisArchiveSlot(item) ? `${recommendationLabel(item)} · ` : purchaseSlot(item)==="current" ? "当前采集（非固定票） · " : item.promotionKind === "manual-exception" ? "手动转正式 · " : item.snapshotId?.startsWith("manual-trial-")?"手动试算 · ":`${recommendationLabel(item)} · `}{item.date}{" "}
                   {new Date(item.generatedAt).toLocaleTimeString("zh-CN", {
                     timeZone: "Asia/Shanghai",
                     hour: "2-digit",
