@@ -565,8 +565,8 @@ function DailyPurchasePlans({
   const allModulesCollapsed=visiblePlanModules.length>0&&visiblePlanModules.every(module=>collapsedModules[module.id]);
   return (
     <section className="daily-purchase-panel">
-      <header>
-        <div>
+      <header className="purchase-panel-header">
+        <div className="purchase-panel-intro">
           <small>DAILY PURCHASE DRAFT</small>
           <h3>每日固定组合票</h3>
           <p>
@@ -574,10 +574,11 @@ function DailyPurchasePlans({
           </p>
           {latestFormalSet&&<p className="purchase-latest">最近归档推荐：{latestFormalSet.date} {new Date(latestFormalSet.generatedAt).toLocaleTimeString("zh-CN",{timeZone:"Asia/Shanghai",hour:"2-digit",minute:"2-digit"})} · {latestFormalSet.plans.filter(plan=>plan.status!=="unavailable"&&plan.items?.length).length} 组{lotteryDate&&lotteryDate!==latestFormalSet.date?`；当前筛选 ${lotteryDate}，可切换彩票日期查看最新批次`:""}</p>}
         </div>
-        <div>
-          <span>{status}</span>
+        <div className="purchase-snapshot-toolbar">
+          <span className="purchase-snapshot-status" role="status">{status}</span>
           {(selectableSets.length > 0 || planSet) && (
             <select
+              className="purchase-snapshot-select"
               aria-label="选择预购买方案快照"
               value={planSet?.snapshotId || planSet?.generatedAt || ""}
               disabled={busy}
@@ -608,6 +609,7 @@ function DailyPurchasePlans({
           )}
           <button type="button" disabled={busy} onClick={()=>setArchiveReload(value=>value+1)}>刷新快照</button>
           <button
+            className="purchase-preview-action"
             disabled={!data || busy}
             onClick={()=>void preview()}
           >
