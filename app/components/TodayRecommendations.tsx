@@ -2,7 +2,7 @@
 "use client";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import PurchaseDoublingSummary from "./PurchaseDoublingSummary";
-import {recommendationLabel,analysisArchiveSlot} from "../purchase-snapshot-status.js";
+import {recommendationLabel,analysisArchiveSlot,historySummaryClass} from "../purchase-snapshot-status.js";
 import {readBrowserData} from "../browser-storage";
 import {fetchOfficialSporttery} from "../sporttery-official";
 import {PROMOTED_PURCHASE_TRIAL,promoteSavedPurchaseTrial} from "../purchase-trial-promotion.js";
@@ -670,7 +670,7 @@ function DailyPurchasePlans({
       <div className="purchase-history">
         {PURCHASE_PLAN_DEFINITIONS.map(definition=>{
           const history=definitionHistory[definition.id]||{settled:0,won:0,rate:0,stake:0,returned:0,net:0,rows:[]};
-          return <details key={definition.id} className="purchase-history-group">
+          return <details key={definition.id} className={historySummaryClass(history)}>
             <summary><strong>{definition.title}</strong><span>中奖 / 已结算 {history.won} / {history.settled}</span><span>中奖率 {history.settled?`${history.rate.toFixed(1)}%`:"待积累"}</span><span>投入 / 返还 <SignedPurchaseMoney value={history.stake} flow="stake"/> / <SignedPurchaseMoney value={history.returned} flow="return"/></span><span>净收益 <SignedPurchaseMoney value={history.net}/></span></summary>
             <div className="purchase-history-scroll"><table><thead><tr><th>日期 / 批次</th><th>投注内容</th><th>结算</th><th>投入</th><th>模拟返还</th><th>净收益</th></tr></thead><tbody>
               {history.rows.length?history.rows.map((row:{snapshotId:string;date:string;generatedAt:string;plan:PurchasePlan})=>{

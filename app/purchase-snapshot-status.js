@@ -1,4 +1,7 @@
 // Recommendation completeness is separate from strict forward-validation eligibility.
+export function historySummaryClass(history) {
+  return `purchase-history-group${history.settled > 0 && Number.isFinite(history.rate) && history.rate > 50 ? " purchase-history-success" : ""}${Number.isFinite(history.net) && history.net > 0 ? " purchase-history-profit" : ""}`;
+}
 export function recommendationComplete(record) {
   const coverage = record.sourceCoverage;
   if (coverage) return coverage.eligible > 0 && coverage.predicted === coverage.eligible;

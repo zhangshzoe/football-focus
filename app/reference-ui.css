@@ -634,6 +634,8 @@ main{max-width:1320px!important;padding-bottom:88px!important}
 .purchase-history-group summary{display:grid;grid-template-columns:minmax(145px,1.3fr) repeat(4,minmax(110px,1fr));gap:10px;align-items:center;padding:10px 12px;cursor:pointer;color:#31556d;font-size:12px}
 .purchase-history-group summary strong{color:#14547d;font-size:13px}
 .purchase-history-group[open] summary{border-bottom:1px solid #d7e6ee;background:#f4faff}
+.purchase-history-group.purchase-history-success>summary{background:repeating-linear-gradient(135deg,#e7f6eb 0,#e7f6eb 10px,#f3fbf5 10px,#f3fbf5 20px)}
+.purchase-history-group.purchase-history-profit>summary{box-shadow:inset 0 0 0 2px #dc3545;border-radius:8px}
 .purchase-history-scroll{overflow-x:auto}
 .purchase-history table{width:100%;min-width:780px;border-collapse:collapse;font-size:11px}
 .purchase-history th,.purchase-history td{padding:8px 10px;border-bottom:1px solid #edf2f5;text-align:left;vertical-align:top}

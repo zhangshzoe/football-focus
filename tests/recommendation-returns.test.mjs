@@ -3,6 +3,20 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import ts from 'typescript';
 import {MARKET_META} from '../app/purchase-plan-engine.js';
+import {historySummaryClass} from '../app/purchase-snapshot-status.js';
+
+test('history rows combine strict over-50 success stripes and positive net-income borders',async()=>{
+  assert.equal(historySummaryClass({settled:2,rate:50,net:0}),'purchase-history-group');
+  assert.equal(historySummaryClass({settled:3,rate:66.67,net:-2}),'purchase-history-group purchase-history-success');
+  assert.equal(historySummaryClass({settled:2,rate:50,net:2}),'purchase-history-group purchase-history-profit');
+  assert.equal(historySummaryClass({settled:3,rate:66.67,net:2}),'purchase-history-group purchase-history-success purchase-history-profit');
+  assert.equal(historySummaryClass({settled:0,rate:100,net:NaN}),'purchase-history-group');
+  const component=await readFile(new URL('../app/components/TodayRecommendations.tsx',import.meta.url),'utf8');
+  assert.match(component,/className=\{historySummaryClass\(history\)\}/);
+  const css=await readFile(new URL('../app/reference-ui.css',import.meta.url),'utf8');
+  assert.match(css,/\.purchase-history-group\.purchase-history-success>summary\{background:repeating-linear-gradient/);
+  assert.match(css,/\.purchase-history-group\.purchase-history-profit>summary\{box-shadow:inset 0 0 0 2px #dc3545/);
+});
 const source=(await readFile(new URL('../app/recommendation-returns.ts',import.meta.url),'utf8'))
   .replace('"./purchase-plan-engine"',JSON.stringify(new URL('../app/purchase-plan-engine.js',import.meta.url).href));
 const output=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText;
