@@ -184,6 +184,23 @@ const fixture=(id,narrative="主队方向 · 升盘，多盘口较一致，偏�
 });
 const commonProps={loading:false,error:"",aiError:"",fetchedAt:"",sourceUrl:"",methodology:"测试模型",aiProvider:"",aiLoading:false,onAiReview(){}};
 
+test("market half-full tab shows exactly two ranked outcomes and does not fabricate missing probabilities",async()=>{
+ const Table=await load("../app/components/MarketPredictionTable.tsx"),{dom,restore}=installDom();let root;
+ try{
+  root=createRoot(document.getElementById("test-root"));
+  const valid=fixture("001"),missing=fixture("002"),invalid=fixture("003");
+  delete missing.marketSignal.modeledHalfFull;invalid.marketSignal.modeledHalfFull=[NaN,10,5,10,20,5,5,5,10];
+  await act(async()=>root.render(h(Table,{...commonProps,rows:[valid,missing,invalid]})));
+  const tab=[...document.querySelectorAll("button")].find(node=>node.textContent==="半全场");assert.ok(tab);
+  await act(async()=>tab.dispatchEvent(new dom.window.MouseEvent("click",{bubbles:true})));
+  const rows=[...document.querySelectorAll(".forecast-view-halfFull tbody tr")];assert.equal(rows.length,3);
+  const picks=row=>[...row.querySelectorAll('td[data-label^="半全场"]')].map(cell=>cell.textContent);
+  assert.deepEqual(picks(rows[0]),["胜胜","30.0%","平平","20.0%"]);
+  for(const row of rows.slice(1))assert.deepEqual(picks(row),["暂无数据","—","暂无数据","—"]);
+  await act(async()=>root.unmount());
+ }finally{restore()}
+});
+
 test("today recommendations refresh official SP on generation, show net ranges and preserve prior results on fetch failure",async()=>{
  const Recommendations=await load("../app/components/TodayRecommendations.tsx");
  const {dom,restore}=installDom(),errors=[],container=dom.window.document.getElementById("test-root");
