@@ -2,7 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {captureWindow,captureEvidence,assertOfficialInput,assertCoverage,requestJson,selectSellingInputs,changedOfficialOdds} from "../scripts/capture-contract.mjs";
 import {selectOfficialDecisionRows,decisionTargetAt} from "../app/snapshot-decision-policy.js";
-import {mkdtemp,readFile,readdir,rm} from "node:fs/promises";
+import {mkdtemp,readFile,readdir,rm,mkdir,writeFile} from "node:fs/promises";
+import {appendPurchaseSnapshot} from "../scripts/sync-purchase-snapshot-index.mjs";
 import {tmpdir} from "node:os";
 import {join} from "node:path";
 import {fileURLToPath} from "node:url";
@@ -10,6 +11,27 @@ import {spawnSync} from "node:child_process";
 import {writePurchaseAttempt} from "../scripts/purchase-capture-attempt.mjs";
 import {recommendationComplete,recommendationLabel,analysisArchiveSlot} from "../app/purchase-snapshot-status.js";
 const target="2026-10-09T17:00:00+08:00", t=Date.parse(target);
+test('purchase index append is offline, idempotent and preserves history and cutoff warnings',async()=>{
+ const root=await mkdtemp(join(tmpdir(),'football-index-append-'));
+ try{
+  await mkdir(join(root,'data','purchase-plan-snapshots'),{recursive:true});
+  const record=JSON.parse(await readFile(new URL('../data/purchase-plan-snapshots/2026-10-10_1700.purchase.json',import.meta.url),'utf8'));
+  const rawPath=join(root,'data','purchase-plan-snapshots','2026-10-10_1700.purchase.json');
+  const raw=JSON.stringify(record);await writeFile(rawPath,raw);
+  const indexPath=join(root,'data','generated-prediction-snapshot-index.json');
+  const old={schemaVersion:2,snapshots:[{snapshotId:'preserved'}],purchasePlanSnapshots:[{snapshotId:'old',contentHash:'unchanged'}],captureAttempts:[{id:'keep'}],resultCache:{keep:'result'}};
+  await writeFile(indexPath,JSON.stringify(old));
+  assert.equal((await appendPurchaseSnapshot(root,'2026-10-10_1700.purchase.json')).historyPreserved,true);
+  const after=await readFile(indexPath,'utf8'),saved=JSON.parse(after),entry=saved.purchasePlanSnapshots.find(item=>item.snapshotId===record.snapshotId);
+  for(const key of ['snapshots','captureAttempts','resultCache'])assert.deepEqual(saved[key],old[key]);
+  assert.deepEqual(saved.purchasePlanSnapshots.find(item=>item.snapshotId==='old'),old.purchasePlanSnapshots[0]);
+  assert.equal(entry.cutoffStatus,'unknown');assert.equal(entry.includedInStrictEvaluation,false);
+  assert.equal(entry.predictionId,record.predictionId);assert.equal(entry.contentHash,record.contentHash);
+  assert.equal((await appendPurchaseSnapshot(root,'2026-10-10_1700.purchase.json')).status,'unchanged');
+  assert.equal(await readFile(indexPath,'utf8'),after);assert.equal(await readFile(rawPath,'utf8'),raw);
+  await assert.rejects(appendPurchaseSnapshot(root,'../record.purchase.json'),/Invalid/);
+ }finally{await rm(root,{recursive:true,force:true});}
+});
 test("requested October 9 analysis cohorts preserve immutable times and eligibility",()=>{
  const current={date:"2026-10-09",snapshotId:"purchase-2026-10-09-190102-9bb04be49374",generatedAt:"2026-10-09T11:01:02.636Z",scheduledTime:"19:01",includedInStrictEvaluation:false};
  const trial={date:"2026-10-09",snapshotId:"manual-trial-private",generatedAt:"2026-10-09T11:55:30Z",scheduledTime:"21:00"};
