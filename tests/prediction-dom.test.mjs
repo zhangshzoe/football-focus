@@ -191,6 +191,15 @@ test("market half-full tab shows exactly two ranked outcomes and does not fabric
   const valid=fixture("001"),missing=fixture("002"),invalid=fixture("003");
   delete missing.marketSignal.modeledHalfFull;invalid.marketSignal.modeledHalfFull=[NaN,10,5,10,20,5,5,5,10];
   await act(async()=>root.render(h(Table,{...commonProps,rows:[valid,missing,invalid]})));
+  for(const label of ["胜平负和让球","比分","大小球","半全场"]){
+   const button=[...document.querySelectorAll(".forecast-view-tabs button")].find(node=>node.textContent===label);assert.ok(button);
+   await act(async()=>button.click());
+   const summary=document.querySelector(".half-full-summary");
+   assert.deepEqual([...summary.querySelectorAll(".half-full-summary-pick")].map(node=>node.textContent),["胜胜30.0%","平平20.0%"]);
+   assert.equal(document.querySelector(".forecast-expectation"),null);
+   assert.ok(!document.querySelector("thead").textContent.includes("外围盘口预测"));
+   for(const row of [...document.querySelectorAll("tbody tr")].slice(1))assert.equal(row.querySelector(".half-full-summary").textContent,"暂无数据");
+  }
   const tab=[...document.querySelectorAll("button")].find(node=>node.textContent==="半全场");assert.ok(tab);
   await act(async()=>tab.dispatchEvent(new dom.window.MouseEvent("click",{bubbles:true})));
   const rows=[...document.querySelectorAll(".forecast-view-halfFull tbody tr")];assert.equal(rows.length,3);
@@ -289,8 +298,8 @@ test("prediction and market views can refresh all matches, filter, clear and unm
   assert.equal(container.querySelectorAll(".daily-prediction-card").length,11);
   assert.equal(container.querySelectorAll(".market-forecast-table tbody tr").length,11);
   assert.equal(container.querySelector(".forecast-league").dataset.tone,String(Array.from("测试联赛").reduce((sum,char)=>sum+char.charCodeAt(0),0)%12));
-  assert.match(container.querySelector(".forecast-expectation>span").textContent,/主队方向/);
-  assert.equal(container.querySelector(".forecast-expectation mark").className,"forecast-key-home");
+  assert.equal(container.querySelector(".forecast-expectation"),null);
+  assert.equal(container.querySelectorAll(".half-full-summary-pick").length,22);
   const scoreTab=[...container.querySelectorAll(".forecast-view-tabs button")].find(button=>button.textContent==="比分");
   await act(async()=>scoreTab.click());
   assert.ok(container.querySelector(".forecast-view-score"));
@@ -298,7 +307,7 @@ test("prediction and market views can refresh all matches, filter, clear and unm
   await act(async()=>{filter.value="测试联赛";filter.dispatchEvent(new dom.window.Event("change",{bubbles:true}))});
   await render([fixture("周一003","客队方向 · 降盘，部分一致，偏向小球")]);
   assert.equal(container.querySelectorAll(".market-forecast-table tbody tr").length,1);
-  assert.equal(container.querySelector(".forecast-expectation mark").className,"forecast-key-away");
+  assert.equal(container.querySelectorAll(".half-full-summary-pick").length,2);
   await render([],true);
   assert.equal(container.querySelectorAll(".daily-prediction-card").length,0);
   await render(rows);

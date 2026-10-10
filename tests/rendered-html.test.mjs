@@ -401,9 +401,9 @@ assert.match(styles,/forecast-view-had th:nth-child\(1\)[^]*width:4\.4%!importan
 test("market probability highlights remain visible on zebra and hovered rows",async()=>{
  const [table,styles]=await Promise.all([readFile(new URL("../app/components/MarketPredictionTable.tsx",import.meta.url),"utf8"),readFile(new URL("../app/reference-ui.css",import.meta.url),"utf8")]);
  assert.match(styles,/tr:nth-child\(even\) td\.high-prob,[^]*tr:hover td\.high-prob\s*\{background:#fff176!important/);
- assert.match(table,/expandedExpectations/);
- assert.match(table,/aria-expanded=\{expanded\}/);
- assert.match(table,/展开全部/);
+ assert.doesNotMatch(table,/expandedExpectations/);
+ assert.match(table,/half-full-summary/);
+ assert.doesNotMatch(table,/外围盘口预测|展开全部/);
  assert.match(table,/前2<br\/>概率和/);
  assert.match(table,/goalCoverage>50\?"goal-top2"/);
  assert.match(table,/rank===0\?"goal-prob-first":rank===1\?"goal-prob-second"/);
