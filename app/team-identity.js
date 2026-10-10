@@ -142,13 +142,15 @@ export const teamNamesCompatible=(left,right,leftLeague="",rightLeague="")=>{
 };
 
 // Manual evidence is fixture-scoped, never a global team alias or an identity override.
+// The official and external feeds use these two labels for the same J2 competition.
+export const fixtureLeagueIdentity=value=>normalize(value)==="日职乙"?normalize("日乙"):normalize(value);
 export function manualMappingScopeCompatible(official,external){
  if(!String(external.MATCH_ID||external.ID||""))return false;
  const kickoff=String(official.kickoffAt||""),externalTime=String(external.MATCH_TIME||"");
  const date=kickoff.slice(0,10),externalDate=externalTime.slice(0,10);
  const clock=value=>{const match=value.match(/(?:T|\s)(\d{2}):(\d{2})/);return match?Number(match[1])*60+Number(match[2]):NaN;};
  const reversed=teamNamesCompatible(official.home,external.GUEST_NAME,official.league,external.LEAGUE_NAME_SIMPLY)&&teamNamesCompatible(official.away,external.HOST_NAME,official.league,external.LEAGUE_NAME_SIMPLY);
- return !!official.officialMatchId&&!!official.salesDate&&!!external.HOST_NAME&&!!external.GUEST_NAME&&String(official.id)===String(external.CC_ID)&&normalize(official.league)!==""&&normalize(official.league)===normalize(external.LEAGUE_NAME_SIMPLY)&&/^\d{4}-\d{2}-\d{2}$/.test(date)&&date===externalDate&&Math.abs(clock(kickoff)-clock(externalTime))<=45&&!reversed;
+ return !!official.officialMatchId&&!!official.salesDate&&!!external.HOST_NAME&&!!external.GUEST_NAME&&String(official.id)===String(external.CC_ID)&&fixtureLeagueIdentity(official.league)!==""&&fixtureLeagueIdentity(official.league)===fixtureLeagueIdentity(external.LEAGUE_NAME_SIMPLY)&&/^\d{4}-\d{2}-\d{2}$/.test(date)&&date===externalDate&&Math.abs(clock(kickoff)-clock(externalTime))<=45&&!reversed;
 }
 export function confirmedFixtureMapping(official,external,records,now=Date.now()){
  if(!manualMappingScopeCompatible(official,external))return null;

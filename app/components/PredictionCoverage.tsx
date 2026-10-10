@@ -20,10 +20,10 @@ export default function PredictionCoverage({coverage,unavailableMatches=[],predi
   {retryMessage&&<p className={/(失败|未完成)/.test(retryMessage)?"prediction-retry-message failed":"prediction-retry-message"}>{retryMessage}</p>}
   {unavailableMatches.length>0&&<>
    <p>以下比赛暂不生成概率，待数据核验通过后纳入预测。</p>
-   <ul>{unavailableMatches.map(match=><li key={`${match.officialMatchId||match.id}-${match.salesDate||""}`}>
+   <ul>{unavailableMatches.map(match=><li className={onRetry&&match.externalCandidates?.some(candidate=>candidate.canConfirmNameMatch&&candidate.displayId===match.id)?"has-confirm-action":undefined} key={`${match.officialMatchId||match.id}-${match.salesDate||""}`}>
     <div><b>{match.id}</b>{match.league&&<span>{match.league}</span>}<time>{predictionKickoffParts(match).label}</time></div>
     <strong>{match.home} <i>VS</i> {match.away}</strong><div className="prediction-mapping-reason"><p>{match.reason}</p>{match.externalCandidates?.length?<small>外围返回：{match.externalCandidates.map(candidate=>`${candidate.home||"—"} VS ${candidate.away||"—"}`).join("；")}</small>:null}</div>
-    {onRetry&&match.externalCandidates?.filter(candidate=>candidate.canConfirmNameMatch&&candidate.displayId===match.id).map(candidate=><button key={candidate.externalId} type="button" disabled={retrying} onClick={()=>confirmMatch(match,candidate)}>确认同场并执行AI预测</button>)}
+    {onRetry&&match.externalCandidates?.filter(candidate=>candidate.canConfirmNameMatch&&candidate.displayId===match.id).map(candidate=><button className="prediction-confirm-match" key={candidate.externalId} type="button" disabled={retrying} onClick={()=>confirmMatch(match,candidate)} title="仅确认队名对应，其他数据仍须通过校验">确认同场并执行AI预测</button>)}
    </li>)}</ul>
   </>}
  </section>;
