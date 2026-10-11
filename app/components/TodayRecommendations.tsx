@@ -685,6 +685,7 @@ function DailyPurchasePlans({
       </div>
       </details>
       {visiblePlanModules.length>0&&<div className="purchase-modules-toolbar"><span>当前组合票 · {visiblePlanModules.length} 类玩法</span><button type="button" onClick={()=>setCollapsedModules(Object.fromEntries(visiblePlanModules.map(module=>[module.id,!allModulesCollapsed])))}>{allModulesCollapsed?"全部展开":"全部收起"}</button></div>}
+      {visiblePlanModules.length>0&&<nav className="purchase-module-nav" aria-label="跳转组合票玩法">{visiblePlanModules.map(module=><a key={module.id} href={`#purchase-module-${module.id}`}>{module.title}</a>)}</nav>}
       {visiblePlanModules.map(module=>{
         const stats=moduleStats[module.id]||{settled:0,won:0,rate:0,stake:0,returned:0,net:0};
         const collapsed=Boolean(collapsedModules[module.id]);

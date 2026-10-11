@@ -24,7 +24,8 @@ export default function ModelHealthPanel(){
  const audit=data?.audit,inventory=audit?.inventory,overall=audit?.overall,calibration=data?.calibration;
  if(!audit)return null;
  const marketLead=overall?.modelBrier!=null&&overall?.marketBrier!=null?overall.modelBrier-overall.marketBrier:null;
- return <section className="model-health-panel" aria-label="模型与数据健康">
+ return <details className="model-health-panel diagnostic-disclosure" aria-label="模型与数据健康">
+  <summary><strong>模型与数据健康</strong><span>样本、校准与数据覆盖</span></summary>
   <header><div><small>HISTORICAL MODEL CHECK</small><h3>模型与数据健康</h3><p>只使用已结算、可追溯的赛前快照；历史成绩用于发现偏差，不作为命中保证。</p></div><span className={calibration?.status==="validated"?"model-status validated":"model-status shadow"}>{calibration?.status==="validated"?`正式校准 ${calibration.profileId}`:"候选参数影子验证中"}</span></header>
   <div className="model-health-grid">
    <article><small>严格未来评估样本</small><b>{inventory?.strictDecisionRows||0} 场</b><span>已结算独立比赛 {inventory?.uniqueSettledMatches||0} 场</span></article>
@@ -40,5 +41,5 @@ export default function ModelHealthPanel(){
    <span><i className="shadow"/>旧格式快照只展示，不参与正式参数升级</span>
    <span><i className="shadow"/>当前市场基线完整率 {percent(audit.completeness?.marketHadBaseline?.rate)}，AI有效证据率 {percent(audit.completeness?.validIntelligenceEvidence?.rate)}</span>
   </div></details>
- </section>;
+ </details>;
 }
