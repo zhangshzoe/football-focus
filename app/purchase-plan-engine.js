@@ -1,3 +1,5 @@
+import {analysisArchiveSlot} from "./purchase-snapshot-status.js";
+
 export const PURCHASE_PLAN_STORAGE_KEY = "ff-daily-purchase-plans-v1";
 export const PURCHASE_PLAN_VERSION = 14;
 export const PURCHASE_PLAN_DEFINITIONS = [
@@ -272,8 +274,29 @@ export const deduplicatePurchasePlans = (plans) => {
   });
 };
 
-export const deduplicatePurchasePlanSets = (planSets) =>
-  (planSets || []).map((set) => ({ ...set, plans: deduplicatePurchasePlans(set?.plans) }));
+// Retries are audit evidence, not additional purchases. Select one whole batch
+// before settlement: complete coverage first, then on-time, then earliest capture.
+// Never choose a retry according to its eventual return or winning status.
+export const deduplicatePurchasePlanSets = (planSets) => {
+  const rank = set => [set.qualityStatus === "partial" ? 1 : 0,
+    set.captureTiming === "delayed" ? 1 : 0,
+    Number.isFinite(Date.parse(set.generatedAt)) ? Date.parse(set.generatedAt) : Infinity,
+    String(set.snapshotId || "")];
+  const compare = (a,b) => {const x=rank(a),y=rank(b);for(let i=0;i<x.length;i++){if(x[i]<y[i])return -1;if(x[i]>y[i])return 1;}return 0;};
+  const batches = new Map();
+  for(const set of [...(planSets || [])].filter(Boolean).sort(compare)) {
+    const slot=analysisArchiveSlot(set)||(set.scheduledTime === "21:00" ? "2100" :
+      set.scheduledTime && set.scheduledTime !== "17:00" ? "current" : "1700");
+    const key=slot === "current" || !set.date ? `trial|${set.snapshotId || set.generatedAt}` : `${set.date}|${slot}`;
+    if(batches.has(key))continue;
+    const methods=new Map();
+    for(const plan of deduplicatePurchasePlans(set.plans)) {
+      if(!methods.has(plan.id) || methods.get(plan.id).status === "unavailable")methods.set(plan.id,plan);
+    }
+    batches.set(key,{...set,plans:[...methods.values()]});
+  }
+  return [...batches.values()].sort((a,b)=>String(b.generatedAt || "").localeCompare(String(a.generatedAt || "")));
+};
 
 const settledPlanStatuses = new Set([
   "won",

@@ -6,8 +6,8 @@ import {calculatePurchaseLegReturns,deduplicatePurchasePlans,generatePurchasePla
 
 test("daily snapshot summary excludes missing dates and unsettled tickets from returns",()=>{
  const days=summarizePurchasePlanDays([
-  {date:"2026-09-25",plans:[{status:"won",stake:2,simulatedReturn:20,items:[{}]},{status:"awaiting_result",stake:2,items:[{}]}]},
-  {date:"2026-09-25",plans:[{status:"lost",stake:4,simulatedReturn:0,items:[{}]}]},
+  {date:"2026-09-25",scheduledTime:"17:00",plans:[{id:"won",status:"won",stake:2,simulatedReturn:20,items:[{}]},{id:"pending",status:"awaiting_result",stake:2,items:[{}]}]},
+  {date:"2026-09-25",scheduledTime:"21:00",plans:[{id:"lost",status:"lost",stake:4,simulatedReturn:0,items:[{}]}]},
   {date:"2026-09-26",plans:[{status:"unavailable",items:[]}]},
  ]);
  assert.deepEqual(days["2026-09-25"],{date:"2026-09-25",batches:2,tickets:3,pending:1,settled:2,won:1,rate:50,stake:6,returned:20,net:14});
@@ -495,7 +495,7 @@ test("each fixed ticket has independent cross-date settlement and visible pendin
  assert.deepEqual({settled:record.settled,won:record.won,rate:record.rate,stake:record.stake,returned:record.returned,net:record.net},{settled:2,won:1,rate:50,stake:16,returned:25,net:9});
 });
 
-test("identical adjacent total-goal tickets count once per saved batch without erasing distinct history",()=>{
+test("daily method summaries count canonical totals once without erasing source history",()=>{
  const items=[
   {officialMatchId:"101",salesDate:"2026-09-21",market:"total",picks:[{pick:"2球",odd:4},{pick:"3球",odd:3}]},
   {officialMatchId:"102",salesDate:"2026-09-21",market:"total",picks:[{pick:"1球",odd:5},{pick:"2球",odd:4}]},
@@ -514,11 +514,12 @@ test("identical adjacent total-goal tickets count once per saved batch without e
  assert.equal(deduplicatePurchasePlans(second.plans)[1].originPlanId,"total-adjacent-double-2");
  const days=summarizePurchasePlanDays([first,second]);
  assert.equal(days["2026-09-21"].tickets,1);
- assert.equal(days["2026-09-22"].tickets,2);
+ assert.equal(days["2026-09-22"].tickets,1);
  const total=summarizePurchasePlanModules([first,second]).total;
- assert.deepEqual({settled:total.settled,won:total.won,stake:total.stake,returned:total.returned},{settled:3,won:2,stake:24,returned:48});
+ assert.deepEqual({settled:total.settled,won:total.won,stake:total.stake,returned:total.returned},{settled:2,won:2,stake:16,returned:48});
  const byType=summarizePurchasePlanDefinitions([first,second]);
- assert.equal(byType["total-double-2"].rows.length,3);
+ assert.equal(byType["total-double-2"].rows.length,2);
+ assert.equal(second.plans.length,2,"distinct original tickets remain intact for audit");
  assert.equal(byType["total-adjacent-double-2"],undefined);
 });
 
