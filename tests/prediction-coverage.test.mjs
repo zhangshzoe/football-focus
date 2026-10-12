@@ -159,6 +159,8 @@ test("coverage panel renders visible missing-match reasons and is wired into bot
  assert.doesNotMatch(html,/确认同场并执行AI预测/);
  const confirmable=renderToStaticMarkup(createElement(Coverage,{coverage,predictedCount:11,onRetry:()=>{},unavailableMatches:[{...unavailableMatches[0],reason:"主客队名称尚未匹配",externalCandidates:[{displayId:"周一014",externalId:"test-feed",canConfirmNameMatch:true,home:"中国女",away:"中国香港女足"}]}]}));
  assert.match(confirmable,/确认同场并执行AI预测/);
+ const missingCandidates=renderToStaticMarkup(createElement(Coverage,{coverage,predictedCount:9,onRetry:()=>{},unavailableMatches:[0,1,2].map(index=>({...unavailableMatches[0],officialMatchId:`missing-${index}`,reason:"主客队名称尚未匹配",externalCandidates:index===0?[]:index===1?[{canConfirmNameMatch:false}]:[{displayId:"different",canConfirmNameMatch:true}]}))}));
+ assert.equal((missingCandidates.match(/class="prediction-confirm-match"/g)||[]).length,3,"Every name mismatch row retains a confirmation entry, even without a safe candidate");
  assert.doesNotMatch(html,/<details|hidden=/,"The missing match must be visible, not hidden behind an expansion");
  assert.equal(renderToStaticMarkup(createElement(Coverage,{predictedCount:0})),"");
  const complete=renderToStaticMarkup(createElement(Coverage,{coverage:{officialMatches:11,predictedMatches:11,unavailableMatches:0},predictedCount:11}));

@@ -74,6 +74,10 @@ test("manual fixture confirmation saves only after consent and triggers retry; s
   dom.window.Storage.prototype.setItem=()=>{throw new Error("quota");};
   await act(async()=>button.click());
   assert.equal(alerts,1);assert.equal(retries,1);
+  await act(async()=>root.render(h(Coverage,{coverage:{officialMatches:1,predictedMatches:0,unavailableMatches:1},predictedCount:0,unavailableMatches:[{...match,externalCandidates:[]}],onRetry:id=>{confirmedId=id;retries++}})));
+  await act(async()=>document.querySelector(".prediction-confirm-match").click());
+  assert.equal(alerts,2);assert.equal(retries,2);assert.equal(confirmedId,undefined,"Missing candidates trigger a fresh fetch, never a confirmed-match override");
+  assert.equal(localStorage.getItem("ff-manual-fixture-mappings"),JSON.stringify(saved));
  }finally{if(root)await act(async()=>root.unmount());restore();}
 });
 
