@@ -7,6 +7,7 @@ import {
   summarizePurchasePlanDefinitions,
 } from "../purchase-plan-engine";
 import { formatDoublingMoney, simulatePurchaseDoubling } from "../purchase-doubling.js";
+import { historySummaryClass } from "../purchase-snapshot-status.js";
 
 function Money({ value, debit = false }: { value: bigint; debit?: boolean }) {
   const signed = debit ? -value : value;
@@ -72,7 +73,7 @@ export default function PurchaseDoublingSummary({
       ) : (
         <div className="purchase-history purchase-doubling-history">
           {summaries.map((summary) => (
-            <details key={summary.definition.id} className="purchase-history-group">
+            <details key={summary.definition.id} className={historySummaryClass(summary)}>
               <summary>
                 <strong>
                   {summary.definition.title}

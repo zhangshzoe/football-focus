@@ -11,6 +11,12 @@ test('history rows combine strict over-50 success stripes and positive net-incom
   assert.equal(historySummaryClass({settled:2,rate:50,net:2}),'purchase-history-group purchase-history-profit');
   assert.equal(historySummaryClass({settled:3,rate:66.67,net:2}),'purchase-history-group purchase-history-success purchase-history-profit');
   assert.equal(historySummaryClass({settled:0,rate:100,net:NaN}),'purchase-history-group');
+  assert.equal(historySummaryClass({settled:2,rate:50,net:0n}),'purchase-history-group');
+  assert.equal(historySummaryClass({settled:3,rate:66.67,net:-1n}),'purchase-history-group purchase-history-success');
+  assert.equal(historySummaryClass({settled:2,rate:50,net:1n}),'purchase-history-group purchase-history-profit');
+  assert.equal(historySummaryClass({settled:3,rate:66.67,net:10n**400n}),'purchase-history-group purchase-history-success purchase-history-profit');
+  const doubling=await readFile(new URL('../app/components/PurchaseDoublingSummary.tsx',import.meta.url),'utf8');
+  assert.match(doubling,/className=\{historySummaryClass\(summary\)\}/);
   const component=await readFile(new URL('../app/components/TodayRecommendations.tsx',import.meta.url),'utf8');
   assert.match(component,/className=\{historySummaryClass\(history\)\}/);
   const css=await readFile(new URL('../app/reference-ui.css',import.meta.url),'utf8');
