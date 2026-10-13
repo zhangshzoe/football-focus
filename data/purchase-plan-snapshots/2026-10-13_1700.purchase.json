@@ -1,0 +1,4162 @@
+{
+  "schemaVersion": 1,
+  "recordType": "purchase-plan-snapshot",
+  "snapshotId": "purchase-2026-10-13-164611-5c0ac20604f3",
+  "immutable": true,
+  "scheduledAt": "2026-10-13T17:00:00+08:00",
+  "capturedAt": "2026-10-13T08:46:11.072Z",
+  "sourceFetchedAt": "2026-10-13T08:46:08.620Z",
+  "upstreamUpdatedAt": "2026-10-13T08:46:08.620Z",
+  "predictionId": "pred-1pw3yb",
+  "predictionVersion": {
+    "predictionId": "pred-1pw3yb",
+    "inputSnapshotId": "input-shor4k",
+    "baseModelVersion": "multi-market-poisson-v6-exact-settlement",
+    "calibrationVersion": "cal-none",
+    "aiReviewVersion": null,
+    "generatedAt": "2026-10-13T08:46:08.620Z"
+  },
+  "inputHash": "input-shor4k",
+  "contentHash": "5c0ac20604f31cfb623fb9035b01b55725c124531a4f6ed4ddca59bdd2a04dfb",
+  "previousSnapshotId": "purchase-2026-10-12-214228-67ee43f13dfc",
+  "reviewAfter": "2026-10-13T23:59:59+08:00",
+  "predictionInputs": [
+    {
+      "officialMatchId": "2041951",
+      "modelInput": {
+        "schemaVersion": 1,
+        "pipelineVersion": "multi-market-poisson-v6-exact-settlement",
+        "decisionAt": "2026-10-13T08:46:08.620Z",
+        "companies": [
+          {
+            "companyId": 2,
+            "company": "36*",
+            "win": 2.15,
+            "draw": 3.6,
+            "lose": 2.87,
+            "handicap": -0.25,
+            "homePrice": 0.97,
+            "awayPrice": 0.82,
+            "total": 3,
+            "overPrice": 0.9,
+            "underPrice": 0.9,
+            "firstWin": 2.05,
+            "firstDraw": 3.5,
+            "firstLose": 3.1,
+            "firstHandicap": -0.25,
+            "firstHomePrice": 0.85,
+            "firstAwayPrice": 0.95,
+            "firstTotal": 2.75,
+            "firstOverPrice": 0.85,
+            "firstUnderPrice": 0.95,
+            "fetchedAt": "2026-10-13T08:46:08.619Z",
+            "upstreamUpdatedAt": null,
+            "missingFields": [],
+            "invalidFields": []
+          },
+          {
+            "companyId": 3,
+            "company": "ＳＢ/*",
+            "win": 2.07,
+            "draw": 3.95,
+            "lose": 2.9,
+            "handicap": -0.25,
+            "homePrice": 0.84,
+            "awayPrice": 0.98,
+            "total": 3.25,
+            "overPrice": 1,
+            "underPrice": 0.8,
+            "firstWin": 2.08,
+            "firstDraw": 3.75,
+            "firstLose": 3,
+            "firstHandicap": -0.25,
+            "firstHomePrice": 0.86,
+            "firstAwayPrice": 0.96,
+            "firstTotal": 2.75,
+            "firstOverPrice": 0.86,
+            "firstUnderPrice": 0.94,
+            "fetchedAt": "2026-10-13T08:46:08.619Z",
+            "upstreamUpdatedAt": null,
+            "missingFields": [],
+            "invalidFields": []
+          },
+          {
+            "companyId": 22,
+            "company": "平*",
+            "win": 2.14,
+            "draw": 3.98,
+            "lose": 3.01,
+            "handicap": -0.25,
+            "homePrice": 0.9,
+            "awayPrice": 0.95,
+            "total": 3,
+            "overPrice": 0.83,
+            "underPrice": 1.02,
+            "firstWin": 2.11,
+            "firstDraw": 3.5,
+            "firstLose": 3.14,
+            "firstHandicap": -0.25,
+            "firstHomePrice": 0.85,
+            "firstAwayPrice": 0.93,
+            "firstTotal": 2.75,
+            "firstOverPrice": 0.83,
+            "firstUnderPrice": 0.93,
+            "fetchedAt": "2026-10-13T08:46:08.619Z",
+            "upstreamUpdatedAt": null,
+            "missingFields": [],
+            "invalidFields": []
+          }
+        ],
+        "official": {
+          "officialMatchId": "2041951",
+          "salesDate": "2026-10-13",
+          "kickoffAt": "2026-10-13T18:00:00+08:00",
+          "hadOdds": [
+            1.98,
+            3.55,
+            2.92
+          ],
+          "handicap": -1,
+          "hhadOdds": [
+            4.08,
+            3.75,
+            1.62
+          ],
+          "totalOdds": [
+            21,
+            6.85,
+            4.1,
+            3.5,
+            4.75,
+            7.25,
+            13,
+            18
+          ],
+          "fetchedAt": "2026-10-13T08:46:08.105Z",
+          "updatedAt": "2026-10-13 16:32:39"
+        }
+      },
+      "modelParameters": {
+        "temperature": 1
+      },
+      "predictionId": "pred-1pw3yb"
+    },
+    {
+      "officialMatchId": "2041952",
+      "modelInput": {
+        "schemaVersion": 1,
+        "pipelineVersion": "multi-market-poisson-v6-exact-settlement",
+        "decisionAt": "2026-10-13T08:46:08.620Z",
+        "companies": [
+          {
+            "companyId": 2,
+            "company": "36*",
+            "win": 1.95,
+            "draw": 3.5,
+            "lose": 3.4,
+            "handicap": -0.5,
+            "homePrice": 1,
+            "awayPrice": 0.8,
+            "total": 2.75,
+            "overPrice": 0.82,
+            "underPrice": 0.97,
+            "firstWin": 1.85,
+            "firstDraw": 3.6,
+            "firstLose": 3.7,
+            "firstHandicap": -0.5,
+            "firstHomePrice": 0.9,
+            "firstAwayPrice": 0.9,
+            "firstTotal": 2.75,
+            "firstOverPrice": 0.85,
+            "firstUnderPrice": 0.95,
+            "fetchedAt": "2026-10-13T08:46:08.619Z",
+            "upstreamUpdatedAt": null,
+            "missingFields": [],
+            "invalidFields": []
+          },
+          {
+            "companyId": 3,
+            "company": "ＳＢ/*",
+            "win": 2,
+            "draw": 3.8,
+            "lose": 3.15,
+            "handicap": -0.5,
+            "homePrice": 1,
+            "awayPrice": 0.82,
+            "total": 2.75,
+            "overPrice": 0.8,
+            "underPrice": 1,
+            "firstWin": 2.11,
+            "firstDraw": 3.65,
+            "firstLose": 3,
+            "firstHandicap": -0.25,
+            "firstHomePrice": 0.88,
+            "firstAwayPrice": 0.94,
+            "firstTotal": 2.75,
+            "firstOverPrice": 0.96,
+            "firstUnderPrice": 0.84,
+            "fetchedAt": "2026-10-13T08:46:08.619Z",
+            "upstreamUpdatedAt": null,
+            "missingFields": [],
+            "invalidFields": []
+          },
+          {
+            "companyId": 22,
+            "company": "平*",
+            "win": 2.02,
+            "draw": 3.88,
+            "lose": 3.35,
+            "handicap": -0.5,
+            "homePrice": 1.03,
+            "awayPrice": 0.83,
+            "total": 2.75,
+            "overPrice": 0.84,
+            "underPrice": 1,
+            "firstWin": 2.12,
+            "firstDraw": 3.41,
+            "firstLose": 3.2,
+            "firstHandicap": -0.25,
+            "firstHomePrice": 0.84,
+            "firstAwayPrice": 0.93,
+            "firstTotal": 2.75,
+            "firstOverPrice": 0.93,
+            "firstUnderPrice": 0.82,
+            "fetchedAt": "2026-10-13T08:46:08.619Z",
+            "upstreamUpdatedAt": null,
+            "missingFields": [],
+            "invalidFields": []
+          }
+        ],
+        "official": {
+          "officialMatchId": "2041952",
+          "salesDate": "2026-10-13",
+          "kickoffAt": "2026-10-13T20:15:00+08:00",
+          "hadOdds": [
+            1.87,
+            3.75,
+            3.05
+          ],
+          "handicap": -1,
+          "hhadOdds": [
+            3.7,
+            3.6,
+            1.72
+          ],
+          "totalOdds": [
+            17,
+            6,
+            4,
+            3.6,
+            5,
+            7.8,
+            14,
+            20
+          ],
+          "fetchedAt": "2026-10-13T08:46:08.105Z",
+          "updatedAt": "2026-10-13 14:24:50"
+        }
+      },
+      "modelParameters": {
+        "temperature": 1
+      },
+      "predictionId": "pred-1pw3yb"
+    },
+    {
+      "officialMatchId": "2041953",
+      "modelInput": {
+        "schemaVersion": 1,
+        "pipelineVersion": "multi-market-poisson-v6-exact-settlement",
+        "decisionAt": "2026-10-13T08:46:08.620Z",
+        "companies": [
+          {
+            "companyId": 2,
+            "company": "36*",
+            "win": 2.5,
+            "draw": 3.75,
+            "lose": 2.55,
+            "handicap": 0,
+            "homePrice": 0.92,
+            "awayPrice": 0.92,
+            "total": 3,
+            "overPrice": 0.92,
+            "underPrice": 0.92,
+            "firstWin": 2.35,
+            "firstDraw": 3.75,
+            "firstLose": 2.7,
+            "firstHandicap": -0.25,
+            "firstHomePrice": 1.05,
+            "firstAwayPrice": 0.75,
+            "firstTotal": 3,
+            "firstOverPrice": 0.92,
+            "firstUnderPrice": 0.92,
+            "fetchedAt": "2026-10-13T08:46:08.619Z",
+            "upstreamUpdatedAt": null,
+            "missingFields": [],
+            "invalidFields": []
+          },
+          {
+            "companyId": 3,
+            "company": "ＳＢ/*",
+            "win": 2.47,
+            "draw": 3.7,
+            "lose": 2.75,
+            "handicap": 0,
+            "homePrice": 0.88,
+            "awayPrice": 1.01,
+            "total": 3,
+            "overPrice": 0.96,
+            "underPrice": 0.92,
+            "firstWin": 2.36,
+            "firstDraw": 3.85,
+            "firstLose": 2.8,
+            "firstHandicap": 0,
+            "firstHomePrice": 0.79,
+            "firstAwayPrice": 1.09,
+            "firstTotal": 3,
+            "firstOverPrice": 0.95,
+            "firstUnderPrice": 0.93,
+            "fetchedAt": "2026-10-13T08:46:08.619Z",
+            "upstreamUpdatedAt": null,
+            "missingFields": [],
+            "invalidFields": []
+          },
+          {
+            "companyId": 22,
+            "company": "平*",
+            "win": 2.52,
+            "draw": 3.74,
+            "lose": 2.71,
+            "handicap": 0,
+            "homePrice": 0.88,
+            "awayPrice": 1.03,
+            "total": 3,
+            "overPrice": 0.96,
+            "underPrice": 0.93,
+            "firstWin": 2.37,
+            "firstDraw": 3.77,
+            "firstLose": 2.75,
+            "firstHandicap": 0,
+            "firstHomePrice": 0.79,
+            "firstAwayPrice": 1.08,
+            "firstTotal": 3,
+            "firstOverPrice": 0.94,
+            "firstUnderPrice": 0.89,
+            "fetchedAt": "2026-10-13T08:46:08.619Z",
+            "upstreamUpdatedAt": null,
+            "missingFields": [],
+            "invalidFields": []
+          }
+        ],
+        "official": {
+          "officialMatchId": "2041953",
+          "salesDate": "2026-10-13",
+          "kickoffAt": "2026-10-14T00:45:00+08:00",
+          "hadOdds": [
+            2.38,
+            3.42,
+            2.4
+          ],
+          "handicap": -1,
+          "hhadOdds": [
+            5,
+            4.45,
+            1.42
+          ],
+          "totalOdds": [
+            18,
+            6.75,
+            4.1,
+            3.45,
+            4.6,
+            7.8,
+            14,
+            20
+          ],
+          "fetchedAt": "2026-10-13T08:46:08.105Z",
+          "updatedAt": "2026-10-13 16:20:56"
+        }
+      },
+      "modelParameters": {
+        "temperature": 1
+      },
+      "predictionId": "pred-1pw3yb"
+    },
+    {
+      "officialMatchId": "2041954",
+      "modelInput": {
+        "schemaVersion": 1,
+        "pipelineVersion": "multi-market-poisson-v6-exact-settlement",
+        "decisionAt": "2026-10-13T08:46:08.620Z",
+        "companies": [
+          {
+            "companyId": 2,
+            "company": "36*",
+            "win": 1.22,
+            "draw": 6.25,
+            "lose": 12,
+            "handicap": -1.75,
+            "homePrice": 0.82,
+            "awayPrice": 1.02,
+            "total": 3.5,
+            "overPrice": 1,
+            "underPrice": 0.85,
+            "firstWin": 1.3,
+            "firstDraw": 4.75,
+            "firstLose": 10,
+            "firstHandicap": -1.5,
+            "firstHomePrice": 0.82,
+            "firstAwayPrice": 1.02,
+            "firstTotal": 3,
+            "firstOverPrice": 0.82,
+            "firstUnderPrice": 1.02,
+            "fetchedAt": "2026-10-13T08:46:08.619Z",
+            "upstreamUpdatedAt": null,
+            "missingFields": [],
+            "invalidFields": []
+          },
+          {
+            "companyId": 3,
+            "company": "ＳＢ/*",
+            "win": 1.25,
+            "draw": 6.7,
+            "lose": 10.5,
+            "handicap": -1.75,
+            "homePrice": 0.81,
+            "awayPrice": 1.08,
+            "total": 3.5,
+            "overPrice": 0.88,
+            "underPrice": 1,
+            "firstWin": 1.3,
+            "firstDraw": 5.9,
+            "firstLose": 9.5,
+            "firstHandicap": -1.75,
+            "firstHomePrice": 1.01,
+            "firstAwayPrice": 0.87,
+            "firstTotal": 3.25,
+            "firstOverPrice": 1.03,
+            "firstUnderPrice": 0.85,
+            "fetchedAt": "2026-10-13T08:46:08.619Z",
+            "upstreamUpdatedAt": null,
+            "missingFields": [],
+            "invalidFields": []
+          },
+          {
+            "companyId": 22,
+            "company": "平*",
+            "win": 1.25,
+            "draw": 6.31,
+            "lose": 11.69,
+            "handicap": -1.75,
+            "homePrice": 0.83,
+            "awayPrice": 1.07,
+            "total": 3.5,
+            "overPrice": 0.9,
+            "underPrice": 0.97,
+            "firstWin": 1.25,
+            "firstDraw": 6.11,
+            "firstLose": 10.12,
+            "firstHandicap": -1.75,
+            "firstHomePrice": 0.93,
+            "firstAwayPrice": 0.9,
+            "firstTotal": 3.25,
+            "firstOverPrice": 1,
+            "firstUnderPrice": 0.83,
+            "fetchedAt": "2026-10-13T08:46:08.619Z",
+            "upstreamUpdatedAt": null,
+            "missingFields": [],
+            "invalidFields": []
+          }
+        ],
+        "official": {
+          "officialMatchId": "2041954",
+          "salesDate": "2026-10-13",
+          "kickoffAt": "2026-10-14T03:00:00+08:00",
+          "hadOdds": [
+            1.13,
+            6.3,
+            12
+          ],
+          "handicap": -2,
+          "hhadOdds": [
+            2.35,
+            3.95,
+            2.22
+          ],
+          "totalOdds": [
+            30,
+            10,
+            5.25,
+            3.75,
+            3.85,
+            6.5,
+            9.5,
+            10.5
+          ],
+          "fetchedAt": "2026-10-13T08:46:08.105Z",
+          "updatedAt": "2026-10-13 16:45:13"
+        }
+      },
+      "modelParameters": {
+        "temperature": 1
+      },
+      "predictionId": "pred-1pw3yb"
+    },
+    {
+      "officialMatchId": "2041955",
+      "modelInput": {
+        "schemaVersion": 1,
+        "pipelineVersion": "multi-market-poisson-v6-exact-settlement",
+        "decisionAt": "2026-10-13T08:46:08.620Z",
+        "companies": [
+          {
+            "companyId": 2,
+            "company": "36*",
+            "win": 1.22,
+            "draw": 6.5,
+            "lose": 13,
+            "handicap": -1.75,
+            "homePrice": 0.8,
+            "awayPrice": 1.05,
+            "total": 3,
+            "overPrice": 0.9,
+            "underPrice": 0.95,
+            "firstWin": 1.25,
+            "firstDraw": 5.25,
+            "firstLose": 12,
+            "firstHandicap": -1.75,
+            "firstHomePrice": 1,
+            "firstAwayPrice": 0.85,
+            "firstTotal": 3,
+            "firstOverPrice": 1,
+            "firstUnderPrice": 0.85,
+            "fetchedAt": "2026-10-13T08:46:08.619Z",
+            "upstreamUpdatedAt": null,
+            "missingFields": [],
+            "invalidFields": []
+          },
+          {
+            "companyId": 3,
+            "company": "ＳＢ/*",
+            "win": 1.22,
+            "draw": 6.5,
+            "lose": 14,
+            "handicap": -2,
+            "homePrice": 1.05,
+            "awayPrice": 0.84,
+            "total": 3,
+            "overPrice": 0.81,
+            "underPrice": 1.07,
+            "firstWin": 1.28,
+            "firstDraw": 5.9,
+            "firstLose": 10.5,
+            "firstHandicap": -1.75,
+            "firstHomePrice": 1.03,
+            "firstAwayPrice": 0.85,
+            "firstTotal": 3,
+            "firstOverPrice": 1.02,
+            "firstUnderPrice": 0.86,
+            "fetchedAt": "2026-10-13T08:46:08.619Z",
+            "upstreamUpdatedAt": null,
+            "missingFields": [],
+            "invalidFields": []
+          },
+          {
+            "companyId": 22,
+            "company": "平*",
+            "win": 1.21,
+            "draw": 6.82,
+            "lose": 14.86,
+            "handicap": -2,
+            "homePrice": 1.05,
+            "awayPrice": 0.82,
+            "total": 3,
+            "overPrice": 0.85,
+            "underPrice": 1.02,
+            "firstWin": 1.24,
+            "firstDraw": 5.91,
+            "firstLose": 10.07,
+            "firstHandicap": -1.75,
+            "firstHomePrice": 0.89,
+            "firstAwayPrice": 0.79,
+            "firstTotal": 3,
+            "firstOverPrice": 0.89,
+            "firstUnderPrice": 0.78,
+            "fetchedAt": "2026-10-13T08:46:08.619Z",
+            "upstreamUpdatedAt": null,
+            "missingFields": [],
+            "invalidFields": []
+          }
+        ],
+        "official": {
+          "officialMatchId": "2041955",
+          "salesDate": "2026-10-13",
+          "kickoffAt": "2026-10-14T03:00:00+08:00",
+          "hadOdds": [
+            1.11,
+            6.5,
+            13.5
+          ],
+          "handicap": -2,
+          "hhadOdds": [
+            2.42,
+            3.82,
+            2.2
+          ],
+          "totalOdds": [
+            21,
+            7,
+            4.45,
+            3.5,
+            4.35,
+            7.6,
+            12.5,
+            16
+          ],
+          "fetchedAt": "2026-10-13T08:46:08.105Z",
+          "updatedAt": "2026-10-13 13:31:36"
+        }
+      },
+      "modelParameters": {
+        "temperature": 1
+      },
+      "predictionId": "pred-1pw3yb"
+    },
+    {
+      "officialMatchId": "2041956",
+      "modelInput": {
+        "schemaVersion": 1,
+        "pipelineVersion": "multi-market-poisson-v6-exact-settlement",
+        "decisionAt": "2026-10-13T08:46:08.620Z",
+        "companies": [
+          {
+            "companyId": 2,
+            "company": "36*",
+            "win": 2.1,
+            "draw": 3.6,
+            "lose": 3.3,
+            "handicap": -0.25,
+            "homePrice": 0.82,
+            "awayPrice": 1.02,
+            "total": 3,
+            "overPrice": 1.02,
+            "underPrice": 0.82,
+            "firstWin": 2.3,
+            "firstDraw": 3.4,
+            "firstLose": 3,
+            "firstHandicap": -0.25,
+            "firstHomePrice": 0.97,
+            "firstAwayPrice": 0.87,
+            "firstTotal": 2.75,
+            "firstOverPrice": 0.92,
+            "firstUnderPrice": 0.92,
+            "fetchedAt": "2026-10-13T08:46:08.619Z",
+            "upstreamUpdatedAt": null,
+            "missingFields": [],
+            "invalidFields": []
+          },
+          {
+            "companyId": 3,
+            "company": "ＳＢ/*",
+            "win": 2.2,
+            "draw": 3.8,
+            "lose": 3.1,
+            "handicap": -0.25,
+            "homePrice": 0.92,
+            "awayPrice": 0.97,
+            "total": 2.75,
+            "overPrice": 0.84,
+            "underPrice": 1.04,
+            "firstWin": 2.23,
+            "firstDraw": 3.8,
+            "firstLose": 3.05,
+            "firstHandicap": -0.25,
+            "firstHomePrice": 0.96,
+            "firstAwayPrice": 0.92,
+            "firstTotal": 2.75,
+            "firstOverPrice": 0.94,
+            "firstUnderPrice": 0.94,
+            "fetchedAt": "2026-10-13T08:46:08.619Z",
+            "upstreamUpdatedAt": null,
+            "missingFields": [],
+            "invalidFields": []
+          },
+          {
+            "companyId": 22,
+            "company": "平*",
+            "win": 2.2,
+            "draw": 3.66,
+            "lose": 3.27,
+            "handicap": -0.25,
+            "homePrice": 0.92,
+            "awayPrice": 0.99,
+            "total": 2.75,
+            "overPrice": 0.88,
+            "underPrice": 1.01,
+            "firstWin": 2.21,
+            "firstDraw": 3.55,
+            "firstLose": 3.17,
+            "firstHandicap": -0.25,
+            "firstHomePrice": 0.93,
+            "firstAwayPrice": 0.93,
+            "firstTotal": 2.75,
+            "firstOverPrice": 0.9,
+            "firstUnderPrice": 0.93,
+            "fetchedAt": "2026-10-13T08:46:08.619Z",
+            "upstreamUpdatedAt": null,
+            "missingFields": [],
+            "invalidFields": []
+          }
+        ],
+        "official": {
+          "officialMatchId": "2041956",
+          "salesDate": "2026-10-13",
+          "kickoffAt": "2026-10-14T03:00:00+08:00",
+          "hadOdds": [
+            2.04,
+            3.4,
+            2.9
+          ],
+          "handicap": -1,
+          "hhadOdds": [
+            4.05,
+            3.95,
+            1.59
+          ],
+          "totalOdds": [
+            17,
+            6.5,
+            3.75,
+            3.45,
+            5,
+            8.2,
+            15,
+            22
+          ],
+          "fetchedAt": "2026-10-13T08:46:08.105Z",
+          "updatedAt": "2026-10-13 15:42:13"
+        }
+      },
+      "modelParameters": {
+        "temperature": 1
+      },
+      "predictionId": "pred-1pw3yb"
+    },
+    {
+      "officialMatchId": "2041957",
+      "modelInput": {
+        "schemaVersion": 1,
+        "pipelineVersion": "multi-market-poisson-v6-exact-settlement",
+        "decisionAt": "2026-10-13T08:46:08.620Z",
+        "companies": [
+          {
+            "companyId": 2,
+            "company": "36*",
+            "win": 15,
+            "draw": 12,
+            "lose": 1.1,
+            "handicap": 3,
+            "homePrice": 0.82,
+            "awayPrice": 1.02,
+            "total": 4.5,
+            "overPrice": 0.92,
+            "underPrice": 0.92,
+            "firstWin": 15,
+            "firstDraw": 11,
+            "firstLose": 1.11,
+            "firstHandicap": 2.75,
+            "firstHomePrice": 0.92,
+            "firstAwayPrice": 0.92,
+            "firstTotal": 4.25,
+            "firstOverPrice": 0.9,
+            "firstUnderPrice": 0.95,
+            "fetchedAt": "2026-10-13T08:46:08.619Z",
+            "upstreamUpdatedAt": null,
+            "missingFields": [],
+            "invalidFields": []
+          },
+          {
+            "companyId": 3,
+            "company": "ＳＢ/*",
+            "win": 19,
+            "draw": 11,
+            "lose": 1.11,
+            "handicap": 3,
+            "homePrice": 0.83,
+            "awayPrice": 1.06,
+            "total": 4.5,
+            "overPrice": 0.95,
+            "underPrice": 0.93,
+            "firstWin": 19.5,
+            "firstDraw": 11.5,
+            "firstLose": 1.11,
+            "firstHandicap": 2.75,
+            "firstHomePrice": 0.97,
+            "firstAwayPrice": 0.91,
+            "firstTotal": 4.25,
+            "firstOverPrice": 0.85,
+            "firstUnderPrice": 1.03,
+            "fetchedAt": "2026-10-13T08:46:08.619Z",
+            "upstreamUpdatedAt": null,
+            "missingFields": [],
+            "invalidFields": []
+          },
+          {
+            "companyId": 22,
+            "company": "平*",
+            "win": 20.96,
+            "draw": 12,
+            "lose": 1.1,
+            "handicap": 2.75,
+            "homePrice": 1.01,
+            "awayPrice": 0.86,
+            "total": 4.5,
+            "overPrice": 0.95,
+            "underPrice": 0.9,
+            "firstWin": 15.63,
+            "firstDraw": 12.76,
+            "firstLose": 1.09,
+            "firstHandicap": 2.75,
+            "firstHomePrice": 0.88,
+            "firstAwayPrice": 0.93,
+            "firstTotal": 4.25,
+            "firstOverPrice": 0.88,
+            "firstUnderPrice": 0.93,
+            "fetchedAt": "2026-10-13T08:46:08.619Z",
+            "upstreamUpdatedAt": null,
+            "missingFields": [],
+            "invalidFields": []
+          }
+        ],
+        "official": {
+          "officialMatchId": "2041957",
+          "salesDate": "2026-10-13",
+          "kickoffAt": "2026-10-14T03:00:00+08:00",
+          "hadOdds": [],
+          "handicap": 3,
+          "hhadOdds": [
+            2,
+            5,
+            2.33
+          ],
+          "totalOdds": [
+            70,
+            19,
+            8.5,
+            5.3,
+            4.5,
+            4.85,
+            6.1,
+            4.2
+          ],
+          "fetchedAt": "2026-10-13T08:46:08.105Z",
+          "updatedAt": "2026-10-13 14:53:44"
+        }
+      },
+      "modelParameters": {
+        "temperature": 1
+      },
+      "predictionId": "pred-1pw3yb"
+    },
+    {
+      "officialMatchId": "2041958",
+      "modelInput": {
+        "schemaVersion": 1,
+        "pipelineVersion": "multi-market-poisson-v6-exact-settlement",
+        "decisionAt": "2026-10-13T08:46:08.620Z",
+        "companies": [
+          {
+            "companyId": 2,
+            "company": "36*",
+            "win": 1.72,
+            "draw": 4.5,
+            "lose": 4,
+            "handicap": -1,
+            "homePrice": 0.92,
+            "awayPrice": 0.92,
+            "total": 3.75,
+            "overPrice": 0.92,
+            "underPrice": 0.92,
+            "firstWin": 1.95,
+            "firstDraw": 3.8,
+            "firstLose": 3.4,
+            "firstHandicap": -0.5,
+            "firstHomePrice": 1,
+            "firstAwayPrice": 0.85,
+            "firstTotal": 3.5,
+            "firstOverPrice": 1,
+            "firstUnderPrice": 0.85,
+            "fetchedAt": "2026-10-13T08:46:08.619Z",
+            "upstreamUpdatedAt": null,
+            "missingFields": [],
+            "invalidFields": []
+          },
+          {
+            "companyId": 3,
+            "company": "ＳＢ/*",
+            "win": 1.58,
+            "draw": 5,
+            "lose": 4.75,
+            "handicap": -1,
+            "homePrice": 0.93,
+            "awayPrice": 0.96,
+            "total": 3.75,
+            "overPrice": 0.84,
+            "underPrice": 1.04,
+            "firstWin": 2.02,
+            "firstDraw": 4.3,
+            "firstLose": 3.2,
+            "firstHandicap": -0.5,
+            "firstHomePrice": 1.02,
+            "firstAwayPrice": 0.86,
+            "firstTotal": 3.5,
+            "firstOverPrice": 1.01,
+            "firstUnderPrice": 0.87,
+            "fetchedAt": "2026-10-13T08:46:08.619Z",
+            "upstreamUpdatedAt": null,
+            "missingFields": [],
+            "invalidFields": []
+          },
+          {
+            "companyId": 22,
+            "company": "平*",
+            "win": 1.61,
+            "draw": 4.9,
+            "lose": 4.74,
+            "handicap": -1,
+            "homePrice": 0.94,
+            "awayPrice": 0.96,
+            "total": 3.75,
+            "overPrice": 0.85,
+            "underPrice": 1.04,
+            "firstWin": 2.02,
+            "firstDraw": 4.22,
+            "firstLose": 3.14,
+            "firstHandicap": -0.5,
+            "firstHomePrice": 1.03,
+            "firstAwayPrice": 0.83,
+            "firstTotal": 3.5,
+            "firstOverPrice": 0.99,
+            "firstUnderPrice": 0.85,
+            "fetchedAt": "2026-10-13T08:46:08.619Z",
+            "upstreamUpdatedAt": null,
+            "missingFields": [],
+            "invalidFields": []
+          }
+        ],
+        "official": {
+          "officialMatchId": "2041958",
+          "salesDate": "2026-10-13",
+          "kickoffAt": "2026-10-14T03:00:00+08:00",
+          "hadOdds": [
+            1.46,
+            4.6,
+            4.4
+          ],
+          "handicap": -1,
+          "hhadOdds": [
+            2.21,
+            4,
+            2.35
+          ],
+          "totalOdds": [
+            35,
+            12,
+            6,
+            4.1,
+            4.1,
+            5.5,
+            7.75,
+            7.9
+          ],
+          "fetchedAt": "2026-10-13T08:46:08.105Z",
+          "updatedAt": "2026-10-13 16:11:41"
+        }
+      },
+      "modelParameters": {
+        "temperature": 1
+      },
+      "predictionId": "pred-1pw3yb"
+    },
+    {
+      "officialMatchId": "2041959",
+      "modelInput": {
+        "schemaVersion": 1,
+        "pipelineVersion": "multi-market-poisson-v6-exact-settlement",
+        "decisionAt": "2026-10-13T08:46:08.620Z",
+        "companies": [
+          {
+            "companyId": 2,
+            "company": "36*",
+            "win": 9,
+            "draw": 7,
+            "lose": 1.25,
+            "handicap": 1.75,
+            "homePrice": 0.95,
+            "awayPrice": 0.9,
+            "total": 4.25,
+            "overPrice": 0.92,
+            "underPrice": 0.92,
+            "firstWin": 8,
+            "firstDraw": 5.75,
+            "firstLose": 1.3,
+            "firstHandicap": 1.75,
+            "firstHomePrice": 0.87,
+            "firstAwayPrice": 0.97,
+            "firstTotal": 4,
+            "firstOverPrice": 0.92,
+            "firstUnderPrice": 0.92,
+            "fetchedAt": "2026-10-13T08:46:08.619Z",
+            "upstreamUpdatedAt": null,
+            "missingFields": [],
+            "invalidFields": []
+          },
+          {
+            "companyId": 3,
+            "company": "ＳＢ/*",
+            "win": 8,
+            "draw": 6.8,
+            "lose": 1.3,
+            "handicap": 1.75,
+            "homePrice": 1,
+            "awayPrice": 0.89,
+            "total": 4.25,
+            "overPrice": 0.98,
+            "underPrice": 0.9,
+            "firstWin": 8,
+            "firstDraw": 6.7,
+            "firstLose": 1.3,
+            "firstHandicap": 1.75,
+            "firstHomePrice": 1,
+            "firstAwayPrice": 0.88,
+            "firstTotal": 4.25,
+            "firstOverPrice": 1.05,
+            "firstUnderPrice": 0.83,
+            "fetchedAt": "2026-10-13T08:46:08.619Z",
+            "upstreamUpdatedAt": null,
+            "missingFields": [],
+            "invalidFields": []
+          },
+          {
+            "companyId": 22,
+            "company": "平*",
+            "win": 8.5,
+            "draw": 6.37,
+            "lose": 1.3,
+            "handicap": 1.75,
+            "homePrice": 0.96,
+            "awayPrice": 0.93,
+            "total": 4.25,
+            "overPrice": 0.96,
+            "underPrice": 0.91,
+            "firstWin": 5.84,
+            "firstDraw": 5.93,
+            "firstLose": 1.37,
+            "firstHandicap": 1.75,
+            "firstHomePrice": 0.87,
+            "firstAwayPrice": 0.81,
+            "firstTotal": 4,
+            "firstOverPrice": 0.74,
+            "firstUnderPrice": 0.93,
+            "fetchedAt": "2026-10-13T08:46:08.619Z",
+            "upstreamUpdatedAt": null,
+            "missingFields": [],
+            "invalidFields": []
+          }
+        ],
+        "official": {
+          "officialMatchId": "2041959",
+          "salesDate": "2026-10-13",
+          "kickoffAt": "2026-10-14T03:00:00+08:00",
+          "hadOdds": [
+            8.15,
+            6.6,
+            1.17
+          ],
+          "handicap": 2,
+          "hhadOdds": [
+            2.2,
+            4.5,
+            2.21
+          ],
+          "totalOdds": [
+            55,
+            15,
+            7,
+            4.6,
+            4.3,
+            5,
+            6.95,
+            5.5
+          ],
+          "fetchedAt": "2026-10-13T08:46:08.105Z",
+          "updatedAt": "2026-10-13 12:22:25"
+        }
+      },
+      "modelParameters": {
+        "temperature": 1
+      },
+      "predictionId": "pred-1pw3yb"
+    },
+    {
+      "officialMatchId": "2041960",
+      "modelInput": {
+        "schemaVersion": 1,
+        "pipelineVersion": "multi-market-poisson-v6-exact-settlement",
+        "decisionAt": "2026-10-13T08:46:08.620Z",
+        "companies": [
+          {
+            "companyId": 2,
+            "company": "36*",
+            "win": 1.9,
+            "draw": 3.8,
+            "lose": 3.7,
+            "handicap": -0.5,
+            "homePrice": 0.92,
+            "awayPrice": 0.92,
+            "total": 3,
+            "overPrice": 0.8,
+            "underPrice": 1.05,
+            "firstWin": 2.25,
+            "firstDraw": 3.8,
+            "firstLose": 2.75,
+            "firstHandicap": -0.25,
+            "firstHomePrice": 1.02,
+            "firstAwayPrice": 0.82,
+            "firstTotal": 3.25,
+            "firstOverPrice": 0.97,
+            "firstUnderPrice": 0.87,
+            "fetchedAt": "2026-10-13T08:46:08.619Z",
+            "upstreamUpdatedAt": null,
+            "missingFields": [],
+            "invalidFields": []
+          },
+          {
+            "companyId": 3,
+            "company": "ＳＢ/*",
+            "win": 1.94,
+            "draw": 3.8,
+            "lose": 3.8,
+            "handicap": -0.5,
+            "homePrice": 0.94,
+            "awayPrice": 0.95,
+            "total": 2.75,
+            "overPrice": 0.88,
+            "underPrice": 1,
+            "firstWin": 2.26,
+            "firstDraw": 3.85,
+            "firstLose": 2.95,
+            "firstHandicap": -0.25,
+            "firstHomePrice": 0.94,
+            "firstAwayPrice": 0.94,
+            "firstTotal": 3.25,
+            "firstOverPrice": 1,
+            "firstUnderPrice": 0.88,
+            "fetchedAt": "2026-10-13T08:46:08.619Z",
+            "upstreamUpdatedAt": null,
+            "missingFields": [],
+            "invalidFields": []
+          },
+          {
+            "companyId": 22,
+            "company": "平*",
+            "win": 1.97,
+            "draw": 3.72,
+            "lose": 3.89,
+            "handicap": -0.5,
+            "homePrice": 0.97,
+            "awayPrice": 0.93,
+            "total": 2.75,
+            "overPrice": 0.88,
+            "underPrice": 1.01,
+            "firstWin": 2.28,
+            "firstDraw": 3.74,
+            "firstLose": 2.91,
+            "firstHandicap": -0.25,
+            "firstHomePrice": 1,
+            "firstAwayPrice": 0.85,
+            "firstTotal": 3.25,
+            "firstOverPrice": 1.02,
+            "firstUnderPrice": 0.83,
+            "fetchedAt": "2026-10-13T08:46:08.619Z",
+            "upstreamUpdatedAt": null,
+            "missingFields": [],
+            "invalidFields": []
+          }
+        ],
+        "official": {
+          "officialMatchId": "2041960",
+          "salesDate": "2026-10-13",
+          "kickoffAt": "2026-10-14T03:00:00+08:00",
+          "hadOdds": [
+            1.72,
+            3.75,
+            3.55
+          ],
+          "handicap": -1,
+          "hhadOdds": [
+            3.06,
+            3.7,
+            1.88
+          ],
+          "totalOdds": [
+            17,
+            6.4,
+            4.05,
+            3.65,
+            4.65,
+            8,
+            14,
+            18
+          ],
+          "fetchedAt": "2026-10-13T08:46:08.105Z",
+          "updatedAt": "2026-10-13 15:31:34"
+        }
+      },
+      "modelParameters": {
+        "temperature": 1
+      },
+      "predictionId": "pred-1pw3yb"
+    },
+    {
+      "officialMatchId": "2041961",
+      "modelInput": {
+        "schemaVersion": 1,
+        "pipelineVersion": "multi-market-poisson-v6-exact-settlement",
+        "decisionAt": "2026-10-13T08:46:08.620Z",
+        "companies": [
+          {
+            "companyId": 2,
+            "company": "36*",
+            "win": 3.6,
+            "draw": 3.5,
+            "lose": 1.95,
+            "handicap": 0.5,
+            "homePrice": 0.85,
+            "awayPrice": 1,
+            "total": 2.75,
+            "overPrice": 0.9,
+            "underPrice": 0.95,
+            "firstWin": 3.4,
+            "firstDraw": 3.4,
+            "firstLose": 2,
+            "firstHandicap": 0.5,
+            "firstHomePrice": 0.9,
+            "firstAwayPrice": 0.95,
+            "firstTotal": 2.75,
+            "firstOverPrice": 0.85,
+            "firstUnderPrice": 1,
+            "fetchedAt": "2026-10-13T08:46:08.619Z",
+            "upstreamUpdatedAt": null,
+            "missingFields": [],
+            "invalidFields": []
+          },
+          {
+            "companyId": 3,
+            "company": "ＳＢ/*",
+            "win": 3.1,
+            "draw": 3.6,
+            "lose": 2.06,
+            "handicap": 0.5,
+            "homePrice": 0.83,
+            "awayPrice": 1.05,
+            "total": 2.75,
+            "overPrice": 0.96,
+            "underPrice": 0.91,
+            "firstWin": 3.35,
+            "firstDraw": 3.75,
+            "firstLose": 1.94,
+            "firstHandicap": 0.5,
+            "firstHomePrice": 0.94,
+            "firstAwayPrice": 0.94,
+            "firstTotal": 2.75,
+            "firstOverPrice": 0.85,
+            "firstUnderPrice": 1.02,
+            "fetchedAt": "2026-10-13T08:46:08.619Z",
+            "upstreamUpdatedAt": null,
+            "missingFields": [],
+            "invalidFields": []
+          },
+          {
+            "companyId": 22,
+            "company": "平*",
+            "win": 3.55,
+            "draw": 3.74,
+            "lose": 2.06,
+            "handicap": 0.5,
+            "homePrice": 0.85,
+            "awayPrice": 1.07,
+            "total": 2.75,
+            "overPrice": 0.98,
+            "underPrice": 0.91,
+            "firstWin": 3.83,
+            "firstDraw": 3.67,
+            "firstLose": 1.88,
+            "firstHandicap": 0.5,
+            "firstHomePrice": 0.93,
+            "firstAwayPrice": 0.89,
+            "firstTotal": 2.75,
+            "firstOverPrice": 0.88,
+            "firstUnderPrice": 0.92,
+            "fetchedAt": "2026-10-13T08:46:08.619Z",
+            "upstreamUpdatedAt": null,
+            "missingFields": [],
+            "invalidFields": []
+          }
+        ],
+        "official": {
+          "officialMatchId": "2041961",
+          "salesDate": "2026-10-13",
+          "kickoffAt": "2026-10-14T03:00:00+08:00",
+          "hadOdds": [
+            3.42,
+            3.55,
+            1.8
+          ],
+          "handicap": 1,
+          "hhadOdds": [
+            1.78,
+            3.72,
+            3.35
+          ],
+          "totalOdds": [
+            16,
+            5.9,
+            3.6,
+            3.5,
+            5,
+            9,
+            17,
+            26
+          ],
+          "fetchedAt": "2026-10-13T08:46:08.105Z",
+          "updatedAt": "2026-10-13 15:39:14"
+        }
+      },
+      "modelParameters": {
+        "temperature": 1
+      },
+      "predictionId": "pred-1pw3yb"
+    }
+  ],
+  "planSet": {
+    "version": 14,
+    "date": "2026-10-13",
+    "generatedAt": "2026-10-13T08:46:11.072Z",
+    "scheduledTime": "17:00",
+    "source": "官方在售状态确认；停售时间未知（不进入严格验证） · 17:00计划批次，16:46实际生成 + 中国体育彩票生成时固定奖金",
+    "plans": [
+      {
+        "id": "score-double-3",
+        "title": "比分双选3串1",
+        "rule": "每场2个比分 · 3串1",
+        "status": "pending",
+        "items": [
+          {
+            "matchId": "周二006",
+            "officialMatchId": "2041955",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-14",
+            "kickoffAt": "2026-10-14T03:00:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "欧冠",
+            "home": "阿森纳",
+            "away": "里尔",
+            "handicap": "-2",
+            "market": "score",
+            "marketCode": "CRS",
+            "marketName": "比分",
+            "maxPass": 4,
+            "allowedPassCounts": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "2:0 / 3:0",
+            "probability": 25.718326395844663,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "2:0",
+                "probability": 13.777674854916782,
+                "odd": 6.5
+              },
+              {
+                "pick": "3:0",
+                "probability": 11.940651540927881,
+                "odd": 7
+              }
+            ]
+          },
+          {
+            "matchId": "周二007",
+            "officialMatchId": "2041956",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-14",
+            "kickoffAt": "2026-10-14T03:00:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "欧冠",
+            "home": "比利亚雷",
+            "away": "那不勒斯",
+            "handicap": "-1",
+            "market": "score",
+            "marketCode": "CRS",
+            "marketName": "比分",
+            "maxPass": 4,
+            "allowedPassCounts": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "1:1 / 2:1",
+            "probability": 20.600693958459374,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "1:1",
+                "probability": 11.444829976921875,
+                "odd": 6.75
+              },
+              {
+                "pick": "2:1",
+                "probability": 9.155863981537498,
+                "odd": 7.75
+              }
+            ]
+          },
+          {
+            "matchId": "周二012",
+            "officialMatchId": "2041961",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-14",
+            "kickoffAt": "2026-10-14T03:00:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "英冠",
+            "home": "斯托克城",
+            "away": "米堡",
+            "handicap": "1",
+            "market": "score",
+            "marketCode": "CRS",
+            "marketName": "比分",
+            "maxPass": 4,
+            "allowedPassCounts": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "1:1 / 1:2",
+            "probability": 20.765763946985324,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "1:1",
+                "probability": 11.224737268640714,
+                "odd": 7
+              },
+              {
+                "pick": "1:2",
+                "probability": 9.541026678344608,
+                "odd": 7.25
+              }
+            ]
+          }
+        ],
+        "passName": "3串1",
+        "combinedOdd": 0,
+        "estimatedProbability": 0.011002020933918367,
+        "betCount": 8,
+        "stake": 16,
+        "minWinningReturn": 614.25,
+        "maxWinningReturn": 786.625,
+        "decision": {
+          "objective": "合规约束内模型命中概率优先",
+          "targetNetProfit": null,
+          "targetProfitTolerance": null,
+          "targetMet": null,
+          "minWinningProfitConstraint": 0,
+          "maximumLoss": 16,
+          "probabilityAssumption": "independent-matches",
+          "expectedProfitGuaranteed": false
+        },
+        "minWinningProfit": 598.25,
+        "maxWinningProfit": 770.63,
+        "theoreticalReturn": 786.625
+      },
+      {
+        "id": "score-single-2",
+        "title": "比分单选2串1",
+        "rule": "每场1个比分 · 2串1",
+        "status": "pending",
+        "items": [
+          {
+            "matchId": "周二006",
+            "officialMatchId": "2041955",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-14",
+            "kickoffAt": "2026-10-14T03:00:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "欧冠",
+            "home": "阿森纳",
+            "away": "里尔",
+            "handicap": "-2",
+            "market": "score",
+            "marketCode": "CRS",
+            "marketName": "比分",
+            "maxPass": 4,
+            "allowedPassCounts": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "2:0",
+            "probability": 13.777674854916782,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "2:0",
+                "probability": 13.777674854916782,
+                "odd": 6.5
+              }
+            ]
+          },
+          {
+            "matchId": "周二007",
+            "officialMatchId": "2041956",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-14",
+            "kickoffAt": "2026-10-14T03:00:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "欧冠",
+            "home": "比利亚雷",
+            "away": "那不勒斯",
+            "handicap": "-1",
+            "market": "score",
+            "marketCode": "CRS",
+            "marketName": "比分",
+            "maxPass": 4,
+            "allowedPassCounts": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "1:1",
+            "probability": 11.444829976921875,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "1:1",
+                "probability": 11.444829976921875,
+                "odd": 6.75
+              }
+            ]
+          }
+        ],
+        "passName": "2串1",
+        "combinedOdd": 0,
+        "estimatedProbability": 0.015768314619183436,
+        "betCount": 1,
+        "stake": 2,
+        "minWinningReturn": 87.75,
+        "maxWinningReturn": 87.75,
+        "decision": {
+          "objective": "合规约束内模型命中概率优先",
+          "targetNetProfit": null,
+          "targetProfitTolerance": null,
+          "targetMet": null,
+          "minWinningProfitConstraint": 0,
+          "maximumLoss": 2,
+          "probabilityAssumption": "independent-matches",
+          "expectedProfitGuaranteed": false
+        },
+        "minWinningProfit": 85.75,
+        "maxWinningProfit": 85.75,
+        "theoreticalReturn": 87.75
+      },
+      {
+        "id": "score-double-2",
+        "title": "比分双选2串1",
+        "rule": "每场2个比分 · 2串1",
+        "status": "pending",
+        "items": [
+          {
+            "matchId": "周二006",
+            "officialMatchId": "2041955",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-14",
+            "kickoffAt": "2026-10-14T03:00:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "欧冠",
+            "home": "阿森纳",
+            "away": "里尔",
+            "handicap": "-2",
+            "market": "score",
+            "marketCode": "CRS",
+            "marketName": "比分",
+            "maxPass": 4,
+            "allowedPassCounts": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "2:0 / 3:0",
+            "probability": 25.718326395844663,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "2:0",
+                "probability": 13.777674854916782,
+                "odd": 6.5
+              },
+              {
+                "pick": "3:0",
+                "probability": 11.940651540927881,
+                "odd": 7
+              }
+            ]
+          },
+          {
+            "matchId": "周二012",
+            "officialMatchId": "2041961",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-14",
+            "kickoffAt": "2026-10-14T03:00:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "英冠",
+            "home": "斯托克城",
+            "away": "米堡",
+            "handicap": "1",
+            "market": "score",
+            "marketCode": "CRS",
+            "marketName": "比分",
+            "maxPass": 4,
+            "allowedPassCounts": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "1:1 / 1:2",
+            "probability": 20.765763946985324,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "1:1",
+                "probability": 11.224737268640714,
+                "odd": 7
+              },
+              {
+                "pick": "1:2",
+                "probability": 9.541026678344608,
+                "odd": 7.25
+              }
+            ]
+          }
+        ],
+        "passName": "2串1",
+        "combinedOdd": 0,
+        "estimatedProbability": 0.05340606950476322,
+        "betCount": 4,
+        "stake": 8,
+        "minWinningReturn": 91,
+        "maxWinningReturn": 101.5,
+        "decision": {
+          "objective": "合规约束内模型命中概率优先",
+          "targetNetProfit": null,
+          "targetProfitTolerance": null,
+          "targetMet": null,
+          "minWinningProfitConstraint": 0,
+          "maximumLoss": 8,
+          "probabilityAssumption": "independent-matches",
+          "expectedProfitGuaranteed": false
+        },
+        "minWinningProfit": 83,
+        "maxWinningProfit": 93.5,
+        "theoreticalReturn": 101.5
+      },
+      {
+        "id": "score-single-3",
+        "title": "比分单选3串1",
+        "rule": "每场1个比分 · 3串1",
+        "status": "pending",
+        "items": [
+          {
+            "matchId": "周二006",
+            "officialMatchId": "2041955",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-14",
+            "kickoffAt": "2026-10-14T03:00:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "欧冠",
+            "home": "阿森纳",
+            "away": "里尔",
+            "handicap": "-2",
+            "market": "score",
+            "marketCode": "CRS",
+            "marketName": "比分",
+            "maxPass": 4,
+            "allowedPassCounts": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "2:0",
+            "probability": 13.777674854916782,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "2:0",
+                "probability": 13.777674854916782,
+                "odd": 6.5
+              }
+            ]
+          },
+          {
+            "matchId": "周二007",
+            "officialMatchId": "2041956",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-14",
+            "kickoffAt": "2026-10-14T03:00:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "欧冠",
+            "home": "比利亚雷",
+            "away": "那不勒斯",
+            "handicap": "-1",
+            "market": "score",
+            "marketCode": "CRS",
+            "marketName": "比分",
+            "maxPass": 4,
+            "allowedPassCounts": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "1:1",
+            "probability": 11.444829976921875,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "1:1",
+                "probability": 11.444829976921875,
+                "odd": 6.75
+              }
+            ]
+          },
+          {
+            "matchId": "周二012",
+            "officialMatchId": "2041961",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-14",
+            "kickoffAt": "2026-10-14T03:00:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "英冠",
+            "home": "斯托克城",
+            "away": "米堡",
+            "handicap": "1",
+            "market": "score",
+            "marketCode": "CRS",
+            "marketName": "比分",
+            "maxPass": 4,
+            "allowedPassCounts": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "1:1",
+            "probability": 11.224737268640714,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "1:1",
+                "probability": 11.224737268640714,
+                "odd": 7
+              }
+            ]
+          }
+        ],
+        "passName": "3串1",
+        "combinedOdd": 0,
+        "estimatedProbability": 0.001769951887696005,
+        "betCount": 1,
+        "stake": 2,
+        "minWinningReturn": 614.25,
+        "maxWinningReturn": 614.25,
+        "decision": {
+          "objective": "合规约束内模型命中概率优先",
+          "targetNetProfit": null,
+          "targetProfitTolerance": null,
+          "targetMet": null,
+          "minWinningProfitConstraint": 0,
+          "maximumLoss": 2,
+          "probabilityAssumption": "independent-matches",
+          "expectedProfitGuaranteed": false
+        },
+        "minWinningProfit": 612.25,
+        "maxWinningProfit": 612.25,
+        "theoreticalReturn": 614.25
+      },
+      {
+        "id": "total-double-3",
+        "title": "总进球双选3串1",
+        "rule": "每场2个进球数 · 3串1",
+        "status": "pending",
+        "items": [
+          {
+            "matchId": "周二003",
+            "officialMatchId": "2041952",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-13",
+            "kickoffAt": "2026-10-13T20:15:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "亚精英赛",
+            "home": "布里兰",
+            "away": "北京国安",
+            "handicap": "-1",
+            "market": "total",
+            "marketCode": "TTG",
+            "marketName": "总进球数",
+            "maxPass": 6,
+            "allowedPassCounts": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "2球 / 3球",
+            "probability": 45.169058725983376,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "2球",
+                "probability": 22.774315324025228,
+                "odd": 4
+              },
+              {
+                "pick": "3球",
+                "probability": 22.394743401958145,
+                "odd": 3.6
+              }
+            ]
+          },
+          {
+            "matchId": "周二007",
+            "officialMatchId": "2041956",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-14",
+            "kickoffAt": "2026-10-14T03:00:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "欧冠",
+            "home": "比利亚雷",
+            "away": "那不勒斯",
+            "handicap": "-1",
+            "market": "total",
+            "marketCode": "TTG",
+            "marketName": "总进球数",
+            "maxPass": 6,
+            "allowedPassCounts": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "2球 / 3球",
+            "probability": 45.50328674878897,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "2球",
+                "probability": 23.13726444853677,
+                "odd": 3.75
+              },
+              {
+                "pick": "3球",
+                "probability": 22.366022300252205,
+                "odd": 3.45
+              }
+            ]
+          },
+          {
+            "matchId": "周二012",
+            "officialMatchId": "2041961",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-14",
+            "kickoffAt": "2026-10-14T03:00:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "英冠",
+            "home": "斯托克城",
+            "away": "米堡",
+            "handicap": "1",
+            "market": "total",
+            "marketCode": "TTG",
+            "marketName": "总进球数",
+            "maxPass": 6,
+            "allowedPassCounts": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "2球 / 3球",
+            "probability": 45.50328746182055,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "2球",
+                "probability": 23.137264811095193,
+                "odd": 3.6
+              },
+              {
+                "pick": "3球",
+                "probability": 22.366022650725352,
+                "odd": 3.5
+              }
+            ]
+          }
+        ],
+        "passName": "3串1",
+        "combinedOdd": 0,
+        "estimatedProbability": 0.0935247555817035,
+        "betCount": 8,
+        "stake": 16,
+        "minWinningReturn": 86.94000000000001,
+        "maxWinningReturn": 108,
+        "decision": {
+          "objective": "合规约束内模型命中概率优先",
+          "targetNetProfit": null,
+          "targetProfitTolerance": null,
+          "targetMet": null,
+          "minWinningProfitConstraint": 0,
+          "maximumLoss": 16,
+          "probabilityAssumption": "independent-matches",
+          "expectedProfitGuaranteed": false
+        },
+        "minWinningProfit": 70.94,
+        "maxWinningProfit": 92,
+        "theoreticalReturn": 108
+      },
+      {
+        "id": "total-double-2",
+        "title": "总进球双选2串1",
+        "rule": "每场2个进球数 · 2串1",
+        "status": "pending",
+        "items": [
+          {
+            "matchId": "周二007",
+            "officialMatchId": "2041956",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-14",
+            "kickoffAt": "2026-10-14T03:00:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "欧冠",
+            "home": "比利亚雷",
+            "away": "那不勒斯",
+            "handicap": "-1",
+            "market": "total",
+            "marketCode": "TTG",
+            "marketName": "总进球数",
+            "maxPass": 6,
+            "allowedPassCounts": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "2球 / 3球",
+            "probability": 45.50328674878897,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "2球",
+                "probability": 23.13726444853677,
+                "odd": 3.75
+              },
+              {
+                "pick": "3球",
+                "probability": 22.366022300252205,
+                "odd": 3.45
+              }
+            ]
+          },
+          {
+            "matchId": "周二012",
+            "officialMatchId": "2041961",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-14",
+            "kickoffAt": "2026-10-14T03:00:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "英冠",
+            "home": "斯托克城",
+            "away": "米堡",
+            "handicap": "1",
+            "market": "total",
+            "marketCode": "TTG",
+            "marketName": "总进球数",
+            "maxPass": 6,
+            "allowedPassCounts": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "2球 / 3球",
+            "probability": 45.50328746182055,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "2球",
+                "probability": 23.137264811095193,
+                "odd": 3.6
+              },
+              {
+                "pick": "3球",
+                "probability": 22.366022650725352,
+                "odd": 3.5
+              }
+            ]
+          }
+        ],
+        "passName": "2串1",
+        "combinedOdd": 0,
+        "estimatedProbability": 0.20705491373877943,
+        "betCount": 4,
+        "stake": 8,
+        "minWinningReturn": 24.150000000000002,
+        "maxWinningReturn": 27,
+        "decision": {
+          "objective": "合规约束内模型命中概率优先",
+          "targetNetProfit": null,
+          "targetProfitTolerance": null,
+          "targetMet": null,
+          "minWinningProfitConstraint": 0,
+          "maximumLoss": 8,
+          "probabilityAssumption": "independent-matches",
+          "expectedProfitGuaranteed": false
+        },
+        "minWinningProfit": 16.15,
+        "maxWinningProfit": 19,
+        "theoreticalReturn": 27
+      },
+      {
+        "id": "total-single-2",
+        "title": "总进球单选2串1",
+        "rule": "每场1个进球数 · 2串1",
+        "status": "pending",
+        "items": [
+          {
+            "matchId": "周二007",
+            "officialMatchId": "2041956",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-14",
+            "kickoffAt": "2026-10-14T03:00:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "欧冠",
+            "home": "比利亚雷",
+            "away": "那不勒斯",
+            "handicap": "-1",
+            "market": "total",
+            "marketCode": "TTG",
+            "marketName": "总进球数",
+            "maxPass": 6,
+            "allowedPassCounts": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "2球",
+            "probability": 23.13726444853677,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "2球",
+                "probability": 23.13726444853677,
+                "odd": 3.75
+              }
+            ]
+          },
+          {
+            "matchId": "周二012",
+            "officialMatchId": "2041961",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-14",
+            "kickoffAt": "2026-10-14T03:00:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "英冠",
+            "home": "斯托克城",
+            "away": "米堡",
+            "handicap": "1",
+            "market": "total",
+            "marketCode": "TTG",
+            "marketName": "总进球数",
+            "maxPass": 6,
+            "allowedPassCounts": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "2球",
+            "probability": 23.137264811095193,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "2球",
+                "probability": 23.137264811095193,
+                "odd": 3.6
+              }
+            ]
+          }
+        ],
+        "passName": "2串1",
+        "combinedOdd": 0,
+        "estimatedProbability": 0.05353330145501336,
+        "betCount": 1,
+        "stake": 2,
+        "minWinningReturn": 27,
+        "maxWinningReturn": 27,
+        "decision": {
+          "objective": "合规约束内模型命中概率优先",
+          "targetNetProfit": null,
+          "targetProfitTolerance": null,
+          "targetMet": null,
+          "minWinningProfitConstraint": 0,
+          "maximumLoss": 2,
+          "probabilityAssumption": "independent-matches",
+          "expectedProfitGuaranteed": false
+        },
+        "minWinningProfit": 25,
+        "maxWinningProfit": 25,
+        "theoreticalReturn": 27
+      },
+      {
+        "id": "draw-or-handicap-draw-2",
+        "title": "平/让平单选2串1",
+        "rule": "平或让平 · 2串1",
+        "status": "pending",
+        "items": [
+          {
+            "matchId": "周二007",
+            "officialMatchId": "2041956",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-14",
+            "kickoffAt": "2026-10-14T03:00:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "欧冠",
+            "home": "比利亚雷",
+            "away": "那不勒斯",
+            "handicap": "-1",
+            "market": "had",
+            "marketCode": "HAD",
+            "marketName": "胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "平",
+            "probability": 24.468455466651587,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "平",
+                "probability": 24.468455466651587,
+                "odd": 3.4
+              }
+            ]
+          },
+          {
+            "matchId": "周二012",
+            "officialMatchId": "2041961",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-14",
+            "kickoffAt": "2026-10-14T03:00:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "英冠",
+            "home": "斯托克城",
+            "away": "米堡",
+            "handicap": "1",
+            "market": "had",
+            "marketCode": "HAD",
+            "marketName": "胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "平",
+            "probability": 23.928994406821904,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "平",
+                "probability": 23.928994406821904,
+                "odd": 3.55
+              }
+            ]
+          }
+        ],
+        "passName": "2串1",
+        "combinedOdd": 0,
+        "estimatedProbability": 0.05855055340050766,
+        "betCount": 1,
+        "stake": 2,
+        "minWinningReturn": 24.139999999999997,
+        "maxWinningReturn": 24.139999999999997,
+        "decision": {
+          "objective": "合规约束内模型命中概率优先",
+          "targetNetProfit": null,
+          "targetProfitTolerance": null,
+          "targetMet": null,
+          "minWinningProfitConstraint": 0,
+          "maximumLoss": 2,
+          "probabilityAssumption": "independent-matches",
+          "expectedProfitGuaranteed": false
+        },
+        "minWinningProfit": 22.14,
+        "maxWinningProfit": 22.14,
+        "theoreticalReturn": 24.139999999999997
+      },
+      {
+        "id": "draw-or-handicap-draw-3",
+        "title": "平/让平单选3串1",
+        "rule": "平或让平 · 3串1",
+        "status": "pending",
+        "items": [
+          {
+            "matchId": "周二003",
+            "officialMatchId": "2041952",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-13",
+            "kickoffAt": "2026-10-13T20:15:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "亚精英赛",
+            "home": "布里兰",
+            "away": "北京国安",
+            "handicap": "-1",
+            "market": "had",
+            "marketCode": "HAD",
+            "marketName": "胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "平",
+            "probability": 23.86192935723998,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "平",
+                "probability": 23.86192935723998,
+                "odd": 3.75
+              }
+            ]
+          },
+          {
+            "matchId": "周二007",
+            "officialMatchId": "2041956",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-14",
+            "kickoffAt": "2026-10-14T03:00:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "欧冠",
+            "home": "比利亚雷",
+            "away": "那不勒斯",
+            "handicap": "-1",
+            "market": "had",
+            "marketCode": "HAD",
+            "marketName": "胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "平",
+            "probability": 24.468455466651587,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "平",
+                "probability": 24.468455466651587,
+                "odd": 3.4
+              }
+            ]
+          },
+          {
+            "matchId": "周二012",
+            "officialMatchId": "2041961",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-14",
+            "kickoffAt": "2026-10-14T03:00:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "英冠",
+            "home": "斯托克城",
+            "away": "米堡",
+            "handicap": "1",
+            "market": "had",
+            "marketCode": "HAD",
+            "marketName": "胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "平",
+            "probability": 23.928994406821904,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "平",
+                "probability": 23.928994406821904,
+                "odd": 3.55
+              }
+            ]
+          }
+        ],
+        "passName": "3串1",
+        "combinedOdd": 0,
+        "estimatedProbability": 0.01397129169070221,
+        "betCount": 1,
+        "stake": 2,
+        "minWinningReturn": 90.52499999999999,
+        "maxWinningReturn": 90.52499999999999,
+        "decision": {
+          "objective": "合规约束内模型命中概率优先",
+          "targetNetProfit": null,
+          "targetProfitTolerance": null,
+          "targetMet": null,
+          "minWinningProfitConstraint": 0,
+          "maximumLoss": 2,
+          "probabilityAssumption": "independent-matches",
+          "expectedProfitGuaranteed": false
+        },
+        "minWinningProfit": 88.52,
+        "maxWinningProfit": 88.52,
+        "theoreticalReturn": 90.52499999999999
+      },
+      {
+        "id": "result-mixed-3",
+        "title": "赛果混合单选3串1",
+        "rule": "胜平负/让球胜平负 · 3串1",
+        "status": "pending",
+        "items": [
+          {
+            "matchId": "周二004",
+            "officialMatchId": "2041953",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-14",
+            "kickoffAt": "2026-10-14T00:45:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "欧冠",
+            "home": "朗斯",
+            "away": "里斯本",
+            "handicap": "-1",
+            "market": "hhad",
+            "marketCode": "HHAD",
+            "marketName": "让球胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "让负",
+            "probability": 61.92563120668254,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "让负",
+                "probability": 61.92563120668254,
+                "odd": 1.42
+              }
+            ]
+          },
+          {
+            "matchId": "周二005",
+            "officialMatchId": "2041954",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-14",
+            "kickoffAt": "2026-10-14T03:00:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "欧冠",
+            "home": "国际米兰",
+            "away": "布鲁日",
+            "handicap": "-2",
+            "market": "had",
+            "marketCode": "HAD",
+            "marketName": "胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "胜",
+            "probability": 78.43994292492512,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "胜",
+                "probability": 78.43994292492512,
+                "odd": 1.13
+              }
+            ]
+          },
+          {
+            "matchId": "周二006",
+            "officialMatchId": "2041955",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-14",
+            "kickoffAt": "2026-10-14T03:00:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "欧冠",
+            "home": "阿森纳",
+            "away": "里尔",
+            "handicap": "-2",
+            "market": "had",
+            "marketCode": "HAD",
+            "marketName": "胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "胜",
+            "probability": 80.24590042457169,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "胜",
+                "probability": 80.24590042457169,
+                "odd": 1.11
+              }
+            ]
+          }
+        ],
+        "passName": "3串1",
+        "combinedOdd": 0,
+        "estimatedProbability": 0.38978988548585697,
+        "betCount": 1,
+        "stake": 2,
+        "minWinningReturn": 3.5622119999999997,
+        "maxWinningReturn": 3.5622119999999997,
+        "decision": {
+          "objective": "合规约束内模型命中概率优先",
+          "targetNetProfit": null,
+          "targetProfitTolerance": null,
+          "targetMet": null,
+          "minWinningProfitConstraint": 0,
+          "maximumLoss": 2,
+          "probabilityAssumption": "independent-matches",
+          "expectedProfitGuaranteed": false
+        },
+        "minWinningProfit": 1.56,
+        "maxWinningProfit": 1.56,
+        "theoreticalReturn": 3.5622119999999997
+      },
+      {
+        "id": "result-mixed-4",
+        "title": "赛果混合单选4串1",
+        "rule": "胜平负/让球胜平负 · 4串1",
+        "status": "pending",
+        "items": [
+          {
+            "matchId": "周二004",
+            "officialMatchId": "2041953",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-14",
+            "kickoffAt": "2026-10-14T00:45:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "欧冠",
+            "home": "朗斯",
+            "away": "里斯本",
+            "handicap": "-1",
+            "market": "hhad",
+            "marketCode": "HHAD",
+            "marketName": "让球胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "让负",
+            "probability": 61.92563120668254,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "让负",
+                "probability": 61.92563120668254,
+                "odd": 1.42
+              }
+            ]
+          },
+          {
+            "matchId": "周二005",
+            "officialMatchId": "2041954",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-14",
+            "kickoffAt": "2026-10-14T03:00:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "欧冠",
+            "home": "国际米兰",
+            "away": "布鲁日",
+            "handicap": "-2",
+            "market": "had",
+            "marketCode": "HAD",
+            "marketName": "胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "胜",
+            "probability": 78.43994292492512,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "胜",
+                "probability": 78.43994292492512,
+                "odd": 1.13
+              }
+            ]
+          },
+          {
+            "matchId": "周二006",
+            "officialMatchId": "2041955",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-14",
+            "kickoffAt": "2026-10-14T03:00:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "欧冠",
+            "home": "阿森纳",
+            "away": "里尔",
+            "handicap": "-2",
+            "market": "had",
+            "marketCode": "HAD",
+            "marketName": "胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "胜",
+            "probability": 80.24590042457169,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "胜",
+                "probability": 80.24590042457169,
+                "odd": 1.11
+              }
+            ]
+          },
+          {
+            "matchId": "周二010",
+            "officialMatchId": "2041959",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-14",
+            "kickoffAt": "2026-10-14T03:00:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "欧冠",
+            "home": "加拉塔萨",
+            "away": "巴萨",
+            "handicap": "2",
+            "market": "had",
+            "marketCode": "HAD",
+            "marketName": "胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "负",
+            "probability": 76.38447761510275,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "负",
+                "probability": 76.38447761510275,
+                "odd": 1.17
+              }
+            ]
+          }
+        ],
+        "passName": "4串1",
+        "combinedOdd": 0,
+        "estimatedProbability": 0.2977389678248791,
+        "betCount": 1,
+        "stake": 2,
+        "minWinningReturn": 4.16778804,
+        "maxWinningReturn": 4.16778804,
+        "decision": {
+          "objective": "合规约束内模型命中概率优先",
+          "targetNetProfit": null,
+          "targetProfitTolerance": null,
+          "targetMet": null,
+          "minWinningProfitConstraint": 0,
+          "maximumLoss": 2,
+          "probabilityAssumption": "independent-matches",
+          "expectedProfitGuaranteed": false
+        },
+        "minWinningProfit": 2.17,
+        "maxWinningProfit": 2.17,
+        "theoreticalReturn": 4.16778804
+      },
+      {
+        "id": "result-mixed-5",
+        "title": "赛果混合单选5串1",
+        "rule": "胜平负/让球胜平负 · 5串1",
+        "status": "pending",
+        "items": [
+          {
+            "matchId": "周二004",
+            "officialMatchId": "2041953",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-14",
+            "kickoffAt": "2026-10-14T00:45:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "欧冠",
+            "home": "朗斯",
+            "away": "里斯本",
+            "handicap": "-1",
+            "market": "hhad",
+            "marketCode": "HHAD",
+            "marketName": "让球胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "让负",
+            "probability": 61.92563120668254,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "让负",
+                "probability": 61.92563120668254,
+                "odd": 1.42
+              }
+            ]
+          },
+          {
+            "matchId": "周二005",
+            "officialMatchId": "2041954",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-14",
+            "kickoffAt": "2026-10-14T03:00:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "欧冠",
+            "home": "国际米兰",
+            "away": "布鲁日",
+            "handicap": "-2",
+            "market": "had",
+            "marketCode": "HAD",
+            "marketName": "胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "胜",
+            "probability": 78.43994292492512,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "胜",
+                "probability": 78.43994292492512,
+                "odd": 1.13
+              }
+            ]
+          },
+          {
+            "matchId": "周二006",
+            "officialMatchId": "2041955",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-14",
+            "kickoffAt": "2026-10-14T03:00:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "欧冠",
+            "home": "阿森纳",
+            "away": "里尔",
+            "handicap": "-2",
+            "market": "had",
+            "marketCode": "HAD",
+            "marketName": "胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "胜",
+            "probability": 80.24590042457169,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "胜",
+                "probability": 80.24590042457169,
+                "odd": 1.11
+              }
+            ]
+          },
+          {
+            "matchId": "周二009",
+            "officialMatchId": "2041958",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-14",
+            "kickoffAt": "2026-10-14T03:00:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "欧冠",
+            "home": "莱红牛",
+            "away": "埃因霍温",
+            "handicap": "-1",
+            "market": "had",
+            "marketCode": "HAD",
+            "marketName": "胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "胜",
+            "probability": 60.43834689693498,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "胜",
+                "probability": 60.43834689693498,
+                "odd": 1.46
+              }
+            ]
+          },
+          {
+            "matchId": "周二010",
+            "officialMatchId": "2041959",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-14",
+            "kickoffAt": "2026-10-14T03:00:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "欧冠",
+            "home": "加拉塔萨",
+            "away": "巴萨",
+            "handicap": "2",
+            "market": "had",
+            "marketCode": "HAD",
+            "marketName": "胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "负",
+            "probability": 76.38447761510275,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "负",
+                "probability": 76.38447761510275,
+                "odd": 1.17
+              }
+            ]
+          }
+        ],
+        "passName": "5串1",
+        "combinedOdd": 0,
+        "estimatedProbability": 0.17994851022135402,
+        "betCount": 1,
+        "stake": 2,
+        "minWinningReturn": 6.084970538399999,
+        "maxWinningReturn": 6.084970538399999,
+        "decision": {
+          "objective": "合规约束内模型命中概率优先",
+          "targetNetProfit": null,
+          "targetProfitTolerance": null,
+          "targetMet": null,
+          "minWinningProfitConstraint": 0,
+          "maximumLoss": 2,
+          "probabilityAssumption": "independent-matches",
+          "expectedProfitGuaranteed": false
+        },
+        "minWinningProfit": 4.08,
+        "maxWinningProfit": 4.08,
+        "theoreticalReturn": 6.084970538399999
+      },
+      {
+        "id": "had-safe-2",
+        "title": "胜平负单选2串1",
+        "rule": "每场首选≥50% · 2串1",
+        "status": "pending",
+        "items": [
+          {
+            "matchId": "周二005",
+            "officialMatchId": "2041954",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-14",
+            "kickoffAt": "2026-10-14T03:00:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "欧冠",
+            "home": "国际米兰",
+            "away": "布鲁日",
+            "handicap": "-2",
+            "market": "had",
+            "marketCode": "HAD",
+            "marketName": "胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "胜",
+            "probability": 78.43994292492512,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "胜",
+                "probability": 78.43994292492512,
+                "odd": 1.13
+              }
+            ]
+          },
+          {
+            "matchId": "周二006",
+            "officialMatchId": "2041955",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-14",
+            "kickoffAt": "2026-10-14T03:00:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "欧冠",
+            "home": "阿森纳",
+            "away": "里尔",
+            "handicap": "-2",
+            "market": "had",
+            "marketCode": "HAD",
+            "marketName": "胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "胜",
+            "probability": 80.24590042457169,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "胜",
+                "probability": 80.24590042457169,
+                "odd": 1.11
+              }
+            ]
+          }
+        ],
+        "passName": "2串1",
+        "combinedOdd": 0,
+        "estimatedProbability": 0.6294483849262628,
+        "betCount": 1,
+        "stake": 2,
+        "minWinningReturn": 2.5086,
+        "maxWinningReturn": 2.5086,
+        "decision": {
+          "objective": "合规约束内模型命中概率优先",
+          "targetNetProfit": null,
+          "targetProfitTolerance": null,
+          "targetMet": null,
+          "minWinningProfitConstraint": 0,
+          "maximumLoss": 2,
+          "probabilityAssumption": "independent-matches",
+          "expectedProfitGuaranteed": false
+        },
+        "minWinningProfit": 0.51,
+        "maxWinningProfit": 0.51,
+        "theoreticalReturn": 2.5086
+      },
+      {
+        "id": "tenfold-safe-2",
+        "title": "10倍目标 A · 单选2串1",
+        "rule": "目标净盈利约20元 · 2串1",
+        "status": "pending",
+        "items": [
+          {
+            "matchId": "周二011",
+            "officialMatchId": "2041960",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-14",
+            "kickoffAt": "2026-10-14T03:00:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "欧冠",
+            "home": "马竞",
+            "away": "曼联",
+            "handicap": "-1",
+            "market": "halfFull",
+            "marketCode": "HAFU",
+            "marketName": "半全场",
+            "maxPass": 4,
+            "allowedPassCounts": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "胜胜",
+            "probability": 32.08590428781673,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "胜胜",
+                "probability": 32.08590428781673,
+                "odd": 2.9
+              }
+            ]
+          },
+          {
+            "matchId": "周二012",
+            "officialMatchId": "2041961",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-14",
+            "kickoffAt": "2026-10-14T03:00:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "英冠",
+            "home": "斯托克城",
+            "away": "米堡",
+            "handicap": "1",
+            "market": "halfFull",
+            "marketCode": "HAFU",
+            "marketName": "半全场",
+            "maxPass": 4,
+            "allowedPassCounts": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "负负",
+            "probability": 30.249779893229274,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "负负",
+                "probability": 30.249779893229274,
+                "odd": 3
+              }
+            ]
+          }
+        ],
+        "passName": "2串1",
+        "combinedOdd": 0,
+        "estimatedProbability": 0.09705915423816774,
+        "betCount": 1,
+        "stake": 2,
+        "minWinningReturn": 17.4,
+        "maxWinningReturn": 17.4,
+        "decision": {
+          "objective": "目标命中净盈利优先，再比较模型概率",
+          "targetNetProfit": 20,
+          "targetProfitTolerance": 5,
+          "targetMet": true,
+          "minWinningProfitConstraint": 0,
+          "maximumLoss": 2,
+          "probabilityAssumption": "independent-matches",
+          "expectedProfitGuaranteed": false
+        },
+        "minWinningProfit": 15.4,
+        "maxWinningProfit": 15.4,
+        "theoreticalReturn": 17.4
+      },
+      {
+        "id": "tenfold-safe-3",
+        "title": "10倍目标 B · 单选3串1",
+        "rule": "目标净盈利约20元 · 3串1",
+        "status": "pending",
+        "items": [
+          {
+            "matchId": "周二005",
+            "officialMatchId": "2041954",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-14",
+            "kickoffAt": "2026-10-14T03:00:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "欧冠",
+            "home": "国际米兰",
+            "away": "布鲁日",
+            "handicap": "-2",
+            "market": "hhad",
+            "marketCode": "HHAD",
+            "marketName": "让球胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "让负",
+            "probability": 41.374170496734564,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "让负",
+                "probability": 41.374170496734564,
+                "odd": 2.22
+              }
+            ]
+          },
+          {
+            "matchId": "周二007",
+            "officialMatchId": "2041956",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-14",
+            "kickoffAt": "2026-10-14T03:00:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "欧冠",
+            "home": "比利亚雷",
+            "away": "那不勒斯",
+            "handicap": "-1",
+            "market": "had",
+            "marketCode": "HAD",
+            "marketName": "胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "胜",
+            "probability": 44.43981468604319,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "胜",
+                "probability": 44.43981468604319,
+                "odd": 2.04
+              }
+            ]
+          },
+          {
+            "matchId": "周二011",
+            "officialMatchId": "2041960",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-14",
+            "kickoffAt": "2026-10-14T03:00:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "欧冠",
+            "home": "马竞",
+            "away": "曼联",
+            "handicap": "-1",
+            "market": "hhad",
+            "marketCode": "HHAD",
+            "marketName": "让球胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "让负",
+            "probability": 48.558155527293174,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "让负",
+                "probability": 48.558155527293174,
+                "odd": 1.88
+              }
+            ]
+          }
+        ],
+        "passName": "3串1",
+        "combinedOdd": 0,
+        "estimatedProbability": 0.08928196104781293,
+        "betCount": 1,
+        "stake": 2,
+        "minWinningReturn": 17.028288,
+        "maxWinningReturn": 17.028288,
+        "decision": {
+          "objective": "目标命中净盈利优先，再比较模型概率",
+          "targetNetProfit": 20,
+          "targetProfitTolerance": 5,
+          "targetMet": true,
+          "minWinningProfitConstraint": 0,
+          "maximumLoss": 2,
+          "probabilityAssumption": "independent-matches",
+          "expectedProfitGuaranteed": false
+        },
+        "minWinningProfit": 15.03,
+        "maxWinningProfit": 15.03,
+        "theoreticalReturn": 17.028288
+      },
+      {
+        "id": "tenfold-safe-4",
+        "title": "10倍目标 C · 单选4串1",
+        "rule": "目标净盈利约20元 · 4串1",
+        "status": "pending",
+        "items": [
+          {
+            "matchId": "周二006",
+            "officialMatchId": "2041955",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-14",
+            "kickoffAt": "2026-10-14T03:00:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "欧冠",
+            "home": "阿森纳",
+            "away": "里尔",
+            "handicap": "-2",
+            "market": "had",
+            "marketCode": "HAD",
+            "marketName": "胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "胜",
+            "probability": 80.24590042457169,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "胜",
+                "probability": 80.24590042457169,
+                "odd": 1.11
+              }
+            ]
+          },
+          {
+            "matchId": "周二009",
+            "officialMatchId": "2041958",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-14",
+            "kickoffAt": "2026-10-14T03:00:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "欧冠",
+            "home": "莱红牛",
+            "away": "埃因霍温",
+            "handicap": "-1",
+            "market": "halfFull",
+            "marketCode": "HAFU",
+            "marketName": "半全场",
+            "maxPass": 4,
+            "allowedPassCounts": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "胜胜",
+            "probability": 40.10096768073649,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "胜胜",
+                "probability": 40.10096768073649,
+                "odd": 2.3
+              }
+            ]
+          },
+          {
+            "matchId": "周二011",
+            "officialMatchId": "2041960",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-14",
+            "kickoffAt": "2026-10-14T03:00:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "欧冠",
+            "home": "马竞",
+            "away": "曼联",
+            "handicap": "-1",
+            "market": "hhad",
+            "marketCode": "HHAD",
+            "marketName": "让球胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "让负",
+            "probability": 48.558155527293174,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "让负",
+                "probability": 48.558155527293174,
+                "odd": 1.88
+              }
+            ]
+          },
+          {
+            "matchId": "周二012",
+            "officialMatchId": "2041961",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-14",
+            "kickoffAt": "2026-10-14T03:00:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "英冠",
+            "home": "斯托克城",
+            "away": "米堡",
+            "handicap": "+1",
+            "market": "hhad",
+            "marketCode": "HHAD",
+            "marketName": "让球胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "让胜",
+            "probability": 50.911599076212006,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "让胜",
+                "probability": 50.911599076212006,
+                "odd": 1.78
+              }
+            ]
+          }
+        ],
+        "passName": "4串1",
+        "combinedOdd": 0,
+        "estimatedProbability": 0.07955301194331059,
+        "betCount": 1,
+        "stake": 2,
+        "minWinningReturn": 17.0867184,
+        "maxWinningReturn": 17.0867184,
+        "decision": {
+          "objective": "目标命中净盈利优先，再比较模型概率",
+          "targetNetProfit": 20,
+          "targetProfitTolerance": 5,
+          "targetMet": true,
+          "minWinningProfitConstraint": 0,
+          "maximumLoss": 2,
+          "probabilityAssumption": "independent-matches",
+          "expectedProfitGuaranteed": false
+        },
+        "minWinningProfit": 15.09,
+        "maxWinningProfit": 15.09,
+        "theoreticalReturn": 17.0867184
+      },
+      {
+        "id": "half-full-double-3",
+        "title": "半全场双选3串1",
+        "rule": "每场覆盖2个走势 · 3串1",
+        "status": "pending",
+        "items": [
+          {
+            "matchId": "周二004",
+            "officialMatchId": "2041953",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-14",
+            "kickoffAt": "2026-10-14T00:45:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "欧冠",
+            "home": "朗斯",
+            "away": "里斯本",
+            "handicap": "-1",
+            "market": "halfFull",
+            "marketCode": "HAFU",
+            "marketName": "半全场",
+            "maxPass": 4,
+            "allowedPassCounts": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "胜胜 / 负负",
+            "probability": 45.52272121831408,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "胜胜",
+                "probability": 22.76136060915704,
+                "odd": 3.9
+              },
+              {
+                "pick": "负负",
+                "probability": 22.76136060915704,
+                "odd": 4
+              }
+            ]
+          },
+          {
+            "matchId": "周二005",
+            "officialMatchId": "2041954",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-14",
+            "kickoffAt": "2026-10-14T03:00:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "欧冠",
+            "home": "国际米兰",
+            "away": "布鲁日",
+            "handicap": "-2",
+            "market": "halfFull",
+            "marketCode": "HAFU",
+            "marketName": "半全场",
+            "maxPass": 4,
+            "allowedPassCounts": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "胜胜 / 平胜",
+            "probability": 74.90437158682322,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "胜胜",
+                "probability": 55.88008309815649,
+                "odd": 1.51
+              },
+              {
+                "pick": "平胜",
+                "probability": 19.02428848866673,
+                "odd": 4.15
+              }
+            ]
+          },
+          {
+            "matchId": "周二006",
+            "officialMatchId": "2041955",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-14",
+            "kickoffAt": "2026-10-14T03:00:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "欧冠",
+            "home": "阿森纳",
+            "away": "里尔",
+            "handicap": "-2",
+            "market": "halfFull",
+            "marketCode": "HAFU",
+            "marketName": "半全场",
+            "maxPass": 4,
+            "allowedPassCounts": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "胜胜 / 平胜",
+            "probability": 77.53884132601132,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "胜胜",
+                "probability": 56.77330407263093,
+                "odd": 1.51
+              },
+              {
+                "pick": "平胜",
+                "probability": 20.765537253380398,
+                "odd": 3.95
+              }
+            ]
+          }
+        ],
+        "passName": "3串1",
+        "combinedOdd": 0,
+        "estimatedProbability": 0.264395882125521,
+        "betCount": 8,
+        "stake": 16,
+        "minWinningReturn": 17.78478,
+        "maxWinningReturn": 131.14000000000001,
+        "decision": {
+          "objective": "合规约束内模型命中概率优先",
+          "targetNetProfit": null,
+          "targetProfitTolerance": null,
+          "targetMet": null,
+          "minWinningProfitConstraint": 0,
+          "maximumLoss": 16,
+          "probabilityAssumption": "independent-matches",
+          "expectedProfitGuaranteed": false
+        },
+        "minWinningProfit": 1.78,
+        "maxWinningProfit": 115.14,
+        "theoreticalReturn": 131.14000000000001
+      },
+      {
+        "id": "twofold-a",
+        "title": "2倍 A · 单选2串1",
+        "rule": "每场单选 · 2串1 · 最低净盈利≥投入2倍",
+        "status": "pending",
+        "items": [
+          {
+            "matchId": "周二003",
+            "officialMatchId": "2041952",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-13",
+            "kickoffAt": "2026-10-13T20:15:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "亚精英赛",
+            "home": "布里兰",
+            "away": "北京国安",
+            "handicap": "-1",
+            "market": "hhad",
+            "marketCode": "HHAD",
+            "marketName": "让球胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "让负",
+            "probability": 52.03937441293814,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "让负",
+                "probability": 52.03937441293814,
+                "odd": 1.72
+              }
+            ]
+          },
+          {
+            "matchId": "周二012",
+            "officialMatchId": "2041961",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-14",
+            "kickoffAt": "2026-10-14T03:00:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "英冠",
+            "home": "斯托克城",
+            "away": "米堡",
+            "handicap": "+1",
+            "market": "hhad",
+            "marketCode": "HHAD",
+            "marketName": "让球胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "让胜",
+            "probability": 50.911599076212006,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "让胜",
+                "probability": 50.911599076212006,
+                "odd": 1.78
+              }
+            ]
+          }
+        ],
+        "passName": "2串1",
+        "combinedOdd": 0,
+        "estimatedProbability": 0.2649407766288392,
+        "betCount": 1,
+        "stake": 2,
+        "minWinningReturn": 6.1232,
+        "maxWinningReturn": 6.1232,
+        "decision": {
+          "objective": "高概率候选池内随机",
+          "targetNetProfit": null,
+          "targetProfitTolerance": null,
+          "targetMet": null,
+          "minWinningProfitConstraint": 4,
+          "maximumLoss": 2,
+          "probabilityAssumption": "independent-matches",
+          "expectedProfitGuaranteed": false
+        },
+        "minWinningProfit": 4.12,
+        "maxWinningProfit": 4.12,
+        "theoreticalReturn": 6.1232
+      },
+      {
+        "id": "twofold-b",
+        "title": "2倍 B · 单选2串1",
+        "rule": "每场单选 · 2串1 · 最低净盈利≥投入2倍",
+        "status": "pending",
+        "items": [
+          {
+            "matchId": "周二006",
+            "officialMatchId": "2041955",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-14",
+            "kickoffAt": "2026-10-14T03:00:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "欧冠",
+            "home": "阿森纳",
+            "away": "里尔",
+            "handicap": "-2",
+            "market": "had",
+            "marketCode": "HAD",
+            "marketName": "胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "胜",
+            "probability": 80.24590042457169,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "胜",
+                "probability": 80.24590042457169,
+                "odd": 1.11
+              }
+            ]
+          },
+          {
+            "matchId": "周二011",
+            "officialMatchId": "2041960",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-14",
+            "kickoffAt": "2026-10-14T03:00:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "欧冠",
+            "home": "马竞",
+            "away": "曼联",
+            "handicap": "-1",
+            "market": "halfFull",
+            "marketCode": "HAFU",
+            "marketName": "半全场",
+            "maxPass": 4,
+            "allowedPassCounts": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "胜胜",
+            "probability": 32.08590428781673,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "胜胜",
+                "probability": 32.08590428781673,
+                "odd": 2.9
+              }
+            ]
+          }
+        ],
+        "passName": "2串1",
+        "combinedOdd": 0,
+        "estimatedProbability": 0.2574762280512479,
+        "betCount": 1,
+        "stake": 2,
+        "minWinningReturn": 6.438000000000001,
+        "maxWinningReturn": 6.438000000000001,
+        "decision": {
+          "objective": "高概率候选池内随机",
+          "targetNetProfit": null,
+          "targetProfitTolerance": null,
+          "targetMet": null,
+          "minWinningProfitConstraint": 4,
+          "maximumLoss": 2,
+          "probabilityAssumption": "independent-matches",
+          "expectedProfitGuaranteed": false
+        },
+        "minWinningProfit": 4.44,
+        "maxWinningProfit": 4.44,
+        "theoreticalReturn": 6.438000000000001
+      },
+      {
+        "id": "twofold-c",
+        "title": "2倍 C · 单选2串1",
+        "rule": "每场单选 · 2串1 · 最低净盈利≥投入2倍",
+        "status": "pending",
+        "items": [
+          {
+            "matchId": "周二004",
+            "officialMatchId": "2041953",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-14",
+            "kickoffAt": "2026-10-14T00:45:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "欧冠",
+            "home": "朗斯",
+            "away": "里斯本",
+            "handicap": "-1",
+            "market": "hhad",
+            "marketCode": "HHAD",
+            "marketName": "让球胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "让负",
+            "probability": 61.92563120668254,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "让负",
+                "probability": 61.92563120668254,
+                "odd": 1.42
+              }
+            ]
+          },
+          {
+            "matchId": "周二010",
+            "officialMatchId": "2041959",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-14",
+            "kickoffAt": "2026-10-14T03:00:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "欧冠",
+            "home": "加拉塔萨",
+            "away": "巴萨",
+            "handicap": "+2",
+            "market": "hhad",
+            "marketCode": "HHAD",
+            "marketName": "让球胜平负",
+            "maxPass": 8,
+            "allowedPassCounts": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "让胜",
+            "probability": 41.798827577579566,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "让胜",
+                "probability": 41.798827577579566,
+                "odd": 2.2
+              }
+            ]
+          }
+        ],
+        "passName": "2串1",
+        "combinedOdd": 0,
+        "estimatedProbability": 0.2588418781440904,
+        "betCount": 1,
+        "stake": 2,
+        "minWinningReturn": 6.248,
+        "maxWinningReturn": 6.248,
+        "decision": {
+          "objective": "高概率候选池内随机",
+          "targetNetProfit": null,
+          "targetProfitTolerance": null,
+          "targetMet": null,
+          "minWinningProfitConstraint": 4,
+          "maximumLoss": 2,
+          "probabilityAssumption": "independent-matches",
+          "expectedProfitGuaranteed": false
+        },
+        "minWinningProfit": 4.25,
+        "maxWinningProfit": 4.25,
+        "theoreticalReturn": 6.248
+      },
+      {
+        "id": "half-full-double-2",
+        "title": "半全场双选2串1",
+        "rule": "每场覆盖2个走势 · 2串1",
+        "status": "pending",
+        "items": [
+          {
+            "matchId": "周二004",
+            "officialMatchId": "2041953",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-14",
+            "kickoffAt": "2026-10-14T00:45:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "欧冠",
+            "home": "朗斯",
+            "away": "里斯本",
+            "handicap": "-1",
+            "market": "halfFull",
+            "marketCode": "HAFU",
+            "marketName": "半全场",
+            "maxPass": 4,
+            "allowedPassCounts": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "胜胜 / 负负",
+            "probability": 45.52272121831408,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "胜胜",
+                "probability": 22.76136060915704,
+                "odd": 3.9
+              },
+              {
+                "pick": "负负",
+                "probability": 22.76136060915704,
+                "odd": 4
+              }
+            ]
+          },
+          {
+            "matchId": "周二008",
+            "officialMatchId": "2041957",
+            "salesDate": "2026-10-13",
+            "matchDate": "2026-10-14",
+            "kickoffAt": "2026-10-14T03:00:00+08:00",
+            "sourceFetchedAt": "2026-10-13T08:46:08.619Z",
+            "matchStatus": "Selling",
+            "league": "欧冠",
+            "home": "维京",
+            "away": "拜仁",
+            "handicap": "3",
+            "market": "halfFull",
+            "marketCode": "HAFU",
+            "marketName": "半全场",
+            "maxPass": 4,
+            "allowedPassCounts": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "cutoffAt": null,
+            "cutoffStatus": "unknown",
+            "ruleVersion": "sporttery-football-2026-09",
+            "pick": "负负 / 平负",
+            "probability": 84.66412917384496,
+            "odd": 0,
+            "picks": [
+              {
+                "pick": "负负",
+                "probability": 67.81020905598294,
+                "odd": 1.23
+              },
+              {
+                "pick": "平负",
+                "probability": 16.853920117862014,
+                "odd": 5
+              }
+            ]
+          }
+        ],
+        "passName": "2串1",
+        "combinedOdd": 0,
+        "estimatedProbability": 0.3854141549572276,
+        "betCount": 4,
+        "stake": 8,
+        "minWinningReturn": 9.594,
+        "maxWinningReturn": 40,
+        "decision": {
+          "objective": "合规约束内模型命中概率优先",
+          "targetNetProfit": null,
+          "targetProfitTolerance": null,
+          "targetMet": null,
+          "minWinningProfitConstraint": 0,
+          "maximumLoss": 8,
+          "probabilityAssumption": "independent-matches",
+          "expectedProfitGuaranteed": false
+        },
+        "minWinningProfit": 1.59,
+        "maxWinningProfit": 32,
+        "theoreticalReturn": 40
+      }
+    ],
+    "captureTiming": "on-time",
+    "includedInStrictEvaluation": false,
+    "qualityStatus": "cutoff-unknown",
+    "cutoffStatus": "unknown",
+    "sourceCoverage": {
+      "listed": 11,
+      "eligible": 11,
+      "predicted": 11,
+      "excluded": []
+    }
+  },
+  "startedAt": "2026-10-13T08:46:04.404Z",
+  "completedAt": "2026-10-13T08:46:12.673Z",
+  "captureTiming": "on-time",
+  "decisionTiming": "pre_match",
+  "includedInStrictEvaluation": false,
+  "includedInPreMatchEvaluation": false,
+  "modelVersion": "multi-market-poisson-v6-exact-settlement",
+  "sourceCoverage": {
+    "listed": 11,
+    "eligible": 11,
+    "predicted": 11,
+    "excluded": []
+  },
+  "cutoffStatus": "unknown",
+  "qualityStatus": "cutoff-unknown"
+}
