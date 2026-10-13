@@ -12,13 +12,14 @@
  .market-prediction-page .market-forecast-table th,.market-prediction-page .market-forecast-table td{box-sizing:border-box;min-width:0!important;max-width:none!important;padding:12px 6px!important;font-size:12px!important;line-height:1.5;white-space:normal;overflow-wrap:break-word;text-align:center!important}
  .market-prediction-page .market-forecast-table :is(th,td):nth-child(1){width:5.5%!important}
  .market-prediction-page .market-forecast-table :is(th,td):nth-child(2){width:4.5%!important}
- .market-prediction-page .market-forecast-table :is(th,td):nth-child(3){width:10%!important}
- .market-prediction-page .market-forecast-table :is(th,td):nth-child(4){width:8%!important}
+ .market-prediction-page .market-forecast-table :is(th,td):nth-child(3){width:8%!important}
+ .market-prediction-page .market-forecast-table :is(th,td):nth-child(4){width:7%!important}
  .market-prediction-page .market-forecast-table :is(th,td):nth-child(5),.market-prediction-page .market-forecast-table :is(th,td):nth-child(6){width:6%!important}
- .market-prediction-page .market-forecast-table :is(th,td):nth-child(7){width:8%!important}
+ .market-prediction-page .market-forecast-table :is(th,td):nth-child(7){width:7%!important}
  .market-prediction-page .market-forecast-table :is(th,td):nth-child(8){width:5.5%!important}
- .market-prediction-page .market-forecast-table :is(th,td):nth-child(9){width:9%!important}
- .market-prediction-page .market-forecast-table :is(th,td):nth-child(n+10){width:auto!important;font-variant-numeric:tabular-nums}
+ .market-prediction-page .market-forecast-table :is(th,td):nth-child(9){width:8%!important}
+ .market-prediction-page .market-forecast-table :is(th,td):nth-child(n+11){width:auto!important;font-variant-numeric:tabular-nums}
+ .market-prediction-page .market-forecast-table :is(th,td):nth-child(10){width:8%!important}
  .market-prediction-page .market-forecast-table[class] :is(th,td){padding:10px 3px!important;overflow-wrap:anywhere;white-space:normal!important}
  .market-prediction-page .market-forecast-table :is(td,th) :is(span,small,em,strong,time){min-width:0!important;max-width:100%;white-space:normal!important;overflow-wrap:anywhere}
  .market-prediction-page .market-forecast-scroll-hint{display:none!important}
@@ -48,11 +49,11 @@
  .market-prediction-page .market-forecast-wrap .market-forecast-table tbody tr>td:nth-child(4){grid-column:1/-1!important;min-height:38px!important;padding:6px 12px!important;flex-direction:row!important;font-size:12px!important;gap:10px!important;background:#f8fafc!important}
  .market-prediction-page .market-forecast-wrap .market-forecast-table tbody tr>td:nth-child(n+5):nth-child(-n+9){display:none!important}
  .market-prediction-page .market-forecast-wrap .market-forecast-table.forecast-view-had tbody tr>td:nth-child(5),.market-prediction-page .market-forecast-wrap .market-forecast-table.forecast-view-had tbody tr>td:nth-child(6){display:flex!important;grid-column:span 3!important;min-height:96px!important;background:#eef7ff!important}
- .market-prediction-page .market-forecast-wrap .market-forecast-table.forecast-view-had tbody tr>td:nth-child(13){grid-column:1/-1!important;min-height:38px!important;flex-direction:row!important;gap:12px!important}
- .market-prediction-page .market-forecast-wrap .market-forecast-table.forecast-view-score tbody tr>td:nth-child(n+10),.market-prediction-page .market-forecast-wrap .market-forecast-table.forecast-view-halfFull tbody tr>td:nth-child(n+10){grid-column:span 3!important}
+ .market-prediction-page .market-forecast-wrap .market-forecast-table.forecast-view-had tbody tr>td:nth-child(14){grid-column:1/-1!important;min-height:38px!important;flex-direction:row!important;gap:12px!important}
+ .market-prediction-page .market-forecast-wrap .market-forecast-table.forecast-view-score tbody tr>td:nth-child(n+11),.market-prediction-page .market-forecast-wrap .market-forecast-table.forecast-view-halfFull tbody tr>td:nth-child(n+11){grid-column:span 3!important}
  .market-prediction-page .market-forecast-wrap .market-forecast-table.forecast-view-total tbody tr>td:nth-child(7){display:flex!important;grid-column:span 3!important;background:#eef7ff!important}
- .market-prediction-page .market-forecast-wrap .market-forecast-table.forecast-view-total tbody tr>td:nth-child(10){grid-column:span 3!important;background:#eef7ff!important;min-height:86px!important}
- .market-prediction-page .market-forecast-wrap .market-forecast-table.forecast-view-total tbody tr>td:nth-child(n+11){grid-column:span 3!important}
+ .market-prediction-page .market-forecast-wrap .market-forecast-table.forecast-view-total tbody tr>td:nth-child(11){grid-column:span 3!important;background:#eef7ff!important;min-height:86px!important}
+ .market-prediction-page .market-forecast-wrap .market-forecast-table.forecast-view-total tbody tr>td:nth-child(n+12){grid-column:span 3!important}
  .market-prediction-page .market-forecast-wrap .market-forecast-table tbody tr>td.high-prob,.market-prediction-page .market-forecast-wrap .market-forecast-table tbody tr>td.score-prob-high{background:#fff3ba!important;color:#775508!important}
  .market-prediction-page .market-forecast-wrap .market-forecast-table tbody tr>td.goal-prob-first{background:#e5f5ec!important;color:#176b48!important}
  .market-prediction-page .market-forecast-wrap .market-forecast-table tbody tr>td.goal-prob-second{background:#eef7f2!important}
@@ -89,3 +90,5 @@
  .daily-purchase-panel .purchase-plan-module h4{scroll-margin-top:70px}
  .daily-purchase-panel .purchase-kanban{grid-template-columns:repeat(2,minmax(0,1fr))!important}
 }
+.institution-total-groups{display:grid;gap:4px;width:100%}.institution-total-group{padding:3px 2px;border-radius:5px;font-variant-numeric:tabular-nums}.institution-total-group>span{font-weight:500}.institution-total-group>strong{font-weight:800}.institution-total-group small{display:block;font-size:10px;line-height:1.4;color:#668195}.institution-total-group.total-line-changed{background:#fff0cf;box-shadow:inset 3px 0 #e8a122;color:#805000}.institution-total-group .total-movement{color:#9b5800;font-weight:700}.total-line-majority{border:1px solid #9bc5e2}.total-unavailable{color:#718697;font-size:11px}
+@media(max-width:767px){.market-prediction-page .market-forecast-wrap .market-forecast-table tbody tr>td.institution-total:nth-child(10){display:flex!important;grid-column:1/-1!important;background:#f8fafc!important}.institution-total-groups{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}.institution-total-group{flex:1;min-width:80px;padding:6px}.institution-total-group small{font-size:11px}}

@@ -9,6 +9,26 @@ import {renderToString} from "react-dom/server";
 import {createRoot,hydrateRoot} from "react-dom/client";
 
 const moduleUrls=new Map();
+test("institution totals merge current lines, emphasize majority and retain movements",async()=>{
+ const Totals=await load("../app/components/InstitutionTotalLines.tsx");
+ const company=(id,total,firstTotal=total)=>({companyId:id,company:`机构${id}`,total,firstTotal});
+ const render=companies=>new JSDOM(renderToString(h(Totals,{companies}))).window.document;
+ let doc=render([company(2,2.5),company(3,2.5),company(22,2.5)]);
+ assert.equal(doc.querySelectorAll(".institution-total-group").length,1);
+ assert.match(doc.body.textContent,/2.5 球 · 3家/);
+ doc=render([company(2,2.5,2),company(3,2.5),company(22,3,3.5)]);
+ assert.equal(doc.querySelectorAll(".institution-total-group").length,2);
+ assert.equal(doc.querySelector("strong").textContent,"2.5 球 · 2家");
+ assert.equal(doc.querySelectorAll(".total-line-changed").length,2);
+ assert.match(doc.body.textContent,/2 → 2.5 ↑ 升盘/);
+ assert.match(doc.body.textContent,/3.5 → 3 ↓ 降盘/);
+ doc=render([company(2,2),company(3,2.5),company(22,3)]);
+ assert.equal(doc.querySelectorAll(".institution-total-group").length,3);
+ assert.equal(doc.querySelector("strong"),null);
+ doc=render([company(2,2.5,null),company(2,2.5),company(3,NaN)]);
+ assert.match(doc.body.textContent,/1家/);assert.match(doc.body.textContent,/初盘未知/);
+ assert.match(render([]).body.textContent,/暂无机构数据/);
+});
 const dataUrl=source=>`data:text/javascript;base64,${Buffer.from(source).toString("base64")}`;
 async function componentUrl(file){
  if(moduleUrls.has(file.href))return moduleUrls.get(file.href);
@@ -199,6 +219,8 @@ test("market half-full tab shows exactly two ranked outcomes and does not fabric
    const button=[...document.querySelectorAll(".forecast-view-tabs button")].find(node=>node.textContent===label);assert.ok(button);
    await act(async()=>button.click());
    const summary=document.querySelector(".half-full-summary");
+   assert.equal(document.querySelectorAll("td.institution-total").length,3);
+   assert.ok(document.querySelector("thead").textContent.includes("机构大小球"));
    assert.deepEqual([...summary.querySelectorAll(".half-full-summary-pick")].map(node=>node.textContent),["胜胜30.0%","平平20.0%"]);
    assert.equal(document.querySelector(".forecast-expectation"),null);
    assert.ok(!document.querySelector("thead").textContent.includes("外围盘口预测"));
