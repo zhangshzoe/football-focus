@@ -351,7 +351,7 @@ test("today recommendations refresh official SP on generation, show net ranges a
   await act(async()=>container.querySelector('#purchase-view-doubling').click());
   assert.equal(container.querySelector('#purchase-panel-original').hidden,true);
   assert.equal(container.querySelector('#purchase-panel-doubling').hidden,false);
-  assert.match(container.querySelector('#purchase-panel-doubling').textContent,/胜平负单选2串1与2倍 A\/B\/C分别从100元开始/);
+  assert.match(container.querySelector('#purchase-panel-doubling').textContent,/胜平负单选2串1、2倍 A\/B\/C与半全场双选2串1分别从100元开始/);
   assert.match(container.querySelector('#purchase-panel-doubling').textContent,/其他方式独立从1倍开始/);
   await act(async()=>container.querySelector('#purchase-view-doubling').dispatchEvent(new dom.window.KeyboardEvent('keydown',{key:'ArrowLeft',bubbles:true})));
   assert.equal(container.querySelector('#purchase-panel-original').hidden,false);
@@ -365,7 +365,8 @@ test("doubling summary renders scaled historical money and tolerates missing sta
  const Summary=await load("../app/components/PurchaseDoublingSummary.tsx");
  const rows=["lost","lost","won","pending"].map((status,index)=>({snapshotId:`test-${index}`,date:`2026-09-${20+index}`,generatedAt:`2026-09-${20+index}T17:00:00+08:00`,plan:{id:"total-double-2",status,stake:index===3?undefined:8,simulatedReturn:status==="won"?20:0,items:[{matchId:"周日001",home:"主队",away:"客队",pick:"2球",marketName:"总进球"}]}}));
  const hundredYuanHistory=Object.fromEntries(["had-safe-2","twofold-a","twofold-b","twofold-c"].map(id=>[id,{rows:rows.slice(0,3).map(row=>({...row,plan:{...row.plan,id,stake:2,simulatedReturn:row.plan.status==="won"?6.35:0}}))}]));
- const html=renderToString(h(Summary,{history:{"total-double-2":{rows},...hundredYuanHistory},slot:"1700",loading:false}));
+ const halfFullRows=rows.slice(0,3).map(row=>({...row,plan:{...row.plan,id:"half-full-double-2",stake:8,simulatedReturn:row.plan.status==="won"?9.59:0}}));
+ const html=renderToString(h(Summary,{history:{"total-double-2":{rows},...hundredYuanHistory,"half-full-double-2":{rows:halfFullRows}},slot:"1700",loading:false}));
  const doc=new JSDOM(html).window.document;
  assert.match(doc.body.textContent,/8元 → 16元 → 24元 → 32元/);
  assert.match(doc.body.textContent,/按1、2、3、4倍依次递增/);
@@ -379,6 +380,11 @@ test("doubling summary renders scaled historical money and tolerates missing sta
  assert.match(doc.body.textContent,/\+¥60\.00/);
  assert.match(doc.body.textContent,/\+¥12\.00/);
  assert.match(doc.body.textContent,/金额待补/);
+ const halfFullSummary=[...doc.querySelectorAll('.purchase-doubling-history > details')].find(node=>node.querySelector('strong').textContent.includes('半全场双选2串1'));
+ assert.match(halfFullSummary.textContent,/100元按12.5倍等比例模拟/);
+ assert.deepEqual([...halfFullSummary.querySelectorAll('tbody tr')].map(row=>row.children[3].textContent),['12.5倍','25倍','50倍']);
+ assert.deepEqual([...halfFullSummary.querySelectorAll('tbody tr')].map(row=>row.children[4].textContent),['-¥100.00','-¥200.00','-¥400.00']);
+ assert.match(halfFullSummary.textContent,/\+¥479\.50/);
  assert.equal(doc.querySelectorAll('tbody tr').length>3,true);
 });
 

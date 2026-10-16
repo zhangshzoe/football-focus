@@ -55,14 +55,19 @@ function cashResult(plan) {
 }
 
 export function isHundredYuanDoubling(methodId) {
-  return ["had-safe-2", "twofold-a", "twofold-b", "twofold-c"].includes(methodId);
+  return ["had-safe-2", "twofold-a", "twofold-b", "twofold-c", "half-full-double-2"].includes(methodId);
 }
 
 /** Replay one method and time slot without changing the original ticket amounts. */
 export function simulatePurchaseDoubling(historyRows = [], methodId = "") {
   const doubleAfterLoss = isHundredYuanDoubling(methodId);
-  // A single-selection 2-leg ticket costs ¥2: 50 copies start this replay at ¥100.
-  const initialMultiplier = doubleAfterLoss ? 50n : 1n;
+  // Keep the ¥8 ticket's 12.5x scale as an exact fraction; other ¥100 methods cost ¥2.
+  const multiplierDivisor = methodId === "half-full-double-2" ? 2n : 1n;
+  const initialMultiplier = multiplierDivisor === 2n ? 25n : doubleAfterLoss ? 50n : 1n;
+  const displayMultiplier = (value) =>
+    value % multiplierDivisor === 0n
+      ? value / multiplierDivisor
+      : `${value / multiplierDivisor}.5`;
   const ordered = [...historyRows].sort((a, b) => {
     const aTime = Date.parse(a.generatedAt),
       bTime = Date.parse(b.generatedAt);
@@ -120,8 +125,9 @@ export function simulatePurchaseDoubling(historyRows = [], methodId = "") {
     let batchStake = 0n;
     for (let index = 0; index < batch.length; index++) {
       const result = results[index];
-      const scaledStake = result.stake * multiplier,
-        scaledReturn = result.returned * multiplier;
+      // Round each proportional amount to cents using integers, including half-cent returns.
+      const scaledStake = (result.stake * multiplier + multiplierDivisor / 2n) / multiplierDivisor,
+        scaledReturn = (result.returned * multiplier + multiplierDivisor / 2n) / multiplierDivisor;
       stake += scaledStake;
       returned += scaledReturn;
       batchStake += scaledStake;
@@ -133,7 +139,7 @@ export function simulatePurchaseDoubling(historyRows = [], methodId = "") {
       rows.push({
         ...batch[index],
         outcome: result.outcome,
-        multiplier,
+        multiplier: displayMultiplier(multiplier),
         stake: scaledStake,
         returned: scaledReturn,
         net: scaledReturn - scaledStake,
@@ -161,8 +167,8 @@ export function simulatePurchaseDoubling(historyRows = [], methodId = "") {
     stake,
     returned,
     net: returned - stake,
-    nextMultiplier: multiplier,
-    peakMultiplier,
+    nextMultiplier: displayMultiplier(multiplier),
+    peakMultiplier: displayMultiplier(peakMultiplier),
     peakStake,
     maxLosingStreak,
   };
