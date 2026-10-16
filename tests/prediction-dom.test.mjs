@@ -351,7 +351,7 @@ test("today recommendations refresh official SP on generation, show net ranges a
   await act(async()=>container.querySelector('#purchase-view-doubling').click());
   assert.equal(container.querySelector('#purchase-panel-original').hidden,true);
   assert.equal(container.querySelector('#purchase-panel-doubling').hidden,false);
-  assert.match(container.querySelector('#purchase-panel-doubling').textContent,/胜平负单选2串1、2倍 A\/B\/C与半全场双选2串1分别从100元开始/);
+  assert.match(container.querySelector('#purchase-panel-doubling').textContent,/胜平负单选2串1、2倍 A\/B\/C与半全场双选2串1分别以100元为起始预算/);
   assert.match(container.querySelector('#purchase-panel-doubling').textContent,/其他方式独立从1倍开始/);
   await act(async()=>container.querySelector('#purchase-view-doubling').dispatchEvent(new dom.window.KeyboardEvent('keydown',{key:'ArrowLeft',bubbles:true})));
   assert.equal(container.querySelector('#purchase-panel-original').hidden,false);
@@ -381,9 +381,10 @@ test("doubling summary renders scaled historical money and tolerates missing sta
  assert.match(doc.body.textContent,/\+¥12\.00/);
  assert.match(doc.body.textContent,/金额待补/);
  const halfFullSummary=[...doc.querySelectorAll('.purchase-doubling-history > details')].find(node=>node.querySelector('strong').textContent.includes('半全场双选2串1'));
- assert.match(halfFullSummary.textContent,/100元按12.5倍等比例模拟/);
- assert.deepEqual([...halfFullSummary.querySelectorAll('tbody tr')].map(row=>row.children[3].textContent),['12.5倍','25倍','50倍']);
- assert.deepEqual([...halfFullSummary.querySelectorAll('tbody tr')].map(row=>row.children[4].textContent),['-¥100.00','-¥200.00','-¥400.00']);
+ assert.match(halfFullSummary.textContent,/100元预算 · 12倍起投96元/);
+ assert.doesNotMatch(halfFullSummary.textContent,/12\.5倍/);
+ assert.deepEqual([...halfFullSummary.querySelectorAll('tbody tr')].map(row=>row.children[3].textContent),['12倍','25倍','50倍']);
+ assert.deepEqual([...halfFullSummary.querySelectorAll('tbody tr')].map(row=>row.children[4].textContent),['-¥96.00','-¥200.00','-¥400.00']);
  assert.match(halfFullSummary.textContent,/\+¥479\.50/);
  assert.equal(doc.querySelectorAll('tbody tr').length>3,true);
 });

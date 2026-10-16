@@ -42,7 +42,8 @@ export default function PurchaseDoublingSummary({
       <h4>各投注方式历史汇总 · 递增倍投模拟</h4>
       <p>
         当前为 {slot === "1700" ? "17:00" : "21:00"}{" "}
-        批次。胜平负单选2串1、2倍 A/B/C与半全场双选2串1分别从100元开始，独立计算，未中后投入翻倍：100元 → 200元 → 400元 → 800元，依次递增；中奖后回到100元。
+        批次。胜平负单选2串1、2倍 A/B/C与半全场双选2串1分别以100元为起始预算，独立计算，未中后预算翻倍：100元 → 200元 → 400元 → 800元；中奖后回到100元预算。
+        半全场双选2串1按每组8元向下取整为整数倍，实际投入为96元 → 200元 → 400元 → 800元。
         其他方式独立从1倍开始，未中后增加1倍，按1、2、3、4倍依次递增，中奖后恢复1倍。
         1倍按每期原组合的全部投入计算，例如8元 → 16元 → 24元 → 32元。
       </p>
@@ -58,7 +59,7 @@ export default function PurchaseDoublingSummary({
           <li>
             以真实快照批次为一期，按采集时间从早到晚。同一期同类多票共用倍数，全部结算后，任一中奖则重置。
             胜平负单选2串1与2倍 A/B/C以原2元组合的50倍起步，未中后倍数翻倍，中奖后恢复50倍。
-            半全场双选2串1按原8元组合的12.5倍起步，未中翻倍，中奖恢复12.5倍；这是100元等比例模拟，不代表可按12.5倍整组出票。
+            半全场双选2串1按当期预算除以原组合8元后向下取整：100元预算为12倍、实际投入96元，200元预算为25倍，400元预算为50倍；中奖后恢复12倍。
             其他方式中奖归1倍，未中增加1倍。
           </li>
           <li>
@@ -68,7 +69,7 @@ export default function PurchaseDoublingSummary({
             中奖即重置，不要求本轮回本。全票无效按本金退款，不计中奖或连败；部分无效按该腿每个选项赔率1.00重算。
           </li>
           <li>
-            1倍返还先四舍五入到分，再按倍数计算；含小数倍时，模拟金额再次四舍五入到分。金额汇总含已确认退款。未记录赛果当时的可知时间，同日多批可能有赛程重叠，不据此推断可实现收益。
+            1倍返还先四舍五入到分，再按实际整数倍计算；金额汇总含已确认退款。未记录赛果当时的可知时间，同日多批可能有赛程重叠，不据此推断可实现收益。
           </li>
         </ul>
       </details>
@@ -82,11 +83,11 @@ export default function PurchaseDoublingSummary({
                 <strong>
                   {summary.definition.title}
                   <small>{summary.definition.rule}</small>
-                  {isHundredYuanDoubling(summary.definition.id) && (
+                  {isHundredYuanDoubling(summary.definition.id) && summary.definition.id !== "half-full-double-2" && (
                     <small>100元起投 · 未中翻倍 · 中奖回到100元</small>
                   )}
                   {summary.definition.id === "half-full-double-2" && (
-                    <small>原组合8元 · 100元按12.5倍等比例模拟</small>
+                    <small>100元预算 · 12倍起投96元 · 未中预算翻倍 · 中奖回到12倍</small>
                   )}
                 </strong>
                 <span>

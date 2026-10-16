@@ -82,29 +82,30 @@ test(`${methodId} refunds and pending results preserve the doubling level`, () =
 });
 }
 
-test("half-full double selection scales its 8-yuan base to 100 and resets after winning", () => {
+test("half-full double selection floors each doubled budget to whole 8-yuan tickets", () => {
   const source = ["lost", "lost", "won", "lost"].map((status, index) =>
     row(index + 1, status, { id: "half-full-double-2", simulatedReturn: status === "won" ? 9.59 : 0 }),
   );
   const copy = structuredClone(source);
   const result = simulatePurchaseDoubling(source, "half-full-double-2");
-  assert.deepEqual(result.rows.map((item) => item.stake), [10000n, 20000n, 40000n, 10000n]);
-  assert.deepEqual(result.rows.map((item) => item.multiplier), ["12.5", 25n, 50n, "12.5"]);
-  assert.equal(result.stake, 80000n);
+  assert.deepEqual(result.rows.map((item) => item.stake), [9600n, 20000n, 40000n, 9600n]);
+  assert.deepEqual(result.rows.map((item) => item.multiplier), [12n, 25n, 50n, 12n]);
+  assert.equal(result.stake, 79200n);
   assert.equal(result.returned, 47950n);
-  assert.equal(result.net, -32050n);
+  assert.equal(result.net, -31250n);
   assert.equal(result.nextMultiplier, 25n);
   assert.equal(result.peakMultiplier, 50n);
-  assert.equal(simulatePurchaseDoubling([], "half-full-double-2").nextMultiplier, "12.5");
+  assert.equal(simulatePurchaseDoubling([], "half-full-double-2").nextMultiplier, 12n);
   assert.deepEqual(source, copy);
   const firstWin = simulatePurchaseDoubling([source[2]], "half-full-double-2");
-  assert.equal(firstWin.returned, 11988n, "119.875 yuan rounds to 119.88, not down to 119.87");
+  assert.equal(firstWin.returned, 11508n, "returns use the actual 12 whole tickets");
+  assert.equal(firstWin.peakMultiplier, 12n);
   const long = simulatePurchaseDoubling(Array.from({length:80}, (_, index) =>
     row(index + 1, "lost", {id:"half-full-double-2"})), "half-full-double-2");
-  assert.equal(long.stake, 10000n * ((1n << 80n) - 1n));
+  assert.equal(long.stake, 10000n * ((1n << 80n) - 1n) - 400n);
 });
 
-test("fractional scaling preserves refunds, pending periods and partial-void returns", () => {
+test("floored whole-ticket scaling preserves refunds, pending periods and partial-void returns", () => {
   const ticket = (day, status, extra = {}) => row(day, status, { id: "half-full-double-2", ...extra });
   const voidItem = { settlementState: "void_settled", picks: [{pick:"胜胜"},{pick:"平胜"}] };
   const result = simulatePurchaseDoubling([
@@ -114,17 +115,17 @@ test("fractional scaling preserves refunds, pending periods and partial-void ret
     ticket(4, "void_won", {items:[voidItem,voidItem]}),
     ticket(5, "lost"),
   ], "half-full-double-2");
-  assert.deepEqual(result.rows.map((item) => item.multiplier), ["12.5", "12.5", null, 25n, 25n]);
-  assert.deepEqual(result.rows.map((item) => item.stake), [10000n, 10000n, null, 20000n, 20000n]);
-  assert.equal(result.rows[0].returned, 10000n);
+  assert.deepEqual(result.rows.map((item) => item.multiplier), [12n, 12n, null, 25n, 25n]);
+  assert.deepEqual(result.rows.map((item) => item.stake), [9600n, 9600n, null, 20000n, 20000n]);
+  assert.equal(result.rows[0].returned, 9600n);
   assert.equal(result.rows[3].returned, 20000n);
   assert.equal(result.nextMultiplier, 50n);
   const partial = simulatePurchaseDoubling([ticket(1, "void_won", {
     items:[voidItem,{actual:"胜胜",picks:[{pick:"胜胜",odd:2.345},{pick:"平胜",odd:4}]}],
     simulatedReturn:2,
   })], "half-full-double-2");
-  assert.equal(partial.returned, 11725n, "two winning selections are repriced before proportional scaling");
-  assert.equal(partial.nextMultiplier, "12.5");
+  assert.equal(partial.returned, 11256n, "two winning selections are repriced before multiplying by 12 whole tickets");
+  assert.equal(partial.nextMultiplier, 12n);
 });
 
 test("pending and missing money never become losses; corrections replay the full chain", () => {
