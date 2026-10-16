@@ -46,12 +46,13 @@ test("linear staking replays chronologically, resets on a win and never alters s
   assert.deepEqual(source, copy);
 });
 
-test("had-safe-2 starts at 100, doubles after losses and resets after a win", () => {
+for (const methodId of ["had-safe-2", "twofold-a", "twofold-b", "twofold-c"]) {
+test(`${methodId} starts at 100, doubles after losses and resets after a win`, () => {
   const source = ["lost", "lost", "won", "lost"].map((status, index) =>
-    row(index + 1, status, { id: "had-safe-2", stake: 2, simulatedReturn: status === "won" ? 6.35 : 0 }),
+    row(index + 1, status, { id: methodId, stake: 2, simulatedReturn: status === "won" ? 6.35 : 0 }),
   );
   const copy = structuredClone(source);
-  const result = simulatePurchaseDoubling(source, "had-safe-2");
+  const result = simulatePurchaseDoubling(source, methodId);
   assert.deepEqual(result.rows.map((item) => item.stake), [10000n, 20000n, 40000n, 10000n]);
   assert.deepEqual(result.rows.map((item) => item.multiplier), [50n, 100n, 200n, 50n]);
   assert.equal(result.returned, 127000n);
@@ -59,19 +60,19 @@ test("had-safe-2 starts at 100, doubles after losses and resets after a win", ()
   assert.equal(result.net, 47000n);
   assert.equal(result.nextMultiplier, 100n);
   assert.equal(result.peakStake, 40000n);
-  assert.equal(simulatePurchaseDoubling([], "had-safe-2").nextMultiplier, 50n);
+  assert.equal(simulatePurchaseDoubling([], methodId).nextMultiplier, 50n);
   assert.deepEqual(source, copy);
 });
 
-test("had-safe-2 refunds and pending results preserve the doubling level", () => {
-  const ticket = (day, status, extra = {}) => row(day, status, { id: "had-safe-2", stake: 2, ...extra });
+test(`${methodId} refunds and pending results preserve the doubling level`, () => {
+  const ticket = (day, status, extra = {}) => row(day, status, { id: methodId, stake: 2, ...extra });
   const result = simulatePurchaseDoubling([
     ticket(1, "lost"),
     ticket(2, "pending"),
     ticket(3, "void_won", { items: [{ settlementState: "void_settled" }] }),
     ticket(4, "lost"),
     ticket(5, "lost"),
-  ], "had-safe-2");
+  ], methodId);
   assert.deepEqual(result.rows.map((item) => item.stake), [10000n, null, 20000n, 20000n, 40000n]);
   assert.equal(result.rows[2].returned, 20000n);
   assert.equal(result.rows[2].net, 0n);
@@ -79,6 +80,7 @@ test("had-safe-2 refunds and pending results preserve the doubling level", () =>
   assert.equal(result.pending, 1);
   assert.equal(result.refunded, 1);
 });
+}
 
 test("pending and missing money never become losses; corrections replay the full chain", () => {
   const source = [

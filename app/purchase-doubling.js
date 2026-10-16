@@ -54,9 +54,13 @@ function cashResult(plan) {
   return { stake, returned, outcome: won ? "won" : "lost" };
 }
 
+export function isHundredYuanDoubling(methodId) {
+  return ["had-safe-2", "twofold-a", "twofold-b", "twofold-c"].includes(methodId);
+}
+
 /** Replay one method and time slot without changing the original ticket amounts. */
 export function simulatePurchaseDoubling(historyRows = [], methodId = "") {
-  const doubleAfterLoss = methodId === "had-safe-2";
+  const doubleAfterLoss = isHundredYuanDoubling(methodId);
   // A single-selection 2-leg ticket costs ¥2: 50 copies start this replay at ¥100.
   const initialMultiplier = doubleAfterLoss ? 50n : 1n;
   const ordered = [...historyRows].sort((a, b) => {

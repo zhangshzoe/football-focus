@@ -6,7 +6,7 @@ import {
   PURCHASE_PLAN_DEFINITIONS,
   summarizePurchasePlanDefinitions,
 } from "../purchase-plan-engine";
-import { formatDoublingMoney, simulatePurchaseDoubling } from "../purchase-doubling.js";
+import { formatDoublingMoney, isHundredYuanDoubling, simulatePurchaseDoubling } from "../purchase-doubling.js";
 import { historySummaryClass } from "../purchase-snapshot-status.js";
 
 function Money({ value, debit = false }: { value: bigint; debit?: boolean }) {
@@ -42,7 +42,7 @@ export default function PurchaseDoublingSummary({
       <h4>各投注方式历史汇总 · 递增倍投模拟</h4>
       <p>
         当前为 {slot === "1700" ? "17:00" : "21:00"}{" "}
-        批次。胜平负单选2串1从100元开始，未中后投入翻倍：100元 → 200元 → 400元 → 800元，依次递增；中奖后回到100元。
+        批次。胜平负单选2串1与2倍 A/B/C分别从100元开始，独立计算，未中后投入翻倍：100元 → 200元 → 400元 → 800元，依次递增；中奖后回到100元。
         其他方式独立从1倍开始，未中后增加1倍，按1、2、3、4倍依次递增，中奖后恢复1倍。
         1倍按每期原组合的全部投入计算，例如8元 → 16元 → 24元 → 32元。
       </p>
@@ -57,7 +57,7 @@ export default function PurchaseDoublingSummary({
           </li>
           <li>
             以真实快照批次为一期，按采集时间从早到晚。同一期同类多票共用倍数，全部结算后，任一中奖则重置。
-            胜平负单选2串1以原2元组合的50倍起步，未中后倍数翻倍，中奖后恢复50倍；其他方式中奖归1倍，未中增加1倍。
+            胜平负单选2串1与2倍 A/B/C以原2元组合的50倍起步，未中后倍数翻倍，中奖后恢复50倍；其他方式中奖归1倍，未中增加1倍。
           </li>
           <li>
             缺赛果、金额不完整或无效待规则确认的期暂不计算、不推进倍数。补齐或订正后，后续模拟会重新计算；未留档日期不当作未中。
@@ -80,7 +80,7 @@ export default function PurchaseDoublingSummary({
                 <strong>
                   {summary.definition.title}
                   <small>{summary.definition.rule}</small>
-                  {summary.definition.id === "had-safe-2" && (
+                  {isHundredYuanDoubling(summary.definition.id) && (
                     <small>100元起投 · 未中翻倍 · 中奖回到100元</small>
                   )}
                 </strong>
