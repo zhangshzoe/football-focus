@@ -18,6 +18,6 @@ test("Sunday 002 supports fixture-only confirmation across official J2 league la
 test("confirmation action appears after mapping details with responsive end alignment",async()=>{
  const component=await readFile(new URL("../app/components/PredictionCoverage.tsx",import.meta.url),"utf8"),css=await readFile(new URL("../app/reference-ui.css",import.meta.url),"utf8");
  assert.ok(component.indexOf('className="prediction-confirm-match"')>component.indexOf('className="prediction-mapping-reason"'));
- assert.match(component,/disabled=\{retrying\} onClick=\{\(\)=>confirmMatch\(match,candidate\)\}/);
+ assert.match(component,/disabled=\{retrying\|\|!onRetry\} onClick=\{\(\)=>confirmRow\(match\)\}/);
  assert.match(css,/\.prediction-confirm-match\{justify-self:end/);
 });

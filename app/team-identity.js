@@ -53,6 +53,7 @@ const aliasGroups={
  "interTurku":["国际图尔","图尔库国际"],
  "vpsVaasa":["瓦萨","VPS瓦萨"],
  "djurgarden":["佐加顿斯","尤尔加登"],
+ "brommapojkarna":["布鲁马波","布洛马波卡纳"],
  "gais":["盖斯","哥德堡盖斯"],
  "sandefjord":["桑纳菲","桑德菲杰"],
  "pakhtakor":["棉农","塔什干棉农"],
@@ -119,7 +120,7 @@ const aliasGroups={
  "realSaltLake":["盐湖城","皇家盐湖城"],
 };
 
-export const TEAM_ALIAS_VERSION="verified-zh-aliases-2026-10-08.1";
+export const TEAM_ALIAS_VERSION="verified-zh-aliases-2026-10-16.1";
 export const TEAM_ALIAS_INDEX=new Map(Object.entries(aliasGroups).flatMap(([identity,names])=>names.map(name=>[normalize(name),identity])));
 export const teamIdentity=(value,league="")=>{
  const name=normalize(value);

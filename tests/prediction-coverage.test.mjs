@@ -144,6 +144,40 @@ test("prediction API recovers every confirmed alias and explains the reversed fi
  }finally{globalThis.fetch=originalFetch}
 });
 
+test("Friday 003 Swedish aliases recover automatically without bypassing fixture identity",async()=>{
+ // Reproduce real fixture identity; odds are synthetic test inputs, never saved forecasts.
+ const official={id:"周五003",officialMatchId:"2042004",salesDate:"2026-10-16",matchDate:"2026-10-17",time:"01:00",kickoffAt:"2026-10-17T01:00:00+08:00",home:"布鲁马波",away:"佐加顿斯",league:"瑞超",odds:[2.1,3.2,3.4],marketOdds:{"总进球数":[16,8,3.2,4,8,16,32,32]},sourceFetchedAt:new Date().toISOString(),marketEligibility:{}};
+ const external={ID:4467185,CC_ID:"周五003",HOST_NAME:"布洛马波卡纳",GUEST_NAME:"尤尔加登",LEAGUE_NAME_SIMPLY:"瑞典超",MATCH_TIME:"2026-10-17 01:00:00",listOdds:[2,3,22].map(company=>({SOURCE_COMPANY_ID:company,COMPANY_NAME:`测试公司${company}`,WIN:2.1,SAME:3.2,LOST:3.4,HANDICAP:-.25,HOST:.9,GUEST:.9,DW_HANDICAP:2.5,BIG:.9,SMALL:.9,FIRST_WIN:2.2,FIRST_SAME:3.2,FIRST_LOST:3.3,FIRST_HANDICAP:-.25,FIRST_HOST:.9,FIRST_GUEST:.9,DW_FIRST_HANDICAP:2.5,FIRST_BIG:.9,FIRST_SMALL:.9}))};
+ const {POST}=await loadRoute(),originalFetch=globalThis.fetch;
+ globalThis.fetch=async(url,options)=>{assert.equal(url,"https://plzx.zgzcw.com/odds/oyzs_ajax.action");assert.equal(options.body.get("issue"),"2026-10-16");return Response.json([external])};
+ const predict=match=>POST(new Request("http://localhost/api/predictions",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({matches:[match],forceRefresh:true,manualMappings:[]})}));
+ try{
+  const response=await predict(official),result=await response.json();
+  assert.equal(response.status,200);
+  assert.deepEqual(result.coverage,{officialMatches:1,predictedMatches:1,unavailableMatches:0,pendingExternalMappings:0});
+  assert.equal(result.unavailableOfficialMatches.length,0);
+  const report=result.reports[0];
+  assert.equal(report.officialMatchId,official.officialMatchId);
+  assert.equal(report.home,official.home);assert.equal(report.away,official.away);
+  assert.equal(report.kickoffAt,official.kickoffAt);
+  assert.equal(report.officialMappingStatus,"verified");
+  assert.match(report.mappingReason,/verified-zh-aliases-2026-10-16.1/);
+  assert.equal(report.companies.length,3);
+  assert.ok(report.marketTotalGoalProbabilities.every(Number.isFinite));
+  assert.ok(Math.abs(report.marketTotalGoalProbabilities.reduce((sum,value)=>sum+value,0)-100)<1e-9);
+  for(const changed of [
+   {...official,home:official.away,away:official.home},
+   {...official,kickoffAt:"2026-10-18T01:00:00+08:00"},
+   {...official,kickoffAt:"2026-10-17T02:00:00+08:00"},
+   {...official,home:"另一支球队"},
+  ]){
+   const rejected=await(await predict(changed)).json();
+   assert.equal(rejected.reports.length,0);
+   assert.equal(rejected.unavailableOfficialMatches.length,1);
+  }
+ }finally{globalThis.fetch=originalFetch}
+});
+
 test("coverage panel renders visible missing-match reasons and is wired into both forecast views",async()=>{
  const config=compile(await readFile(new URL("../app/prediction-config.ts",import.meta.url),"utf8"));
  const source=(await readFile(new URL("../app/components/PredictionCoverage.tsx",import.meta.url),"utf8")).replace('from "../prediction-config"',`from ${JSON.stringify(config)}`);
