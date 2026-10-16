@@ -33,7 +33,7 @@ export default function PurchaseDoublingSummary({
     () =>
       PURCHASE_PLAN_DEFINITIONS.map((definition) => ({
         definition,
-        ...simulatePurchaseDoubling(history[definition.id]?.rows || []),
+        ...simulatePurchaseDoubling(history[definition.id]?.rows || [], definition.id),
       })),
     [history],
   );
@@ -42,8 +42,9 @@ export default function PurchaseDoublingSummary({
       <h4>各投注方式历史汇总 · 递增倍投模拟</h4>
       <p>
         当前为 {slot === "1700" ? "17:00" : "21:00"}{" "}
-        批次。每种方式独立从1倍开始：未中后增加1倍，按1、2、3、4倍依次递增，中奖后恢复1倍。
-        1倍按每期原组合的全部投入计算，例如8元 → 16元 → 24元 → 32元；中奖后的下一期回到1倍。
+        批次。胜平负单选2串1从100元开始，未中后投入翻倍：100元 → 200元 → 400元 → 800元，依次递增；中奖后回到100元。
+        其他方式独立从1倍开始，未中后增加1倍，按1、2、3、4倍依次递增，中奖后恢复1倍。
+        1倍按每期原组合的全部投入计算，例如8元 → 16元 → 24元 → 32元。
       </p>
       <aside className="purchase-doubling-warning">
         递增倍投不提高中奖概率，也不保证收回此前亏损；连续未中时，每期投入与累计资金需求都会增加。这里仅按最终赛果顺序模拟，不考虑资金上限和出票限额，不是当时可执行的实盘回测。
@@ -55,7 +56,8 @@ export default function PurchaseDoublingSummary({
             仅使用原“各投注方式历史汇总”的正式记录，不增加模拟票，也不改动原快照；17点与21点互不混算。
           </li>
           <li>
-            以真实快照批次为一期，按采集时间从早到晚。同一期同类多票共用倍数，全部结算后，任一中奖则归1倍，否则下一期增加1倍；不是将上一期倍数乘2。
+            以真实快照批次为一期，按采集时间从早到晚。同一期同类多票共用倍数，全部结算后，任一中奖则重置。
+            胜平负单选2串1以原2元组合的50倍起步，未中后倍数翻倍，中奖后恢复50倍；其他方式中奖归1倍，未中增加1倍。
           </li>
           <li>
             缺赛果、金额不完整或无效待规则确认的期暂不计算、不推进倍数。补齐或订正后，后续模拟会重新计算；未留档日期不当作未中。
@@ -78,6 +80,9 @@ export default function PurchaseDoublingSummary({
                 <strong>
                   {summary.definition.title}
                   <small>{summary.definition.rule}</small>
+                  {summary.definition.id === "had-safe-2" && (
+                    <small>100元起投 · 未中翻倍 · 中奖回到100元</small>
+                  )}
                 </strong>
                 <span>
                   中奖 / 已结算

@@ -54,8 +54,11 @@ function cashResult(plan) {
   return { stake, returned, outcome: won ? "won" : "lost" };
 }
 
-/** Replay one method and time slot: add one unit after a loss, reset to one after a win. */
-export function simulatePurchaseDoubling(historyRows = []) {
+/** Replay one method and time slot without changing the original ticket amounts. */
+export function simulatePurchaseDoubling(historyRows = [], methodId = "") {
+  const doubleAfterLoss = methodId === "had-safe-2";
+  // A single-selection 2-leg ticket costs ¥2: 50 copies start this replay at ¥100.
+  const initialMultiplier = doubleAfterLoss ? 50n : 1n;
   const ordered = [...historyRows].sort((a, b) => {
     const aTime = Date.parse(a.generatedAt),
       bTime = Date.parse(b.generatedAt);
@@ -79,7 +82,7 @@ export function simulatePurchaseDoubling(historyRows = []) {
     if (!batches.has(batchKey)) batches.set(batchKey, []);
     batches.get(batchKey).push(row);
   }
-  let multiplier = 1n,
+  let multiplier = initialMultiplier,
     stake = 0n,
     returned = 0n,
     peakMultiplier = 0n,
@@ -136,10 +139,10 @@ export function simulatePurchaseDoubling(historyRows = []) {
     if (multiplier > peakMultiplier) peakMultiplier = multiplier;
     if (batchStake > peakStake) peakStake = batchStake;
     if (results.some((result) => result.outcome === "won")) {
-      multiplier = 1n;
+      multiplier = initialMultiplier;
       losingStreak = 0;
     } else if (results.some((result) => result.outcome === "lost")) {
-      multiplier += 1n;
+      multiplier = doubleAfterLoss ? multiplier * 2n : multiplier + 1n;
       losingStreak++;
       maxLosingStreak = Math.max(maxLosingStreak, losingStreak);
     }
