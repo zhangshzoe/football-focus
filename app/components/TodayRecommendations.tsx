@@ -2,6 +2,7 @@
 "use client";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import PurchaseDoublingSummary from "./PurchaseDoublingSummary";
+import PageLoadStatus from "./PageLoadStatus";
 import {recommendationLabel,analysisArchiveSlot,historySummaryClass} from "../purchase-snapshot-status.js";
 import {readBrowserData} from "../browser-storage";
 import {fetchOfficialSporttery} from "../sporttery-official";
@@ -282,7 +283,6 @@ let officialSnapshot: OfficialSnapshot = {
     fetchedAt: "",
     error: "",
   },
-  officialTimer: ReturnType<typeof setTimeout> | undefined,
   officialRequest: Promise<OfficialSnapshot | null> | undefined;
 const officialListeners = new Set<
   (snapshot: typeof officialSnapshot) => void
@@ -317,33 +317,21 @@ function refreshOfficialMarkets(): Promise<OfficialSnapshot | null> {
     } finally {
       clearTimeout(timeout);
       officialRequest = undefined;
-      const future = officialSnapshot.matches
-        .map((match) => parseZonedKickoff(match.kickoffAt))
-        .filter((value) => Number.isFinite(value) && value > Date.now()),
-      nearest = future.length ? Math.min(...future) : NaN,
-      policy = refreshPolicy(
-        Number.isFinite(nearest) ? new Date(nearest).toISOString() : null,
-      );
-    if (officialTimer) clearTimeout(officialTimer);
-      officialTimer = officialListeners.size ? setTimeout(() => void refreshOfficialMarkets(), policy.refreshMs) : undefined;
     }
   })();
   return officialRequest;
 }
 function useOfficialMarkets(data: SavedPredictionSet | null) {
   const [snapshot, setSnapshot] = useState(officialSnapshot);
+  const hasData = Boolean(data);
   useEffect(() => {
-    if (!data) return;
+    if (!hasData) return;
     officialListeners.add(setSnapshot);
-    if (!officialSnapshot.fetchedAt || !officialTimer) refreshOfficialMarkets();
+    void refreshOfficialMarkets();
     return () => {
       officialListeners.delete(setSnapshot);
-      if (!officialListeners.size && officialTimer) {
-        clearTimeout(officialTimer);
-        officialTimer = undefined;
-      }
     };
-  }, [data]);
+  }, [hasData]);
   return snapshot;
 }
 
@@ -372,22 +360,10 @@ function DailyPurchasePlans({
     [busy, setBusy] = useState(false),
     [previewError, setPreviewError] = useState(""),
     [saveState, setSaveState] = useState(""),
+    [archiveLoadedAt, setArchiveLoadedAt] = useState(""),
+    [archiveLoading, setArchiveLoading] = useState(true),
     [archiveReload, setArchiveReload] = useState(0),
     [collapsedModules, setCollapsedModules] = useState<Record<string, boolean>>({});
-  useEffect(()=>{
-    let timer:ReturnType<typeof setTimeout>;
-    const schedule=()=>{
-      const now=Date.now(),shanghaiOffset=8*60*60*1000;
-      const salesDayStart=Math.floor((now+shanghaiOffset)/86400000)*86400000-shanghaiOffset;
-      let nextRefresh=salesDayStart+17*3600000+5*60000;
-      if(nextRefresh<=now)nextRefresh+=86400000;
-      timer=setTimeout(()=>{setArchiveReload(value=>value+1);schedule()},nextRefresh-now);
-    };
-    const refreshOnReturn=()=>{if(document.visibilityState==="visible")setArchiveReload(value=>value+1)};
-    document.addEventListener("visibilitychange",refreshOnReturn);
-    schedule();
-    return()=>{clearTimeout(timer);document.removeEventListener("visibilitychange",refreshOnReturn)};
-  },[]);
   async function selectPlanSet(selected: PurchasePlanSet, cachedResults = historyResultCache) {
     setBusy(true);
     const resultDates = Array.from(
@@ -423,9 +399,10 @@ function DailyPurchasePlans({
   useEffect(() => {
     let active = true;
     setBusy(true);
+    setArchiveLoading(true);
     Promise.all([
       fetch("/api/prediction-snapshots?view=recommendations", { cache: "no-store" })
-        .then((response) => response.ok ? response.json() : {snapshots:[]})
+        .then((response) => response.ok ? response.json().then(payload=>({...payload,loadedAt:new Date().toISOString()})) : {snapshots:[]})
         .catch(() => ({ snapshots: [] })),
       fetch("/api/purchase-trials", { cache: "no-store" })
         .then((response) => response.ok ? response.json() : {trials:[]})
@@ -481,6 +458,7 @@ function DailyPurchasePlans({
         const settledSets=(deduplicatePurchasePlanSets(formalSets) as PurchasePlanSet[]).map(item=>({...item,plans:item.plans.map(plan=>settlePurchasePlan(plan,historyResults))}));
         const settledTrials=(deduplicatePurchasePlanSets(storedTrials.filter(trial=>!analysisArchiveSlot(trial)&&!promoted.some(item=>item.snapshotId===trial.snapshotId))) as PurchasePlanSet[]).map(item=>({...item,plans:item.plans.map(plan=>settlePurchasePlan(plan,historyResults))}));
         if (active) {
+          if (archive.loadedAt) setArchiveLoadedAt(archive.loadedAt);
           setPlanSets(settledSets);
           setSavedTrials(settledTrials);
           setHistoryResultCache(historyResults);
@@ -496,12 +474,12 @@ function DailyPurchasePlans({
         else if (active) setStatus(`该彩票日期没有已保存的${activeSlot==="2100"?"21:00":"17:00"}组合票`);
       })
       .finally(() => {
-        if (active) setBusy(false);
+        if (active) { setBusy(false); setArchiveLoading(false); }
       });
     return () => {
       active = false;
     };
-  // Select uses the just-loaded archive results, so this effect tracks only the date and archive refresh.
+  // Reload only when the user changes the date/slot or explicitly refreshes.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lotteryDate,archiveReload,activeSlot]);
   async function preview() {
@@ -569,6 +547,7 @@ function DailyPurchasePlans({
         <div className="purchase-panel-intro">
           <small>DAILY PURCHASE DRAFT</small>
           <h3>每日固定组合票</h3>
+          <PageLoadStatus loadedAt={archiveLoadedAt} loading={archiveLoading}/>
           <p>
             每天北京时间17:00、21:00各留档一批；按每注2元计算组合投入，依据官方赛果分别结算。
           </p>

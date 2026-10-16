@@ -109,9 +109,9 @@ test("confirmation refreshes a qualified version then invokes AI with that versi
  const row={...fixture("周五003"),...version,officialMappingStatus:"verified",salesDate:date,matchDate:date};
  const candidate={displayId:row.id,externalId:"isolated-ext",league:row.league,externalTime:row.time,home:row.home,away:"另一译名",canConfirmNameMatch:true};
  const match={...row,matchId:row.officialMatchId,odds:[2,3.2,3.8],marketOdds:{"胜平负":[2,3.2,3.8]},form:[],risk:"",tag:"",matchStatus:"Selling"};
- let aiCalls=0;
+ let aiCalls=0;const requests=[];
  globalThis.fetch=async(url,options={})=>{
-  const path=String(url);
+  const path=String(url);requests.push(path);
   if(path.startsWith("/api/sporttery"))return Response.json({matches:[match],fetchedAt:now});
   if(path==="/api/predictions"){
    const body=JSON.parse(options.body),confirmed=body.manualMappings?.some(record=>record.officialMatchId===row.officialMatchId);
@@ -137,6 +137,8 @@ test("confirmation refreshes a qualified version then invokes AI with that versi
   for(let i=0;i<50&&!aiCalls;i++)await act(async()=>{await new Promise(resolve=>setTimeout(resolve,20))});
   assert.equal(aiCalls,1);
   assert.match(document.querySelector(".compact-predictions-page").textContent,/隔离测试复核/);
+  assert.equal(document.querySelector(".recommendations-page"),null);
+  assert.deepEqual(requests.filter(path=>path.startsWith("/api/purchase-trials")||path.includes("view=recommendations")),[],"AI route must not mount recommendation data loaders in the background");
  }finally{await act(async()=>root.unmount());restore();}
 });
 
@@ -207,6 +209,68 @@ const fixture=(id,narrative="主队方向 · 升盘，多盘口较一致，偏�
  marketSignal:{direction:"主队方向",narrative,strength:1,officialOdds:[2,3.2,3.8],officialHandicap:"-1",officialHhadOdds:[3.2,3.1,2],officialHhadFair:[3,3,3],fairOdds:[2,3.33,5],hhadAvailable:true,modeledHhad:[30,30,40],modeledTotalGoals:[5,15,30,25,15,5,3,2],modeledHalfFull:[30,10,5,10,20,5,5,5,10],firstHandicap:0,handicapChange:-.25,asianHomeProbability:55,asianAwayProbability:45,asianMovement:2,overProbability:55,fitAgreement:"多盘口较一致",handicapMeaning:"测试让球"}
 });
 const commonProps={loading:false,error:"",aiError:"",fetchedAt:"",sourceUrl:"",methodology:"测试模型",aiProvider:"",aiLoading:false,onAiReview(){}};
+
+test("page load status renders Beijing time, loading and unavailable states",async()=>{
+ const Status=await load("../app/components/PageLoadStatus.tsx");
+ const render=props=>new JSDOM(renderToString(h(Status,props))).window.document;
+ const loadedAt="2026-10-16T08:59:00.000Z",doc=render({loadedAt});
+ assert.equal(doc.querySelector("time").dateTime,loadedAt);
+ assert.match(doc.querySelector("time").textContent,/16:59:00/);
+ assert.match(doc.body.textContent,/本次加载：.*（北京时间）/);
+ assert.match(doc.body.textContent,/页面停留期间不自动更新/);
+ const loading=render({loadedAt,loading:true});
+ assert.match(loading.body.textContent,/正在加载数据/);
+ assert.equal(loading.querySelector("time").dateTime,loadedAt,"Loading retains the last successful load time");
+ for(const loadedAt of ["","invalid"]){
+  const unavailable=render({loadedAt});
+  assert.equal(unavailable.querySelector("time"),null);
+  assert.match(unavailable.body.textContent,/尚未成功加载/);
+ }
+});
+
+test("recommendations stay unchanged across time and visibility, with explicit snapshot refresh preserving the last success on failure",async context=>{
+ const Recommendations=await load("../app/components/TodayRecommendations.tsx"),{dom,restore}=installDom();
+ Object.defineProperty(dom.window,"indexedDB",{value:new IDBFactory()});
+ const requests=[],date="2026-10-16",version="manual-refresh-test";
+ const matches=[{...fixture("周五001"),predictionId:version,salesDate:date,matchDate:date,kickoffAt:"2026-10-16T23:00:00+08:00"}];
+ let fail=false;
+ globalThis.fetch=async url=>{
+  const path=String(url);requests.push(path);
+  if(path.startsWith("/api/prediction-snapshots"))return fail?Response.json({error:"temporary failure"},{status:502}):Response.json({snapshots:[]});
+  if(path==="/api/purchase-trials")return Response.json({trials:[]});
+  if(path==="/api/sporttery")return Response.json({matches:[],fetchedAt:new Date().toISOString()});
+  if(path.startsWith("/api/sporttery/results"))return Response.json({results:[]});
+  throw new Error(`Unexpected manual refresh request: ${path}`);
+ };
+ const root=createRoot(document.getElementById("test-root"));
+ const settle=async()=>{for(let i=0;i<30;i++)await act(async()=>{context.mock.timers.tick(0);await new Promise(resolve=>setImmediate(resolve))})};
+ const refresh=()=>[...document.querySelectorAll("button")].find(button=>button.textContent==="刷新快照");
+ const loadedTime=()=>document.querySelector(".page-load-status time")?.dateTime;
+ try{
+  const storage=await import(await componentUrl(new URL("../app/browser-storage.ts",import.meta.url)));
+  await storage.writeBrowserData("ff-today-predictions-v3",{date,predictionId:version,matches});
+  context.mock.timers.enable({apis:["Date","setTimeout","setInterval"],now:Date.parse("2026-10-16T08:59:00Z")});
+  await act(async()=>root.render(h(Recommendations)));
+  await settle();
+  assert.ok(refresh());assert.equal(refresh().disabled,false);assert.ok(loadedTime());
+  assert.ok(requests.includes("/api/sporttery"),"Saved predictions must load official markets on entry");
+  const initialTime=loadedTime(),initialRequests=[...requests];
+  await act(async()=>{
+   context.mock.timers.tick(2*3600000);
+   Object.defineProperty(document,"visibilityState",{value:"visible",configurable:true});
+   document.dispatchEvent(new dom.window.Event("visibilitychange"));
+  });
+  await settle();
+  assert.deepEqual(requests,initialRequests,"Staying open past 17:05 and becoming visible must not fetch new data");
+  assert.equal(loadedTime(),initialTime);
+  await act(async()=>refresh().click());await settle();
+  assert.equal(requests.filter(path=>path.startsWith("/api/prediction-snapshots")).length,initialRequests.filter(path=>path.startsWith("/api/prediction-snapshots")).length+1);
+  const refreshedTime=loadedTime();assert.notEqual(refreshedTime,initialTime);
+  fail=true;context.mock.timers.tick(60000);
+  await act(async()=>refresh().click());await settle();
+  assert.equal(loadedTime(),refreshedTime,"Failed refresh must preserve the last successful timestamp");
+ }finally{await act(async()=>root.unmount());context.mock.timers.reset();restore()}
+});
 
 test("market half-full tab shows exactly two ranked outcomes and does not fabricate missing probabilities",async()=>{
  const Table=await load("../app/components/MarketPredictionTable.tsx"),{dom,restore}=installDom();let root;

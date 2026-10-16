@@ -611,7 +611,6 @@ test("17:00 snapshot persists purchase drafts and the recommendation page expose
  assert.match(component,/命中时最低 \/ 最高盈利/);
  assert.match(component,/最近归档推荐/);
  assert.match(component,/刷新快照/);
- assert.match(component,/visibilitychange/);
  assert.match(purchaseCapture,/record\.immutable===true&&record\.scheduledAt===/);
  assert.match(component,/最终赛果 \{purchaseHistoryActual\(item\)\} · 购入赔率 \{purchaseHistoryOdds\(item\)\}/);
  assert.match(component,/<details className="purchase-history-panel"/);
