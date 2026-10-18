@@ -61,10 +61,12 @@ export function isHundredYuanDoubling(methodId) {
 /** Replay one method and time slot without changing the original ticket amounts. */
 export function simulatePurchaseDoubling(historyRows = [], methodId = "") {
   const doubleAfterLoss = isHundredYuanDoubling(methodId);
+  const hundredYuanLinear = methodId === "tenfold-safe-2";
   // Keep the target budget exact, then floor to whole tickets each period.
   // For ¥8 tickets, budgets ¥100/200/400 yield 12/25/50 copies, costing ¥96/200/400.
   const multiplierDivisor = methodId === "half-full-double-2" ? 2n : 1n;
-  const initialMultiplier = multiplierDivisor === 2n ? 25n : doubleAfterLoss ? 50n : 1n;
+  const initialMultiplier = multiplierDivisor === 2n ? 25n : doubleAfterLoss || hundredYuanLinear ? 50n : 1n;
+  const multiplierIncrement = hundredYuanLinear ? 50n : 1n;
   const wholeMultiplier = (value) => value / multiplierDivisor;
   const ordered = [...historyRows].sort((a, b) => {
     const aTime = Date.parse(a.generatedAt),
@@ -150,7 +152,7 @@ export function simulatePurchaseDoubling(historyRows = [], methodId = "") {
       multiplier = initialMultiplier;
       losingStreak = 0;
     } else if (results.some((result) => result.outcome === "lost")) {
-      multiplier = doubleAfterLoss ? multiplier * 2n : multiplier + 1n;
+      multiplier = doubleAfterLoss ? multiplier * 2n : multiplier + multiplierIncrement;
       losingStreak++;
       maxLosingStreak = Math.max(maxLosingStreak, losingStreak);
     }

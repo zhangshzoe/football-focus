@@ -366,7 +366,8 @@ test("doubling summary renders scaled historical money and tolerates missing sta
  const rows=["lost","lost","won","pending"].map((status,index)=>({snapshotId:`test-${index}`,date:`2026-09-${20+index}`,generatedAt:`2026-09-${20+index}T17:00:00+08:00`,plan:{id:"total-double-2",status,stake:index===3?undefined:8,simulatedReturn:status==="won"?20:0,items:[{matchId:"周日001",home:"主队",away:"客队",pick:"2球",marketName:"总进球"}]}}));
  const hundredYuanHistory=Object.fromEntries(["had-safe-2","twofold-a","twofold-b","twofold-c"].map(id=>[id,{rows:rows.slice(0,3).map(row=>({...row,plan:{...row.plan,id,stake:2,simulatedReturn:row.plan.status==="won"?6.35:0}}))}]));
  const halfFullRows=rows.slice(0,3).map(row=>({...row,plan:{...row.plan,id:"half-full-double-2",stake:8,simulatedReturn:row.plan.status==="won"?9.59:0}}));
- const html=renderToString(h(Summary,{history:{"total-double-2":{rows},...hundredYuanHistory,"half-full-double-2":{rows:halfFullRows}},slot:"1700",loading:false}));
+ const tenfoldRows=rows.slice(0,3).map(row=>({...row,plan:{...row.plan,id:"tenfold-safe-2",stake:2}}));
+ const html=renderToString(h(Summary,{history:{"total-double-2":{rows},...hundredYuanHistory,"half-full-double-2":{rows:halfFullRows},"tenfold-safe-2":{rows:tenfoldRows}},slot:"1700",loading:false}));
  const doc=new JSDOM(html).window.document;
  assert.match(doc.body.textContent,/8元 → 16元 → 24元 → 32元/);
  assert.match(doc.body.textContent,/按1、2、3、4倍依次递增/);
@@ -386,6 +387,10 @@ test("doubling summary renders scaled historical money and tolerates missing sta
  assert.deepEqual([...halfFullSummary.querySelectorAll('tbody tr')].map(row=>row.children[3].textContent),['12倍','25倍','50倍']);
  assert.deepEqual([...halfFullSummary.querySelectorAll('tbody tr')].map(row=>row.children[4].textContent),['-¥96.00','-¥200.00','-¥400.00']);
  assert.match(halfFullSummary.textContent,/\+¥479\.50/);
+ const tenfoldSummary=[...doc.querySelectorAll('.purchase-doubling-history > details')].find(node=>node.querySelector('strong').textContent.includes('10倍目标 A · 单选2串1'));
+ assert.match(tenfoldSummary.textContent,/100元起投 · 未中增加100元 · 中奖回到100元/);
+ assert.deepEqual([...tenfoldSummary.querySelectorAll('tbody tr')].map(row=>row.children[4].textContent),['-¥100.00','-¥200.00','-¥300.00']);
+ assert.deepEqual([...tenfoldSummary.querySelectorAll('tbody tr')].map(row=>row.children[5].textContent),['¥0.00','¥0.00','+¥3,000.00']);
  assert.equal(doc.querySelectorAll('tbody tr').length>3,true);
 });
 

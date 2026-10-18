@@ -46,6 +46,38 @@ test("linear staking replays chronologically, resets on a win and never alters s
   assert.deepEqual(source, copy);
 });
 
+test("tenfold A increases stakes by 100 after losses and resets after a win", () => {
+  const source = ["lost", "lost", "lost", "won", "lost"].map((status, index) =>
+    row(index + 1, status, { id: "tenfold-safe-2", stake: 2, simulatedReturn: status === "won" ? 20.3 : 0 }),
+  );
+  const copy = structuredClone(source);
+  const result = simulatePurchaseDoubling(source, "tenfold-safe-2");
+  assert.deepEqual(result.rows.map(item => item.stake), [10000n, 20000n, 30000n, 40000n, 10000n]);
+  assert.deepEqual(result.rows.map(item => item.multiplier), [50n, 100n, 150n, 200n, 50n]);
+  assert.equal(result.stake, 110000n);
+  assert.equal(result.returned, 406000n);
+  assert.equal(result.net, 296000n);
+  assert.equal(result.nextMultiplier, 100n);
+  assert.equal(simulatePurchaseDoubling([], "tenfold-safe-2").nextMultiplier, 50n);
+  assert.deepEqual(source, copy);
+});
+
+test("tenfold A pending periods and refunds preserve the current 100-yuan step", () => {
+  const ticket = (day, status, extra = {}) => row(day, status, { id: "tenfold-safe-2", stake: 2, ...extra });
+  const result = simulatePurchaseDoubling([
+    ticket(1, "lost"),
+    ticket(2, "pending"),
+    ticket(3, "void_won", { items: [{ settlementState: "void_settled" }] }),
+    ticket(4, "lost"),
+    ticket(5, "lost"),
+  ], "tenfold-safe-2");
+  assert.deepEqual(result.rows.map(item => item.stake), [10000n, null, 20000n, 20000n, 30000n]);
+  assert.equal(result.rows[2].returned, 20000n);
+  assert.equal(result.nextMultiplier, 200n);
+  assert.equal(result.pending, 1);
+  assert.equal(result.refunded, 1);
+});
+
 for (const methodId of ["had-safe-2", "twofold-a", "twofold-b", "twofold-c"]) {
 test(`${methodId} starts at 100, doubles after losses and resets after a win`, () => {
   const source = ["lost", "lost", "won", "lost"].map((status, index) =>
