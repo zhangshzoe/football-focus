@@ -4,8 +4,8 @@ import { useMemo } from "react";
 import type { PurchaseItem } from "./TodayRecommendations";
 import {
   PURCHASE_PLAN_DEFINITIONS,
-  summarizePurchasePlanDefinitions,
 } from "../purchase-plan-engine";
+import type { buildPurchaseDoublingHistory } from "../purchase-doubling-history.js";
 import { formatDoublingMoney, isHundredYuanDoubling, simulatePurchaseDoubling } from "../purchase-doubling.js";
 import { historySummaryClass } from "../purchase-snapshot-status.js";
 
@@ -25,7 +25,7 @@ export default function PurchaseDoublingSummary({
   slot,
   loading,
 }: {
-  history: ReturnType<typeof summarizePurchasePlanDefinitions>;
+  history: ReturnType<typeof buildPurchaseDoublingHistory>;
   slot: "1700" | "2100";
   loading: boolean;
 }) {
@@ -47,6 +47,8 @@ export default function PurchaseDoublingSummary({
         其他方式独立从1倍开始，未中后增加1倍，按1、2、3、4倍依次递增，中奖后恢复1倍。
         1倍按每期原组合的全部投入计算，例如8元 → 16元 → 24元 → 32元。
       </p>
+      {slot === "2100" && <p>21:00记录优先；同日同玩法没有记录时，使用17:00留档补齐。待结算或明确不投注不视为缺失，补入记录保留原始时间和赔率。</p>}
+      {summaries.some(summary => summary.rows.some(row => row.manualTrial)) && <p>已纳入经确认的2026-10-16 17:19手动试算，按原始时间参与倍投回放；官方截止时间未知，不作为严格前瞻验证记录。</p>}
       <aside className="purchase-doubling-warning">
         递增倍投不提高中奖概率，也不保证收回此前亏损；连续未中时，每期投入与累计资金需求都会增加。这里仅按最终赛果顺序模拟，不考虑资金上限和出票限额，不是当时可执行的实盘回测。
       </aside>
@@ -54,7 +56,7 @@ export default function PurchaseDoublingSummary({
         <summary>计算口径与待结算处理</summary>
         <ul>
           <li>
-            仅使用原“各投注方式历史汇总”的正式记录，不增加模拟票，也不改动原快照；17点与21点互不混算。
+            使用已留档方案与经确认纳入的手动试算，保留原快照内容和实际生成时间。17点与21点分别回放；21点缺失时按同日同玩法使用17点记录补齐，不与已有21点记录重复计算。
           </li>
           <li>
             以真实快照批次为一期，按采集时间从早到晚。同一期同类多票共用倍数，全部结算后，任一中奖则重置。
@@ -151,6 +153,8 @@ export default function PurchaseDoublingSummary({
                         >
                           <td>
                             {row.date}
+                            {row.isFallback && <small>17:00补入21:00</small>}
+                            {row.manualTrial && <small>手动试算纳入倍投</small>}
                             <small>
                               {Number.isFinite(Date.parse(row.generatedAt))
                                 ? new Date(row.generatedAt).toLocaleTimeString("zh-CN", {

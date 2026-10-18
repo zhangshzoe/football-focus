@@ -2,6 +2,7 @@
 "use client";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import PurchaseDoublingSummary from "./PurchaseDoublingSummary";
+import {buildPurchaseDoublingHistory,getApprovedDoublingTrial} from "../purchase-doubling-history.js";
 import PageLoadStatus from "./PageLoadStatus";
 import {recommendationLabel,analysisArchiveSlot,historySummaryClass} from "../purchase-snapshot-status.js";
 import {readBrowserData} from "../browser-storage";
@@ -352,6 +353,7 @@ function DailyPurchasePlans({
     [summaryView, setSummaryView] = useState<"original" | "doubling">("original"),
     [activeSlot,setActiveSlot]=useState<"1700"|"2100">("1700"),
     [planSets, setPlanSets] = useState<PurchasePlanSet[]>([]),
+    [doublingPlanSets, setDoublingPlanSets] = useState<PurchasePlanSet[]>([]),
     [savedTrials, setSavedTrials] = useState<PurchasePlanSet[]>([]),
     [historyResultCache, setHistoryResultCache] = useState<PurchaseResult[]>([]),
     [resultSyncError,setResultSyncError]=useState(""),
@@ -416,7 +418,7 @@ function DailyPurchasePlans({
         } catch {
           /* 损坏缓存不参与推荐 */
         }
-        const periodicSets: PurchasePlanSet[] = (
+        const archivedSets: PurchasePlanSet[] = (
           Array.isArray(archive.purchasePlanSnapshots)
             ? archive.purchasePlanSnapshots
             : []
@@ -424,9 +426,10 @@ function DailyPurchasePlans({
           .map((snapshot: { planSet?: PurchasePlanSet; captureTiming?: string; qualityStatus?: string; cutoffStatus?: string }) => snapshot.planSet ? {...snapshot.planSet,captureTiming:snapshot.captureTiming||snapshot.planSet.captureTiming,qualityStatus:snapshot.qualityStatus||snapshot.planSet.qualityStatus,cutoffStatus:snapshot.cutoffStatus||snapshot.planSet.cutoffStatus} : undefined)
           .filter(
             (item: PurchasePlanSet | undefined): item is PurchasePlanSet =>
-              hasPurchasePlanData(item),
+              Boolean(item && Array.isArray(item.plans)),
           );
-        const legacySets: PurchasePlanSet[] = (
+        const periodicSets = archivedSets.filter(hasPurchasePlanData);
+        const legacyArchivedSets: PurchasePlanSet[] = (
           Array.isArray(archive.snapshots) ? archive.snapshots : []
         )
           .map(
@@ -435,8 +438,11 @@ function DailyPurchasePlans({
           )
           .filter(
             (item: PurchasePlanSet | undefined): item is PurchasePlanSet =>
-              hasPurchasePlanData(item),
+              Boolean(item && Array.isArray(item.plans)),
           );
+        const legacySets = legacyArchivedSets.filter(hasPurchasePlanData);
+        const noBetSets = [...archivedSets, ...legacyArchivedSets, ...locals.filter(item=>item?.snapshotId?.startsWith("purchase-"))]
+          .filter(item=>item && Array.isArray(item.plans) && !hasPurchasePlanData(item));
         const allSets = Array.from(
           new Map(
             [...periodicSets, ...legacySets, ...locals.filter(item=>item.snapshotId?.startsWith("purchase-"))]
@@ -453,13 +459,16 @@ function DailyPurchasePlans({
         const targetTrial=storedTrials.find(trial=>trial.snapshotId===PROMOTED_PURCHASE_TRIAL.snapshotId);
         const promotionRejected=Boolean(targetTrial&&!promoted.length&&!allSets.some(set=>set.date===PROMOTED_PURCHASE_TRIAL.date&&purchaseSlot(set)==="1700"));
         const formalSets=[...allSets.filter(item=>purchaseSlot(item)!=="current"),...promoted,...storedTrials.filter(item=>analysisArchiveSlot(item))];
+        const approvedDoublingTrials=storedTrials.map(getApprovedDoublingTrial).filter(Boolean) as PurchasePlanSet[];
         const cachedResults=Object.values(archive.resultCache&&typeof archive.resultCache==="object"?archive.resultCache:{}) as PurchaseResult[];
-        const {results:historyResults,failed}=await fetchHistoricalPurchaseResults(formalSets,cachedResults);
+        const {results:historyResults,failed}=await fetchHistoricalPurchaseResults([...formalSets,...approvedDoublingTrials],cachedResults);
         const settledSets=(deduplicatePurchasePlanSets(formalSets) as PurchasePlanSet[]).map(item=>({...item,plans:item.plans.map(plan=>settlePurchasePlan(plan,historyResults))}));
         const settledTrials=(deduplicatePurchasePlanSets(storedTrials.filter(trial=>!analysisArchiveSlot(trial)&&!promoted.some(item=>item.snapshotId===trial.snapshotId))) as PurchasePlanSet[]).map(item=>({...item,plans:item.plans.map(plan=>settlePurchasePlan(plan,historyResults))}));
         if (active) {
           if (archive.loadedAt) setArchiveLoadedAt(archive.loadedAt);
           setPlanSets(settledSets);
+          setDoublingPlanSets([...settledSets,...noBetSets,
+            ...approvedDoublingTrials.map(item=>({...item,plans:item.plans.map(plan=>settlePurchasePlan(plan,historyResults))}))]);
           setSavedTrials(settledTrials);
           setHistoryResultCache(historyResults);
           setResultSyncError(failed?`${failed} 个比赛日期的赛果查询失败，相关组合暂不计入已结算；刷新页面可重试。`:"");
@@ -529,6 +538,7 @@ function DailyPurchasePlans({
   const planStats=useMemo(()=>summarizePurchasePlans((deduplicatePurchasePlanSets(slotSets) as PurchasePlanSet[]).flatMap(item=>item.plans)),[slotSets]);
   const moduleStats=useMemo(()=>summarizePurchasePlanModules(slotSets),[slotSets]);
   const definitionHistory=useMemo(()=>summarizePurchasePlanDefinitions(slotSets),[slotSets]);
+  const doublingHistory=useMemo(()=>buildPurchaseDoublingHistory(doublingPlanSets,activeSlot),[doublingPlanSets,activeSlot]);
   const dayHistory=useMemo(()=>summarizePurchasePlanDays(slotSets),[slotSets]);
   const recentDates=useMemo(()=>{
     const [year,month,day]=shanghaiDate().split("-").map(Number);
@@ -618,7 +628,7 @@ function DailyPurchasePlans({
       <div id="purchase-panel-doubling" role="tabpanel" aria-labelledby="purchase-view-doubling" hidden={summaryView !== "doubling"}>
         {resultSyncError && <p role="alert" className="purchase-notice">{resultSyncError}</p>}
         {promotionError && <p role="alert" className="purchase-notice">{promotionError}</p>}
-        <PurchaseDoublingSummary history={definitionHistory} slot={activeSlot} loading={busy} />
+        <PurchaseDoublingSummary history={doublingHistory} slot={activeSlot} loading={busy} />
       </div>
       <div id="purchase-panel-original" role="tabpanel" aria-labelledby="purchase-view-original" hidden={summaryView !== "original"}>
       {!data && <p className="purchase-notice">当前浏览器没有今日预测版本，请先到 AI 预测页生成预测；没有预测时无法试算。</p>}

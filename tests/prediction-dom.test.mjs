@@ -389,6 +389,53 @@ test("doubling summary renders scaled historical money and tolerates missing sta
  assert.equal(doc.querySelectorAll('tbody tr').length>3,true);
 });
 
+test("evening doubling fills missing methods and includes the approved trial without overriding a no-bet batch",async context=>{
+ const Recommendations=await load("../app/components/TodayRecommendations.tsx"),{dom,restore}=installDom();
+ Object.defineProperty(dom.window,"indexedDB",{value:new IDBFactory()});
+ context.mock.timers.enable({apis:["Date"],now:Date.parse("2026-10-19T04:00:00Z")});
+ const item={matchId:"周五001",officialMatchId:"isolated-fallback-match",salesDate:"2026-10-16",matchDate:"2026-10-17",kickoffAt:"2026-10-17T01:00:00+08:00",sourceFetchedAt:"2026-10-16T08:42:43.401Z",cutoffAt:null,cutoffStatus:"unknown",matchStatus:"Selling",home:"测试主队",away:"测试客队",market:"had",marketName:"胜平负",pick:"胜",odd:2,probability:50};
+ const plan=id=>({id,status:"pending",stake:2,items:[item]});
+ const noBet=date=>({snapshotId:`purchase-evening-no-bet-${date}`,date,scheduledTime:"21:00",generatedAt:`${date}T13:00:00Z`,plans:[{id:"had-safe-2",status:"unavailable",items:[]}]});
+ const batches=[
+  ...['2026-10-13','2026-10-14'].map(date=>({snapshotId:`afternoon-${date}`,date,scheduledTime:"17:00",generatedAt:`${date}T09:00:00Z`,plans:[plan("had-safe-2")]})),
+  {snapshotId:"afternoon-15",date:"2026-10-15",scheduledTime:"17:00",generatedAt:"2026-10-15T09:00:00Z",plans:[plan("had-safe-2"),plan("total-double-2")]},
+  {snapshotId:"evening-no-bet-15",date:"2026-10-15",scheduledTime:"21:00",generatedAt:"2026-10-15T13:00:00Z",plans:[{id:"had-safe-2",status:"unavailable",items:[]}]},
+ ];
+ const trial={snapshotId:"manual-trial-4dbbaedd-c89b-42c5-9cfe-69d4554b6b1e",date:"2026-10-16",scheduledTime:"17:00",generatedAt:"2026-10-16T09:19:06.549Z",source:"测试已保存试算",plans:[plan("had-safe-2")]};
+ const calls=[];
+ globalThis.fetch=async url=>{
+  const path=String(url);calls.push(path);
+  if(path.startsWith("/api/prediction-snapshots"))return Response.json({purchasePlanSnapshots:batches.map(planSet=>({planSet})),snapshots:[{purchasePlans:noBet('2026-10-13')}]});
+  if(path==="/api/purchase-trials")return Response.json({trials:[trial,{...trial,snapshotId:"manual-trial-unapproved",date:"2026-10-14"}]});
+  if(path.startsWith("/api/sporttery/results"))return Response.json({results:[]});
+  return Response.json({matches:[]});
+ };
+ const root=createRoot(document.getElementById("test-root"));
+ const waitForHistory=async()=>{
+  for(let i=0;i<60&&!document.querySelector('.purchase-doubling-history');i++)await act(async()=>{await new Promise(resolve=>setTimeout(resolve,10))});
+  assert.ok(document.querySelector('.purchase-doubling-history'),'History should finish loading');
+ };
+ try{
+  const storage=await import(await componentUrl(new URL("../app/browser-storage.ts",import.meta.url)));
+  await storage.writeBrowserData("ff-daily-purchase-plans-v1",[noBet('2026-10-14')]);
+  await act(async()=>root.render(h(Recommendations)));
+  for(let i=0;i<60&&(!document.querySelector('.page-load-status time')||document.querySelector('[aria-label="各投注方式倍投历史汇总"]')?.getAttribute('aria-busy')==='true');i++)await act(async()=>{await new Promise(resolve=>setTimeout(resolve,10))});
+  await act(async()=>document.querySelector('#purchase-view-doubling').click());
+  const findMethod=title=>[...document.querySelectorAll('.purchase-doubling-history > details')].find(node=>node.querySelector('strong').textContent.includes(title));
+  let rows=[...findMethod('胜平负单选2串1').querySelectorAll('tbody tr')];
+  assert.deepEqual(rows.map(row=>row.children[0].textContent.slice(0,10)),['2026-10-13','2026-10-14','2026-10-15','2026-10-16']);
+  assert.match(rows[3].textContent,/手动试算纳入倍投.*17:19/);
+  assert.ok(calls.includes('/api/sporttery/results?date=2026-10-17'),'Approved trial match dates must load settlement results');
+  await act(async()=>[...document.querySelectorAll('[role="tab"]')].find(node=>node.textContent==='21:00 场次').click());
+  await waitForHistory();
+  rows=[...findMethod('胜平负单选2串1').querySelectorAll('tbody tr')];
+  assert.equal(rows.length,1,'Unavailable evening batches from current archives, legacy archives and local storage must prevent substitution');
+  assert.match(rows[0].textContent,/2026-10-16.*17:00补入21:00.*手动试算纳入倍投.*17:19/);
+  const totalRows=[...findMethod('总进球双选2串1').querySelectorAll('tbody tr')];
+  assert.equal(totalRows.length,1);assert.match(totalRows[0].textContent,/2026-10-15.*17:00补入21:00/);
+ }finally{await act(async()=>root.unmount());context.mock.timers.reset();restore()}
+});
+
 test("prediction and market views can refresh all matches, filter, clear and unmount without DOM errors",async()=>{
  const [AiReport,MarketTable]=await Promise.all([load("../app/components/AiPredictionReport.tsx"),load("../app/components/MarketPredictionTable.tsx")]);
  const {dom,restore}=installDom(),errors=[],container=dom.window.document.getElementById("test-root");
