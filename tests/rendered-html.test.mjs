@@ -573,13 +573,14 @@ test("invalid or expired kickoff data cannot enter purchase plans",()=>{
 });
 
 test("17:00 snapshot persists purchase drafts and the recommendation page exposes settlement",async()=>{
- const [capture,purchaseCapture,api,component,styles,sync]=await Promise.all([
+ const [capture,purchaseCapture,api,component,styles,sync,planReturns]=await Promise.all([
   readFile(new URL("../scripts/capture-prediction-snapshot.mjs",import.meta.url),"utf8"),
   readFile(new URL("../scripts/capture-purchase-plan-snapshot.mjs",import.meta.url),"utf8"),
   readFile(new URL("../app/api/prediction-snapshots/route.ts",import.meta.url),"utf8"),
   readFile(new URL("../app/components/TodayRecommendations.tsx",import.meta.url),"utf8"),
   readFile(new URL("../app/reference-ui.css",import.meta.url),"utf8"),
   readFile(new URL("../scripts/sync-prediction-decision-index.mjs",import.meta.url),"utf8"),
+  readFile(new URL("../app/components/PurchasePlanReturns.tsx",import.meta.url),"utf8"),
  ]);
  assert.match(capture,/slot !== "1700"/);
  assert.match(capture,/generatePurchasePlans/);
@@ -598,7 +599,7 @@ test("17:00 snapshot persists purchase drafts and the recommendation page expose
  assert.match(component,/settlePurchasePlan/);
  assert.match(component,/每注2元/);
  assert.match(component,/prediction-snapshots\?view=recommendations/);
- assert.match(component,/fetchHistoricalPurchaseResults\(formalSets,cachedResults\)/);
+ assert.match(component,/fetchHistoricalPurchaseResults\(\[\.\.\.formalSets,\.\.\.approvedDoublingTrials\],cachedResults\)/);
  assert.match(component,/promoteSavedPurchaseTrial/);
  assert.match(component,/赛果查询失败，相关组合暂不计入已结算/);
  assert.match(component,/purchase-plan-module/);
@@ -608,15 +609,17 @@ test("17:00 snapshot persists purchase drafts and the recommendation page expose
  assert.match(component,/中奖 \/ 已结算/);
  assert.match(component,/投入 \/ 返还/);
  assert.match(component,/模型预期返奖/);
- assert.match(component,/命中时最低 \/ 最高盈利/);
+ assert.match(component,/import PurchasePlanReturns, \{ SignedPurchaseMoney \} from "\.\/PurchasePlanReturns"/);
+ assert.match(component,/<PurchasePlanReturns plan=\{plan\}/);
+ assert.match(planReturns,/命中时最低 \/ 最高盈利/);
  assert.match(component,/最近归档推荐/);
  assert.match(component,/刷新快照/);
  assert.match(purchaseCapture,/record\.immutable===true&&record\.scheduledAt===/);
  assert.match(component,/最终赛果 \{purchaseHistoryActual\(item\)\} · 购入赔率 \{purchaseHistoryOdds\(item\)\}/);
  assert.match(component,/<details className="purchase-history-panel"/);
  assert.match(component,/allModulesCollapsed\?"全部展开":"全部收起"/);
- assert.match(component,/purchase-money-negative/);
- assert.match(component,/purchase-money-positive/);
+ assert.match(planReturns,/purchase-money-negative/);
+ assert.match(planReturns,/purchase-money-positive/);
  assert.match(styles,/purchase-history-panel>summary/);
  assert.match(styles,/\.daily-purchase-panel \.purchase-money-negative\{color:#168052/);
  assert.match(styles,/\.daily-purchase-panel \.purchase-money-positive\{color:#c34242/);
