@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import type { PurchaseItem } from "./TodayRecommendations";
+import PurchasePlanReturns from "./PurchasePlanReturns";
 import {
   PURCHASE_PLAN_DEFINITIONS,
 } from "../purchase-plan-engine";
@@ -187,7 +188,9 @@ export default function PurchaseDoublingSummary({
                               {Number.isFinite(row.plan.stake)
                                 ? `¥${row.plan.stake.toFixed(2)}`
                                 : "金额待补"}
+                              {" · 以下为原组合1倍测算"}
                             </small>
+                            <PurchasePlanReturns plan={row.plan} />
                           </td>
                           <td>
                             {row.outcome === "won"

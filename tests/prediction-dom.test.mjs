@@ -394,6 +394,29 @@ test("doubling summary renders scaled historical money and tolerates missing sta
  assert.equal(doc.querySelectorAll('tbody tr').length>3,true);
 });
 
+test("doubling details show original one-copy expected and winning returns for every period",async()=>{
+ const Summary=await load("../app/components/PurchaseDoublingSummary.tsx");
+ const items=[
+  {matchId:"周日014",officialMatchId:"payout-home",home:"主队一",away:"客队一",market:"had",marketName:"胜平负",pick:"胜",odd:1.4,probability:62.2},
+  {matchId:"周日018",officialMatchId:"payout-away",home:"主队二",away:"客队二",market:"had",marketName:"胜平负",pick:"负",odd:1.34,probability:63.3},
+ ];
+ const rows=["lost","won","pending","pending"].map((status,index)=>({snapshotId:`payout-${index}`,date:`2026-10-${10+index}`,generatedAt:`2026-10-${10+index}T17:00:00+08:00`,plan:{id:"had-safe-2",status,stake:2,simulatedReturn:status==="won"?3.75:0,items:items.map((item,itemIndex)=>({...item,...(index===2&&itemIndex===0?{probability:undefined}:{}),...(index===3&&itemIndex===0?{odd:undefined}:{})}))}}));
+ const doc=new JSDOM(renderToString(h(Summary,{history:{"had-safe-2":{rows}},slot:"1700",loading:false}))).window.document;
+ const detail=[...doc.querySelectorAll('.purchase-doubling-history > details')].find(node=>node.querySelector('strong').textContent.includes('胜平负单选2串1'));
+ const renderedRows=[...detail.querySelectorAll('tbody tr')];
+ for(const row of renderedRows.slice(0,2)) {
+  assert.match(row.children[1].textContent,/以下为原组合1倍测算/);
+  assert.match(row.children[1].textContent,/本组合模型预期返奖 ¥1\.48/);
+  assert.match(row.children[1].textContent,/组合命中返奖 ¥3\.75～¥3\.75/);
+  assert.match(row.children[1].textContent,/命中时最低 \/ 最高盈利 \+¥1\.75 \/ \+¥1\.75/);
+ }
+ assert.deepEqual(renderedRows.slice(0,2).map(row=>row.children[4].textContent),['-¥100.00','-¥200.00']);
+ assert.equal(renderedRows[1].children[5].textContent,'+¥375.00');
+ assert.match(renderedRows[2].children[1].textContent,/本组合模型预期返奖 概率待补/);
+ assert.match(renderedRows[2].children[1].textContent,/组合命中返奖 ¥3\.75～¥3\.75/);
+ assert.match(renderedRows[3].children[1].textContent,/本组合返奖：赔率待补/);
+});
+
 test("evening doubling fills missing methods and includes the approved trial without overriding a no-bet batch",async context=>{
  const Recommendations=await load("../app/components/TodayRecommendations.tsx"),{dom,restore}=installDom();
  Object.defineProperty(dom.window,"indexedDB",{value:new IDBFactory()});
