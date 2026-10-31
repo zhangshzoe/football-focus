@@ -1,0 +1,48 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+"use client";
+import {useEffect,useMemo,useRef,useState} from "react";
+import {buildValidationReport} from "../data-validation.js";
+import {loadValidationSources} from "./load-validation.js";
+import "./validation.css";
+type Check={id:string;label:string;status:string;detail:string};
+type Sources=Awaited<ReturnType<typeof loadValidationSources>>;
+const labels:Record<string,string>={pass:"通过",warn:"需关注",fail:"未通过",unknown:"未验证"};
+const show=(value:unknown)=>value===null||value===undefined||value===""?"—":String(value);
+function Checks({checks}:{checks:Check[]}){return <ul className="dv-checks">{checks.map(c=><li key={c.id}><span className={"dv-status "+c.status}>{labels[c.status]||c.status}</span><div><strong>{c.label}</strong><p>{c.detail}</p></div></li>)}</ul>}
+export default function DataValidationPage(){
+ const [sources,setSources]=useState<Sources|null>(null),[loading,setLoading]=useState(true),[nonce,setNonce]=useState(0),[clock,setClock]=useState(Date.now()),[filter,setFilter]=useState("all");
+ const sequence=useRef(0);
+ useEffect(()=>{
+  const controller=new AbortController(),run=++sequence.current;setLoading(true);setSources(null);
+  const timer=setTimeout(()=>controller.abort(new Error("读取超过 60 秒，请重新验证")),60000);
+  loadValidationSources(fetch,{signal:controller.signal,forceRefresh:nonce>0}).then(data=>{if(run===sequence.current){setSources(data);setClock(Date.now())}}).catch(error=>{if(run===sequence.current)setSources({official:null,predictions:null,audit:null,errors:{official:error instanceof Error?error.message:"读取中断"}})}).finally(()=>{clearTimeout(timer);if(run===sequence.current)setLoading(false)});
+  return()=>{sequence.current++;controller.abort();clearTimeout(timer)};
+ },[nonce]);
+ useEffect(()=>{const t=setInterval(()=>setClock(Date.now()),30000);return()=>clearInterval(t)},[]);
+ const report=useMemo(()=>buildValidationReport({official:sources?.official,predictions:sources?.predictions,audit:sources?.audit,now:clock}),[sources,clock]);
+ const fixtures=report.fixtures.filter((r:any)=>filter==="all"||r.status!=="pass"),audit=sources?.audit?.audit;
+ return <main className="dv-page">
+  <header className="dv-header"><a href="/matches" className="dv-brand"><span>球</span><b>竞彩研习室<small>FOOTBALL FOCUS / RESEARCH</small></b></a><a href="/matches">返回今日比赛 ↗</a></header>
+  <nav className="dv-nav" aria-label="主导航"><a href="/matches">今日比赛</a><a href="/predictions">AI预测</a><a href="/market-predictions">盘口预测</a><a href="/recommendations">今日推荐</a><a href="/prediction-archive">预测复盘</a><a href="/data-validation" aria-current="page">数据验证</a></nav>
+  <section className="dv-hero"><div><p className="dv-kicker">DATA VALIDATION · 足球分析</p><h1>先验证数据，<br/>再理解预测。</h1><p className="dv-lead">把赛程、赔率来源、证据缺口与历史评估放在一张检查清单中。通过检查不等于预测准确，也不构成投注建议。</p></div><div className="dv-action"><span>只读核验 · 不改写模型与历史</span><button onClick={()=>setNonce(n=>n+1)} disabled={loading}>{loading?"正在读取并核验…":"重新读取并验证 ↻"}</button><small>仅请求本站现有接口 · 不启用 AI 付费调用</small></div></section>
+  <div aria-live="polite" aria-busy={loading}>{loading?<section className="dv-panel dv-loading"><span className="dv-spinner"/>正在读取官方赛事与历史审计，再核对外围赔率；不使用演示数据。<p>最长等待 60 秒；离开页面会取消本轮请求。</p></section>:<>
+   {Object.entries(sources?.errors||{}).map(([name,error])=><div className="dv-error" role="alert" key={name}><b>{({official:"官方赛事",predictions:"外围预测",audit:"历史审计"} as Record<string,string>)[name]}读取失败</b><p>{String(error)}</p><small>未使用旧缓存或模拟数据补位；其他成功来源仍独立展示。</small></div>)}
+   <section className="dv-stats" aria-label="本轮统计">{[["当前官方赛事",report.summary.officialMatches,"来自本轮官方接口"],["身份匹配预测",report.summary.matchedPredictions,"只接受可核对的官方身份"],["未通过检查项",report.summary.failedChecks,"数据问题，不是比赛结果"],["需关注检查项",report.summary.warnings,"缺失、时效与证据限制"]].map(([title,value,note])=><article key={String(title)}><small>{title}</small><b>{show(value)}</b><span>{note}</span></article>)}</section>
+   <section className="dv-panel"><div className="dv-heading"><div><p className="dv-kicker">01 / CURRENT OBSERVATION</p><h2>当前数据检查</h2></div><span>检查时刻 {new Date(clock).toLocaleString("zh-CN",{timeZone:"Asia/Shanghai"})}（上海）</span></div><Checks checks={report.checks}/><div className="dv-times"><span>官方读取时间：{show(sources?.official?.fetchedAt)}</span><span>官方上游更新时间：{show(sources?.official?.upstreamUpdatedAt)}</span><span>预测响应生成时间：{show(sources?.predictions?.fetchedAt)}</span></div></section>
+   <section className="dv-panel"><div className="dv-heading"><div><p className="dv-kicker">02 / FIXTURE CHECKLIST</p><h2>逐场验证</h2></div><label>显示 <select value={filter} onChange={e=>setFilter(e.target.value)}><option value="all">全部比赛</option><option value="attention">仅需关注</option></select></label></div><p className="dv-subtle">每场独立核对身份、玩法与时间。展开查看证据；未采集不等于已确认不存在。</p>{!fixtures.length?<div className="dv-empty">{sources?.official?.matches?.length?"当前筛选下没有比赛。":sources?.official?(report.summary.officialMatches===0?"五玩法读取成功，本轮返回空赛程；没有赛事可验证。":"返回空列表但来源不完整，无法断言没有赛事。"):"官方源不可用，无法建立逐场检查。"}</div>:<div className="dv-fixtures">{fixtures.map((row:any)=><details key={row.key}><summary><span className={"dv-status "+row.status}>{labels[row.status]||row.status}</span><div><strong>{row.home} <em>vs</em> {row.away}</strong><small>{row.id} · {show(row.kickoffAt)}</small></div><span className="dv-expand">查看检查 ＋</span></summary><Checks checks={row.checks}/><p className="dv-provenance">预测 ID：{show(row.predictionId)}<br/>模型版本：{show(row.baseModelVersion)}</p></details>)}</div>}</section>
+   <section className="dv-panel"><div className="dv-heading"><div><p className="dv-kicker">03 / HISTORICAL EVIDENCE</p><h2>历史评估，不冒充实时成绩</h2></div><a href="/prediction-archive">查看完整复盘 →</a></div><p className="dv-subtle">以下只对应现有历史审计文件，不代表最新全部归档。审计生成时间：<b>{show(audit?.generatedAt)}</b>；接口响应时间不是审计更新日期。</p>{!audit?<div className="dv-empty">历史审计未读取，样本与成绩不可验证。</div>:<><div className="dv-history-grid">{[["严格决策行",audit.inventory?.strictDecisionRows],["回退决策行",audit.inventory?.fallbackDecisionRows],["已结算独立比赛",audit.inventory?.uniqueSettledMatches],["AI 可比较样本",audit.aiContribution?.comparableMatches]].map(([title,n])=><article key={title}><span>{title}</span><b>{show(n)}</b></article>)}</div><div className="dv-table-wrap"><table><thead><tr><th>历史指标</th><th>合格样本</th><th>结果</th></tr></thead><tbody>{[["胜平负首选",audit.overall?.hadTop1],["比分前三",audit.overall?.scoreTop3],["总进球前二",audit.overall?.totalTop2]].map(([label,metric]:any)=><tr key={label}><td>{label}</td><td>{show(metric?.eligible)}</td><td>{typeof metric?.rate==="number"?metric.rate+"%":"—"}</td></tr>)}</tbody></table></div><p className="dv-note">原审计模型 Brier：{show(audit.overall?.modelBrier)}；市场 Brier：{show(audit.overall?.marketBrier)}；市场可比较样本：{show(audit.overall?.marketComparable)}。分母、同场同刻与测试区间未逐条复核，不据此宣称模型超越市场。严格决策行也不自动等于独立前向测试集。</p></>}</section>
+  </>}</div>
+  <section className="dv-panel"><p className="dv-kicker">04 / METHODOLOGY & SOURCES</p><h2>这页如何得出结论</h2><div className="dv-method-grid"><article><b>① 先建立可信赛事身份</b><p>官方比赛 ID、销售日、主客队与开赛时间共同核对。不仅凭“周六001”合并比赛，不继承浏览器手动映射。</p></article><article><b>② 分开读取与报价时间</b><p>fetchedAt 只说明拿到响应的时间。外围没有报价更新时刻时保持未知。每 30 秒重算时效，不自动重复抓取。</p></article><article><b>③ 暴露证据缺口</b><p>阵容、伤停、天气须有来源和观测时间。本页不调用新闻搜索或 AI 复核；模型推断、天气装饰不是已采集证据。</p></article><article><b>④ 现状与历史分层</b><p>当前检查来自本轮 API；历史指标来自审计。赛前原始快照为历史依据，紧凑索引是线上投影，设备缓存不是正式共享数据库。</p></article></div>
+  <div className="dv-table-wrap"><table><thead><tr><th>依赖 / 用途</th><th>本页读取方式</th><th>边界</th></tr></thead><tbody><tr><td><a href="https://www.sporttery.cn/" target="_blank" rel="noreferrer">竞彩网</a> · 赛事与五玩法</td><td>/api/sporttery</td><td>上游失败直接展示，不伪造赔率</td></tr><tr><td><a href="https://plzx.zgzcw.com/" target="_blank" rel="noreferrer">足彩网</a> · 外围盘口</td><td>/api/predictions（只读计算）</td><td>现有公司 ID 2 / 3 / 22；不是官方赔率</td></tr><tr><td>本站历史审计与校准</td><td>/api/model-audit</td><td>静态历史审计 + 已发布校准状态，不现场重训</td></tr><tr><td>既有快照归档</td><td>复盘与历史审计的上游依据</td><td>不下载全部快照，不写入新快照</td></tr></tbody></table></div>
+  <details className="dv-candidates"><summary>建议研究工具：尚未接入（不是本轮数据源）</summary><p>soccerdata、penaltyblog、The Odds API 示例、rss-parser、SearXNG、Readability，以及离线 Hudl / StatsBomb、socceraction 均未因新增此页而安装或启用。接入前需逐项核验代码许可、数据站点条款、额度与密钥要求；开源代码许可不等于可无限抓取或转发数据。本页不转载新闻全文、不新增收费服务。</p><ul className="dv-source-list">
+   <li><a href="https://github.com/probberechts/soccerdata" target="_blank" rel="noreferrer">soccerdata</a>：历史/赛程采集适配；Apache-2.0，另需核验各数据站抓取条款。</li>
+   <li><a href="https://github.com/martineastwood/penaltyblog" target="_blank" rel="noreferrer">penaltyblog</a>：统计模型与赔率工具；MIT，仅候选，不替换本站模型。</li>
+   <li><a href="https://github.com/the-odds-api/samples-nodejs" target="_blank" rel="noreferrer">The Odds API Node.js 示例</a> / <a href="https://github.com/the-odds-api/samples-python" target="_blank" rel="noreferrer">Python 示例</a>：需要 API key；历史接口涉及付费，独立代码许可未确认。</li>
+   <li><a href="https://github.com/rbren/rss-parser" target="_blank" rel="noreferrer">rss-parser</a>：订阅源解析；MIT，不自带新闻源，内容转载权需另核验。</li>
+   <li><a href="https://github.com/searxng/searxng" target="_blank" rel="noreferrer">SearXNG</a>：检索聚合；AGPL-3.0，需部署服务并确认搜索源条款。</li>
+   <li><a href="https://github.com/mozilla/readability" target="_blank" rel="noreferrer">Readability</a>：网页正文提取；Apache-2.0，不授予新闻转载权。</li>
+   <li><a href="https://github.com/hudl/open-data" target="_blank" rel="noreferrer">Hudl / StatsBomb open data</a>：离线事件研究；自定义数据使用条款。<a href="https://github.com/ML-KULeuven/socceraction" target="_blank" rel="noreferrer">socceraction</a>：MIT，离线动作价值研究；维护状态与版本需接入前复核。</li>
+  </ul></details></section>
+  <footer className="dv-footer">FOOTBALL FOCUS · 验证证据，而非承诺结果。<a href="/matches">返回今日比赛 ↑</a></footer>
+ </main>;
+}
