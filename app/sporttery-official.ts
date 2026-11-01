@@ -314,7 +314,7 @@ export type SportteryData = {
   upstreamUpdatedAt: string;
   poolStatus: Record<
     SportteryPool,
-    { status: "success" | "failed"; matchCount: number; error?: string }
+    { status: "success" | "failed"; matchCount: number; error?: string; upstreamUpdatedAt?: string }
   >;
   matches: SportteryMatch[];
   repairMode: boolean;
@@ -355,7 +355,7 @@ export type SportteryMatch = {
 };
 
 export async function fetchOfficialSporttery(
-  options: { repair?: boolean; serverHeaders?: boolean; timeoutMs?: number } = {},
+  options: { repair?: boolean; serverHeaders?: boolean; timeoutMs?: number; allowMobileFallback?: boolean } = {},
 ): Promise<SportteryData> {
   const repair = Boolean(options.repair),
     attempts = repair ? 2 : 1,
@@ -383,7 +383,7 @@ export async function fetchOfficialSporttery(
   }
   let mobileCalculatorUsed = false;
   const missingPools = SPORTTERY_POOLS.filter((pool) => !collected[pool].some((payload) => rowsOf(payload).length));
-  if (missingPools.length) {
+  if (missingPools.length && options.allowMobileFallback !== false) {
     try {
       const mobile = await fetchMobileCalculator(timeoutMs);
       const mobileRows = rowsOf(mobile);
@@ -412,7 +412,7 @@ export async function fetchOfficialSporttery(
         ...latest,
         value: { ...latest.value, matchInfoList: [{ subMatchList: Array.from(rows.values()) }] },
       };
-      poolStatus[pool] = { status: "success", matchCount: rows.size };
+      poolStatus[pool] = { status: "success", matchCount: rows.size, upstreamUpdatedAt: String(latest.value.lastUpdateTime || "") };
     } else
       poolStatus[pool] = {
         status: "failed",
@@ -421,9 +421,9 @@ export async function fetchOfficialSporttery(
       };
   });
   if (!SPORTTERY_POOLS.some((pool) => poolStatus[pool].status === "success"))
-    throw new Error(
+    throw Object.assign(new Error(
       `竞彩网五个玩法均读取失败：${SPORTTERY_POOLS.map((pool) => `${pool} ${poolStatus[pool].error || "失败"}`).join("；")}`,
-    );
+    ), {poolStatus});
   const maps = Object.fromEntries(
     SPORTTERY_POOLS.map((pool) => [
       pool,

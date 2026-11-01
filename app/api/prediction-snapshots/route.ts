@@ -1,3 +1,4 @@
+import {readHandoffProjection} from "../../cloud-handoff/runtime.js";
 import {readdir,readFile} from "node:fs/promises";
 import {join} from "node:path";
 import {NextResponse} from "next/server";
@@ -81,7 +82,8 @@ function toSnapshot(raw:RawSnapshot & CaptureEvidence,fileName:string,supplement
 export async function GET(request:Request){
  try{
   const view=new URL(request.url).searchParams.get("view");
-  const bundledIndex=(Object.values(bundledIndexFiles)[0]||{}) as {snapshots?:Array<Record<string,unknown>>;resultCache?:Record<string,unknown>;purchasePlanSnapshots?:Array<Record<string,unknown>>};
+  const durableProjection=await readHandoffProjection(Object.values(bundledIndexFiles)[0]||{});
+  const bundledIndex=durableProjection.index as {snapshots?:Array<Record<string,unknown>>;resultCache?:Record<string,unknown>;purchasePlanSnapshots?:Array<Record<string,unknown>>};
   const bundledSnapshots=Array.isArray(bundledIndex.snapshots)?bundledIndex.snapshots:[];
   const bundledMigratedSnapshots=bundledSnapshots.filter(snapshot=>snapshot.storageOrigin==="migrated-browser");
   const bundledResultCache=bundledIndex.resultCache&&typeof bundledIndex.resultCache==="object"&&!Array.isArray(bundledIndex.resultCache)?bundledIndex.resultCache:{};
@@ -89,7 +91,7 @@ export async function GET(request:Request){
   const bundledPurchaseSnapshots=Array.isArray(bundledIndex.purchasePlanSnapshots)?bundledIndex.purchasePlanSnapshots:[];
   const diskPurchaseSnapshots=await readPurchaseSnapshotsFromDisk();
   const purchasePlanSnapshots=Array.from(new Map([...bundledPurchaseSnapshots,...diskPurchaseSnapshots].filter(record=>record&&typeof record==="object"&&"snapshotId" in record).map(record=>[String(record.snapshotId),record])).values()).map(withoutDuplicateTickets).sort((a,b)=>String(b.capturedAt||"").localeCompare(String(a.capturedAt||"")));
-  if(view==="recommendations")return NextResponse.json({snapshots:[],purchasePlanSnapshots,resultCache:{...bundledResultCache,...verifiedResultCache},storage:diskPurchaseSnapshots.length?"disk+bundle-index":"bundle-index"},{headers:{"Cache-Control":"no-store, max-age=0"}});
+  if(view==="recommendations")return NextResponse.json({snapshots:[],purchasePlanSnapshots,resultCache:{...bundledResultCache,...verifiedResultCache},persistenceStatus:durableProjection.status,persistenceError:durableProjection.error||null,storage:diskPurchaseSnapshots.length?"disk+bundle-index":"bundle-index"},{headers:{"Cache-Control":"no-store, max-age=0"}});
   let disk:Array<ReturnType<typeof toSnapshot>>=[];
   try{
    const allNames=await readdir(directory),supplementNames=allNames.filter(name=>name.includes(".supplement."));
@@ -111,7 +113,7 @@ export async function GET(request:Request){
   const baseSnapshots=diskSnapshots.length?Array.from(new Map([...(snapshots as unknown as Array<Record<string,unknown>>),...bundledMigratedSnapshots].map(snapshot=>[snapshotKey(snapshot),snapshot])).values()):bundledSnapshots;
   const recoverySnapshots=buildArchiveRecoverySnapshots(baseSnapshots,purchasePlanSnapshots);
   const responseSnapshots=[...recoverySnapshots,...baseSnapshots].sort((a,b)=>String(b.capturedAt||b.sourceFetchedAt).localeCompare(String(a.capturedAt||a.sourceFetchedAt)));
-  return NextResponse.json({snapshots:responseSnapshots,resultCache:{...bundledResultCache,...verifiedResultCache},resultCorrections:verifiedResultCache,purchasePlanSnapshots,storage:diskSnapshots.length||diskPurchaseSnapshots.length?"disk+bundle-migration":"bundle-index"},{headers:{"Cache-Control":"no-store, max-age=0"}});
+  return NextResponse.json({snapshots:responseSnapshots,resultCache:{...bundledResultCache,...verifiedResultCache},resultCorrections:verifiedResultCache,purchasePlanSnapshots,persistenceStatus:durableProjection.status,persistenceError:durableProjection.error||null,storage:diskSnapshots.length||diskPurchaseSnapshots.length?"disk+bundle-migration":"bundle-index"},{headers:{"Cache-Control":"no-store, max-age=0"}});
  }catch(error){
   return NextResponse.json({snapshots:[],error:error instanceof Error?error.message:"快照读取失败"},{status:500,headers:{"Cache-Control":"no-store, max-age=0"}});
  }

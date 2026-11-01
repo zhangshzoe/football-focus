@@ -1,3 +1,9 @@
+// Node-only render harness: hosted bindings are absent, exercising explicit baseline fallback.
+import {registerHooks} from "node:module";
+registerHooks({resolve(specifier,context,nextResolve){
+ if(specifier==="cloudflare:workers")return {url:"data:text/javascript,export const env = {};",shortCircuit:true};
+ return nextResolve(specifier,context);
+}});
 import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
 import test from "node:test";
